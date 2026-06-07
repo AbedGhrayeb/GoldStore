@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260607131708_AddSupplierEntities")]
+    partial class AddSupplierEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -251,180 +254,6 @@ namespace Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_gold_ledger_entries_reference_type_reference_id");
 
                     b.ToTable("gold_ledger_entries", "public");
-                });
-
-            modelBuilder.Entity("Domain.SupplierOperations.SupplierDelivery", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("date");
-
-                    b.Property<decimal>("Equivalent21KWeightInGrams")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("equivalent21k_weight_in_grams");
-
-                    b.Property<string>("Karat")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasColumnName("karat");
-
-                    b.Property<string>("ManufacturingFeeCurrency")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasColumnName("manufacturing_fee_currency");
-
-                    b.Property<decimal>("ManufacturingFeePerGram")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("manufacturing_fee_per_gram");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("notes");
-
-                    b.Property<Guid>("SupplierId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("supplier_id");
-
-                    b.Property<decimal>("TotalManufacturingFee")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("total_manufacturing_fee");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<decimal>("WeightInGrams")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("weight_in_grams");
-
-                    b.HasKey("Id")
-                        .HasName("pk_supplier_deliveries");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_supplier_deliveries_user_id");
-
-                    b.HasIndex("SupplierId", "Date")
-                        .HasDatabaseName("ix_supplier_deliveries_supplier_id_date");
-
-                    b.ToTable("supplier_deliveries", "public");
-                });
-
-            modelBuilder.Entity("Domain.SupplierOperations.SupplierManufacturingPayment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("account_id");
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("amount");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasColumnName("currency");
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("date");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("notes");
-
-                    b.Property<Guid>("SupplierId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("supplier_id");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_supplier_manufacturing_payments");
-
-                    b.HasIndex("AccountId")
-                        .HasDatabaseName("ix_supplier_manufacturing_payments_account_id");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_supplier_manufacturing_payments_user_id");
-
-                    b.HasIndex("SupplierId", "Date")
-                        .HasDatabaseName("ix_supplier_manufacturing_payments_supplier_id_date");
-
-                    b.ToTable("supplier_manufacturing_payments", "public");
-                });
-
-            modelBuilder.Entity("Domain.SupplierOperations.SupplierScrapGoldPayment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("date");
-
-                    b.Property<decimal>("Equivalent21KWeightInGrams")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("equivalent21k_weight_in_grams");
-
-                    b.Property<string>("Karat")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasColumnName("karat");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("notes");
-
-                    b.Property<Guid>("SupplierId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("supplier_id");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<decimal>("WeightInGrams")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("weight_in_grams");
-
-                    b.HasKey("Id")
-                        .HasName("pk_supplier_scrap_gold_payments");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_supplier_scrap_gold_payments_user_id");
-
-                    b.HasIndex("SupplierId", "Date")
-                        .HasDatabaseName("ix_supplier_scrap_gold_payments_supplier_id_date");
-
-                    b.ToTable("supplier_scrap_gold_payments", "public");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.Supplier", b =>
@@ -737,64 +566,6 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_gold_ledger_entries_users_user_id");
-                });
-
-            modelBuilder.Entity("Domain.SupplierOperations.SupplierDelivery", b =>
-                {
-                    b.HasOne("Domain.Suppliers.Supplier", null)
-                        .WithMany()
-                        .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_supplier_deliveries_suppliers_supplier_id");
-
-                    b.HasOne("Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_supplier_deliveries_users_user_id");
-                });
-
-            modelBuilder.Entity("Domain.SupplierOperations.SupplierManufacturingPayment", b =>
-                {
-                    b.HasOne("Domain.Finance.FinancialAccount", null)
-                        .WithMany()
-                        .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_supplier_manufacturing_payments_financial_accounts_account_");
-
-                    b.HasOne("Domain.Suppliers.Supplier", null)
-                        .WithMany()
-                        .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_supplier_manufacturing_payments_suppliers_supplier_id");
-
-                    b.HasOne("Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_supplier_manufacturing_payments_users_user_id");
-                });
-
-            modelBuilder.Entity("Domain.SupplierOperations.SupplierScrapGoldPayment", b =>
-                {
-                    b.HasOne("Domain.Suppliers.Supplier", null)
-                        .WithMany()
-                        .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_supplier_scrap_gold_payments_suppliers_supplier_id");
-
-                    b.HasOne("Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_supplier_scrap_gold_payments_users_user_id");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.SupplierGoldLedgerEntry", b =>

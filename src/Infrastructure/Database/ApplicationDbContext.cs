@@ -2,6 +2,8 @@ using Application.Abstractions.Data;
 using Domain.Catalog;
 using Domain.Finance;
 using Domain.Inventory;
+using Domain.SupplierOperations;
+using Domain.Suppliers;
 using Domain.Todos;
 using Domain.Users;
 using Infrastructure.DomainEvents;
@@ -26,6 +28,18 @@ public sealed class ApplicationDbContext(
     public DbSet<Category> Categories { get; set; }
 
     public DbSet<GoldLedgerEntry> GoldLedgerEntries { get; set; }
+
+    public DbSet<Supplier> Suppliers { get; set; }
+
+    public DbSet<SupplierGoldLedgerEntry> SupplierGoldLedgerEntries { get; set; }
+
+    public DbSet<SupplierManufacturingLedgerEntry> SupplierManufacturingLedgerEntries { get; set; }
+
+    public DbSet<SupplierDelivery> SupplierDeliveries { get; set; }
+
+    public DbSet<SupplierScrapGoldPayment> SupplierScrapGoldPayments { get; set; }
+
+    public DbSet<SupplierManufacturingPayment> SupplierManufacturingPayments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
