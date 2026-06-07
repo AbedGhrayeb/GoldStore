@@ -1,6 +1,7 @@
-﻿using Application.Abstractions.Data;
+using Application.Abstractions.Data;
 using Domain.Catalog;
 using Domain.Finance;
+using Domain.Inventory;
 using Domain.Todos;
 using Domain.Users;
 using Infrastructure.DomainEvents;
@@ -20,9 +21,11 @@ public sealed class ApplicationDbContext(
 
     public DbSet<FinancialTransaction> FinancialTransactions { get; set; }
 
-    public DbSet<FinancialAccount> FinancialAccounts {get; set;}
+    public DbSet<FinancialAccount> FinancialAccounts { get; set; }
 
     public DbSet<Category> Categories { get; set; }
+
+    public DbSet<GoldLedgerEntry> GoldLedgerEntries { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
