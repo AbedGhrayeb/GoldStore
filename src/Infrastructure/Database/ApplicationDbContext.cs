@@ -1,4 +1,5 @@
 ﻿using Application.Abstractions.Data;
+using Domain.Catalog;
 using Domain.Finance;
 using Domain.Todos;
 using Domain.Users;
@@ -20,6 +21,8 @@ public sealed class ApplicationDbContext(
     public DbSet<FinancialTransaction> FinancialTransactions { get; set; }
 
     public DbSet<FinancialAccount> FinancialAccounts {get; set;}
+
+    public DbSet<Category> Categories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
