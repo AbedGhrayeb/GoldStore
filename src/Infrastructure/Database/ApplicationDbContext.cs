@@ -1,4 +1,5 @@
 ﻿using Application.Abstractions.Data;
+using Domain.Finance;
 using Domain.Todos;
 using Domain.Users;
 using Infrastructure.DomainEvents;
@@ -15,6 +16,10 @@ public sealed class ApplicationDbContext(
     public DbSet<User> Users { get; set; }
 
     public DbSet<TodoItem> TodoItems { get; set; }
+
+    public DbSet<FinancialTransaction> FinancialTransactions { get; set; }
+
+    public DbSet<FinancialAccount> FinancialAccounts {get; set;}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
