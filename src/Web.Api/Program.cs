@@ -2,6 +2,7 @@ using System.Reflection;
 using Application;
 using HealthChecks.UI.Client;
 using Infrastructure;
+using Infrastructure.Data;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
 using Web.Api;
@@ -30,7 +31,7 @@ if (app.Environment.IsDevelopment())
 
     app.ApplyMigrations();
 }
-
+await app.InitializeDatabaseAsync();
 app.MapHealthChecks("health", new HealthCheckOptions
 {
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse

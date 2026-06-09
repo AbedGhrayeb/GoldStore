@@ -3,6 +3,7 @@ using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Infrastructure.Authentication;
 using Infrastructure.Authorization;
+using Infrastructure.Data;
 using Infrastructure.Database;
 using Infrastructure.DomainEvents;
 using Infrastructure.Time;
@@ -45,10 +46,10 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(
             options => options
                 .UseSqlServer(connectionString, sqlServerOptions =>
-                    sqlServerOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Default)));
+                    sqlServerOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName)));
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
-
+        services.AddScoped<ApplicationDbContextInitializer>();
         return services;
     }
 
