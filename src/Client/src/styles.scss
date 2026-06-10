@@ -1,0 +1,15 @@
+@use 'styles/variables' as *;
+@use 'styles/reset';
+@use 'styles/typography';
+
+html {
+  font-family: $font-family;
+  color: $text-primary;
+  background-color: $surface-base;
+  direction: rtl;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}

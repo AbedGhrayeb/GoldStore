@@ -41,6 +41,8 @@ app.UseRequestContextLogging();
 
 app.UseSerilogRequestLogging();
 
+app.UseCors("AllowAngularApp");
+
 app.UseExceptionHandler();
 
 app.UseAuthentication();

@@ -15,6 +15,12 @@ public static class DependencyInjection
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
 
+        services.AddCors(options =>
+            options.AddPolicy("AllowAngularApp", policy =>
+                policy.AllowAnyOrigin()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()));
+
         return services;
     }
 }
