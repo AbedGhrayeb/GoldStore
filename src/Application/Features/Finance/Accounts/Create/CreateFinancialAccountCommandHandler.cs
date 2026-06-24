@@ -39,6 +39,23 @@ internal sealed class CreateFinancialAccountCommandHandler(IApplicationDbContext
         };
 
         context.FinancialAccounts.Add(account);
+
+        if (command.OpeningBalance > 0m)
+        {
+            context.FinancialTransactions.Add(new FinancialTransaction
+            {
+                Id = Guid.CreateVersion7(),
+                AccountId = account.Id,
+                Currency = currency,
+                Amount = command.OpeningBalance,
+                TransactionType = FinancialTransactionType.Inflow,
+                ReferenceType = FinancialReferenceType.ManualAdjustment,
+                ReferenceId = account.Id,
+                Date = DateTime.UtcNow,
+                Notes = string.IsNullOrWhiteSpace(command.Notes) ? "رصيد افتتاحي" : command.Notes
+            });
+        }
+
         await context.SaveChangesAsync(cancellationToken);
 
         return account.Id;

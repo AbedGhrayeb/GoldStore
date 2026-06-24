@@ -6,4 +6,5 @@ public sealed record CreateFinancialAccountCommand(
     string Name,
     string Currency,
     string? AccountNumber,
-    string? Notes) : ICommand<Guid>;
+    string? Notes,
+    decimal OpeningBalance = 0m) : ICommand<Guid>;

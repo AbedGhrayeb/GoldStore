@@ -16,4 +16,7 @@ public class CreateBankAccountModel
 
     [StringLength(500, ErrorMessage = "الملاحظات طويلة جداً")]
     public string? Notes { get; set; }
+
+    [Range(0, double.MaxValue, ErrorMessage = "الرصيد الافتتاحي لا يمكن أن يكون سالباً")]
+    public decimal OpeningBalance { get; set; } = 0m;
 }

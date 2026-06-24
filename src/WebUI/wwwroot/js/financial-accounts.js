@@ -47,7 +47,7 @@ function buildCashCard(a) {
 
     var isPrimary = a.currency === 'Jod';
 
-    return '<a href="/FinancialTransactions/Index?accountName=' + encodeURIComponent(a.name) + '" class="account-card-link block bg-surface-container-lowest rounded-xl p-md border border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.04)] relative overflow-hidden group hover:border-primary transition-colors">' +
+    return '<div class="account-card bg-surface-container-lowest rounded-xl p-md border border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.04)] relative overflow-hidden group hover:border-primary transition-colors">' +
         (isPrimary ? '<div class="absolute top-0 right-0 w-1 h-full bg-primary-container rounded-r-xl"></div>' : '') +
         '<div class="flex justify-between items-start mb-md">' +
             '<div>' +
@@ -61,11 +61,14 @@ function buildCashCard(a) {
         '<div class="mb-md">' +
             '<span class="font-display-lg text-display-lg text-on-surface" dir="ltr">' + formatNumber(a.balance) + '</span>' +
         '</div>' +
-        '<div class="flex items-center gap-xs ' + changeClass + ' font-label-md text-label-md">' +
-            '<span class="material-symbols-outlined text-[16px]">' + changeIcon + '</span>' +
-            '<span>' + changeText + '</span>' +
+        '<div class="flex items-center justify-between gap-xs">' +
+            '<div class="flex items-center gap-xs ' + changeClass + ' font-label-md text-label-md">' +
+                '<span class="material-symbols-outlined text-[16px]">' + changeIcon + '</span>' +
+                '<span>' + changeText + '</span>' +
+            '</div>' +
+            buildCardActions(a) +
         '</div>' +
-    '</a>';
+    '</div>';
 }
 
 function getCurrencyLabel(currency) {
@@ -101,21 +104,38 @@ function loadBankAccounts() {
 function buildBankCard(a) {
     var maskedNumber = a.accountNumber ? '**** **** **** ' + a.accountNumber.slice(-4) : '';
 
-    return '<a href="/FinancialTransactions/Index?accountName=' + encodeURIComponent(a.name) + '" class="account-card-link block bg-surface-container-lowest/80 backdrop-blur-md rounded-xl p-md border border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.04)] flex flex-col md:flex-row gap-md items-start md:items-center justify-between hover:shadow-[0px_10px_32px_rgba(0,0,0,0.08)] transition-shadow">' +
-        '<div class="flex items-center gap-md">' +
-            '<div class="w-14 h-14 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant shadow-sm shrink-0">' +
-                '<span class="material-symbols-outlined text-3xl text-primary">corporate_fare</span>' +
+    return '<div class="account-card bg-surface-container-lowest/80 backdrop-blur-md rounded-xl p-md border border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.04)] flex flex-col gap-md hover:shadow-[0px_10px_32px_rgba(0,0,0,0.08)] transition-shadow">' +
+        '<div class="flex items-start justify-between gap-md">' +
+            '<div class="flex items-center gap-md">' +
+                '<div class="w-14 h-14 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant shadow-sm shrink-0">' +
+                    '<span class="material-symbols-outlined text-3xl text-primary">corporate_fare</span>' +
+                '</div>' +
+                '<div>' +
+                    '<h4 class="font-headline-md text-headline-md text-on-surface">' + escapeHtml(a.name) + '</h4>' +
+                    (maskedNumber ? '<p class="font-body-md text-body-md text-secondary font-data-mono mt-1">' + maskedNumber + '</p>' : '') +
+                '</div>' +
             '</div>' +
-            '<div>' +
-                '<h4 class="font-headline-md text-headline-md text-on-surface">' + escapeHtml(a.name) + '</h4>' +
-                (maskedNumber ? '<p class="font-body-md text-body-md text-secondary font-data-mono mt-1">' + maskedNumber + '</p>' : '') +
+            '<div class="text-left shrink-0">' +
+                '<p class="font-label-md text-label-md text-secondary uppercase mb-xs">الرصيد المتاح (' + a.currency + ')</p>' +
+                '<span class="font-headline-lg text-headline-lg text-on-surface font-data-mono" dir="ltr">' + formatNumber(a.balance) + '</span>' +
             '</div>' +
         '</div>' +
-        '<div class="text-right">' +
-            '<p class="font-label-md text-label-md text-secondary uppercase mb-xs">الرصيد المتاح (' + a.currency + ')</p>' +
-            '<span class="font-headline-lg text-headline-lg text-on-surface font-data-mono" dir="ltr">' + formatNumber(a.balance) + '</span>' +
-        '</div>' +
-    '</a>';
+        buildCardActions(a) +
+    '</div>';
+}
+
+// ── Card Action Buttons (shared by cash + bank cards) ──
+function buildCardActions(a) {
+    return '<div class="flex items-center gap-xs">' +
+        '<a href="/FinancialTransactions/Index?accountName=' + encodeURIComponent(a.name) + '" class="inline-flex items-center gap-xs px-sm py-xs bg-surface-container-low hover:bg-surface-container text-on-surface border border-outline-variant rounded-md font-label-md text-label-md transition-colors">' +
+            '<span class="material-symbols-outlined text-[16px]">receipt_long</span>' +
+            'عرض الحركات' +
+        '</a>' +
+        '<button type="button" onclick="openSetBalanceModal(\'' + a.id + '\')" class="inline-flex items-center gap-xs px-sm py-xs bg-primary-container/10 hover:bg-primary-container/20 text-primary border border-primary/30 rounded-md font-label-md text-label-md transition-colors">' +
+            '<span class="material-symbols-outlined text-[16px]">tune</span>' +
+            'ضبط الرصيد' +
+        '</button>' +
+    '</div>';
 }
 
 // ── Recent Transactions ────────────────────────────────
@@ -171,6 +191,8 @@ function resetCreateAccountForm() {
     document.getElementById('accountName').value = '';
     document.getElementById('accountNumber').value = '';
     document.getElementById('accountNotes').value = '';
+    var openingInput = document.getElementById('accountOpeningBalance');
+    if (openingInput) openingInput.value = '0';
     document.getElementById('accountNameError').classList.add('hidden');
 }
 
@@ -202,11 +224,15 @@ function submitCreateAccount() {
     }
     document.getElementById('accountNameError').classList.add('hidden');
 
+    var openingRaw = document.getElementById('accountOpeningBalance')?.value || '0';
+    var openingBalance = parseFloat(openingRaw) || 0;
+
     var payload = {
         name: name,
         currency: document.getElementById('accountCurrency').value,
         accountNumber: document.getElementById('accountNumber').value.trim() || null,
-        notes: document.getElementById('accountNotes').value.trim() || null
+        notes: document.getElementById('accountNotes').value.trim() || null,
+        openingBalance: openingBalance
     };
 
     var token = document.querySelector('#createAccountForm input[name="__RequestVerificationToken"]')?.value || '';
@@ -234,6 +260,93 @@ function submitCreateAccount() {
     });
 }
 
+// ── Set Balance Modal ─────────────────────────────────
+function openSetBalanceModal(accountId) {
+    $.ajax({
+        url: '/FinancialAccounts/GetAccountBalance',
+        type: 'GET',
+        data: { id: accountId },
+        dataType: 'json',
+        success: function (data) {
+            if (!data || data.success === false) {
+                showToastMessage(data?.error || 'تعذر جلب بيانات الحساب', 'error', 'الحسابات المالية');
+                return;
+            }
+            document.getElementById('setBalanceAccountId').value = data.id;
+            document.getElementById('setBalanceAccountName').textContent = data.name + ' (' + data.currency + ')';
+            var currentEl = document.getElementById('setBalanceCurrent');
+            currentEl.textContent = formatNumber(data.currentBalance) + ' ' + (data.currencySymbol || '');
+            document.getElementById('setBalanceTarget').value = formatNumberInput(data.currentBalance);
+            document.getElementById('setBalanceNotes').value = '';
+            document.getElementById('setBalanceTargetError').classList.add('hidden');
+            document.getElementById('setBalanceModal').classList.remove('hidden');
+        },
+        error: function () {
+            showToastMessage('حدث خطأ أثناء جلب بيانات الحساب', 'error', 'الحسابات المالية');
+        }
+    });
+}
+
+function closeSetBalanceModal() {
+    document.getElementById('setBalanceModal').classList.add('hidden');
+    resetSetBalanceForm();
+}
+
+function resetSetBalanceForm() {
+    document.getElementById('setBalanceAccountId').value = '';
+    document.getElementById('setBalanceAccountName').textContent = '—';
+    document.getElementById('setBalanceCurrent').textContent = '0.00';
+    document.getElementById('setBalanceTarget').value = '';
+    document.getElementById('setBalanceNotes').value = '';
+    document.getElementById('setBalanceTargetError').classList.add('hidden');
+}
+
+function submitSetBalance() {
+    var accountId = document.getElementById('setBalanceAccountId').value;
+    if (!accountId) {
+        showToastMessage('لم يتم تحديد حساب', 'error', 'الحسابات المالية');
+        return;
+    }
+
+    var targetRaw = document.getElementById('setBalanceTarget').value;
+    var target = parseFloat(targetRaw);
+    if (isNaN(target) || target < 0) {
+        document.getElementById('setBalanceTargetError').classList.remove('hidden');
+        return;
+    }
+    document.getElementById('setBalanceTargetError').classList.add('hidden');
+
+    var payload = {
+        accountId: accountId,
+        targetBalance: target,
+        notes: document.getElementById('setBalanceNotes').value.trim() || null
+    };
+
+    var token = document.querySelector('#setBalanceForm input[name="__RequestVerificationToken"]')?.value || '';
+
+    $.ajax({
+        url: '/FinancialAccounts/SetBalanceAjax',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(payload),
+        headers: { 'RequestVerificationToken': token },
+        success: function (json) {
+            if (typeof json === 'object' && json.status !== undefined) {
+                renderToastFromController(json);
+                if (json.status === 1 || json.callback === 'refreshAccountsPage') {
+                    closeSetBalanceModal();
+                    loadCashAccounts();
+                    loadBankAccounts();
+                    loadRecentTransactions();
+                }
+            }
+        },
+        error: function (xhr) {
+            handleAjaxError(xhr, 'الحسابات المالية');
+        }
+    });
+}
+
 function refreshAccountsPage() {
     loadCashAccounts();
     loadBankAccounts();
@@ -248,6 +361,11 @@ function exportReport() {
 function formatNumber(num) {
     if (num === null || num === undefined) return '0.00';
     return parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatNumberInput(num) {
+    if (num === null || num === undefined) return '0';
+    return parseFloat(num).toFixed(2);
 }
 
 function escapeHtml(str) {

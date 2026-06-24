@@ -84,7 +84,7 @@ public static class DependencyInjection
         // Cookie hardening
         opts.Cookie.Name = "GoldStoreAuth.Session";
         opts.Cookie.HttpOnly = true;              // JS cannot read the cookie
-        opts.Cookie.SecurePolicy = CookieSecurePolicy.Always; // HTTPS only in prod
+        opts.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         opts.Cookie.SameSite = SameSiteMode.Strict;
         opts.Cookie.IsEssential = true;
     });

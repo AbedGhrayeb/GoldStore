@@ -29,12 +29,14 @@ select:focus {
     box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.3) !important;
 }
 
-/* Account card links — no underline */
+/* Account cards — no underline */
+.account-card,
 .account-card-link {
     text-decoration: none;
     color: inherit;
 }
 
+.account-card:hover,
 .account-card-link:hover {
     text-decoration: none;
 }
