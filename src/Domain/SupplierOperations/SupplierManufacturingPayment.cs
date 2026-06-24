@@ -15,8 +15,6 @@ public sealed class SupplierManufacturingPayment : Entity
 
     public Currency Currency { get; set; }
 
-    public Guid UserId { get; set; }
-
     public DateTime Date { get; set; }
 
     public string? Notes { get; set; }

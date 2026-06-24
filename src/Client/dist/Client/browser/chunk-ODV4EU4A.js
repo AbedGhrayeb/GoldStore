@@ -1,1 +1,0 @@
-import"./chunk-2NFLSA4Y.js";var n=[{path:"",loadComponent:()=>import("./chunk-ON7Y4544.js").then(o=>o.FinanceOverviewComponent)},{path:"accounts",loadComponent:()=>import("./chunk-LIOH3FUL.js").then(o=>o.AccountsComponent)},{path:"ledger",loadComponent:()=>import("./chunk-MHCLSGEP.js").then(o=>o.LedgerComponent)}];export{n as default};

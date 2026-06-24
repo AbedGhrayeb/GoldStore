@@ -1,0 +1,12 @@
+body {
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    background-color: #fbf8ff;
+}
+
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.icon-fill {
+    font-variation-settings: 'FILL' 1;
+}

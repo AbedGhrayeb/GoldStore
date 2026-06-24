@@ -1,11 +1,8 @@
 <Project>
-  <PropertyGroup>
-    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-  </PropertyGroup>
-  <!--.NET 9 packages. Most of them will work on .NET 8. If you need to, make the updates here individually.-->
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+	</PropertyGroup>
   <ItemGroup>
-    <!-- Static code analysis -->
-    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.24.0.138807" />
     <!-- Application -->
     <PackageVersion Include="Scrutor" Version="7.0.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
@@ -19,7 +16,7 @@
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.7" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.7" />
-    <!-- Web.Api -->
+    <!-- WebUI -->
     <PackageVersion Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.7" />

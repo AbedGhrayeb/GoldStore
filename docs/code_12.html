@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>توريد مورد - بريق للذهب</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#1a1b22",
+                        "error": "#ba1a1a",
+                        "secondary": "#5f5e5e",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#6ffbbe",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-bright": "#fbf8ff",
+                        "on-error-container": "#93000a",
+                        "on-background": "#1a1b22",
+                        "surface-container": "#eeedf7",
+                        "on-secondary-fixed-variant": "#474746",
+                        "primary-container": "#d4af37",
+                        "on-primary-fixed": "#241a00",
+                        "inverse-on-surface": "#f1effa",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#e3e1ec",
+                        "tertiary-container": "#33ca90",
+                        "surface-dim": "#dad9e3",
+                        "on-secondary": "#ffffff",
+                        "primary": "#735c00",
+                        "on-primary-container": "#554300",
+                        "outline-variant": "#d0c5af",
+                        "on-tertiary-container": "#005035",
+                        "primary-fixed": "#ffe088",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#e2dfde",
+                        "inverse-primary": "#e9c349",
+                        "secondary-fixed": "#e5e2e1",
+                        "surface": "#fbf8ff",
+                        "inverse-surface": "#2f3038",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "surface-container-high": "#e8e7f1",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "on-surface-variant": "#4d4635",
+                        "surface-tint": "#735c00",
+                        "on-primary-fixed-variant": "#574500",
+                        "on-secondary-container": "#636262",
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#f4f2fd",
+                        "tertiary": "#006c49",
+                        "primary-fixed-dim": "#e9c349",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-variant": "#e3e1ec",
+                        "outline": "#7f7663",
+                        "background": "#fbf8ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "xl": "64px",
+                        "gutter": "24px",
+                        "container-max": "1440px",
+                        "md": "24px",
+                        "lg": "40px",
+                        "sm": "12px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["IBM Plex Sans Arabic"],
+                        "headline-lg": ["IBM Plex Sans Arabic"],
+                        "body-md": ["IBM Plex Sans Arabic"],
+                        "body-lg": ["IBM Plex Sans Arabic"],
+                        "display-lg": ["IBM Plex Sans Arabic"],
+                        "label-md": ["IBM Plex Sans Arabic"],
+                        "title-lg": ["IBM Plex Sans Arabic"],
+                        "data-mono": ["IBM Plex Sans Arabic"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["40px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'IBM Plex Sans Arabic', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full w-[280px] fixed right-0 top-0 z-50 text-right bg-surface-container-lowest shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border-l border-outline-variant">
+<div class="p-md border-b border-outline-variant/30">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">بريق للذهب</h1>
+<p class="font-body-md text-body-md text-secondary mt-xs">نظام إدارة الذهب</p>
+</div>
+<div class="p-md">
+<button class="w-full bg-primary-container text-on-primary-container font-body-lg text-body-lg py-sm px-md rounded-lg font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined">add</span>
+                عملية بيع جديدة
+            </button>
+</div>
+<nav class="flex-1 overflow-y-auto py-sm px-sm">
+<a class="flex items-center gap-md px-md py-sm mb-xs rounded-lg text-secondary hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-lg text-body-lg">لوحة القيادة</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm mb-xs rounded-lg text-secondary hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-body-lg text-body-lg">المخزون</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm mb-xs rounded-lg text-secondary hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-body-lg text-body-lg">المبيعات</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm mb-xs rounded-lg text-primary border-r-2 border-primary bg-surface-container-high font-bold scale-[0.99] transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="group" data-weight="fill" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-body-lg text-body-lg">الموردين</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm mb-xs rounded-lg text-secondary hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-body-lg text-body-lg">المالية</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm mb-xs rounded-lg text-secondary hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-body-lg text-body-lg">التقارير</span>
+</a>
+</nav>
+<div class="mt-auto p-sm border-t border-outline-variant/30">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-lg text-body-lg">الإعدادات</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-error hover:bg-error-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-body-lg text-body-lg">تسجيل الخروج</span>
+</a>
+</div>
+</aside>
+<!-- TopAppBar -->
+<header class="flex flex-row-reverse justify-between items-center px-gutter h-16 w-full md:w-[calc(100%-280px)] fixed top-0 left-0 z-40 bg-surface/80 backdrop-blur-md border-b border-outline-variant">
+<div class="md:hidden font-headline-md text-headline-md font-black text-primary">
+            بريق للذهب
+        </div>
+<div class="flex items-center gap-sm">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden ml-sm">
+<img alt="صورة المستخدم الشخصية" class="w-full h-full object-cover" data-alt="A professional headshot of a person looking directly at the camera, conveying trust and competence. The lighting is soft and even, highlighting facial features naturally. The background is neutral and slightly out of focus, drawing attention entirely to the subject. The overall aesthetic is clean, corporate, and polished, fitting for a modern enterprise application profile image." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBa37OVInXFsM_RtgR1xckt9PBw-1iDI_xVEFhtofkhWAoUT3kfKeEoJQQWgWvie2RfUq_3dUtBAGfI_MBNxgnmoDTwq1kndQi4N_h3Ni07FAwKohXUw4ObDmXLqL0FLWIDM_GNoK-lsEfyyBKsT0BatAdwz08DuJdxdSUAZh-HLWweBmK6n4fDBu-Ts2oRfmfmnEt9tYHZhbsRgxM9cXG4O5ahxhTG-4b9lRMqBXOhKI0lIOPEi_TtHPeHrHscX5_giThnVTxc9I"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-24 pb-md px-gutter w-full md:w-[calc(100%-280px)] md:mr-[280px] min-h-screen">
+<div class="max-w-4xl mx-auto">
+<!-- Header -->
+<div class="mb-lg flex items-center justify-between">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">توريد مورد جديد</h2>
+<p class="font-body-lg text-body-lg text-secondary mt-xs">إدخال تفاصيل الذهب المورد وحساب المصنعية</p>
+</div>
+<button class="text-secondary hover:text-on-surface p-2 rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Wizard Container -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/50 overflow-hidden">
+<!-- Progress Indicator -->
+<div class="bg-surface-container-low px-md py-sm border-b border-outline-variant/30 flex justify-between items-center relative">
+<!-- Progress Line Background -->
+<div class="absolute right-md left-md top-1/2 -translate-y-1/2 h-[2px] bg-surface-variant -z-0"></div>
+<!-- Active Progress Line -->
+<div class="absolute right-md w-1/3 top-1/2 -translate-y-1/2 h-[2px] bg-primary-container z-0 transition-all duration-500" id="progress-line"></div>
+<!-- Step 1 -->
+<div class="flex flex-col items-center z-10 bg-surface-container-low px-sm" id="step-nav-1">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-title-lg text-title-lg mb-xs border-2 border-surface-container-low">1</div>
+<span class="font-label-md text-label-md text-on-surface">المورد</span>
+</div>
+<!-- Step 2 -->
+<div class="flex flex-col items-center z-10 bg-surface-container-low px-sm opacity-50" id="step-nav-2">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-secondary flex items-center justify-center font-title-lg text-title-lg mb-xs border-2 border-surface-container-low">2</div>
+<span class="font-label-md text-label-md text-secondary">الذهب</span>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col items-center z-10 bg-surface-container-low px-sm opacity-50" id="step-nav-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-secondary flex items-center justify-center font-title-lg text-title-lg mb-xs border-2 border-surface-container-low">3</div>
+<span class="font-label-md text-label-md text-secondary">المصنعية</span>
+</div>
+<!-- Step 4 -->
+<div class="flex flex-col items-center z-10 bg-surface-container-low px-sm opacity-50" id="step-nav-4">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-secondary flex items-center justify-center font-title-lg text-title-lg mb-xs border-2 border-surface-container-low">4</div>
+<span class="font-label-md text-label-md text-secondary">تأكيد</span>
+</div>
+</div>
+<!-- Form Steps Area -->
+<div class="p-xl relative min-h-[400px]">
+<!-- Step 1: Supplier Selection -->
+<div class="block transition-opacity duration-300" id="step-1">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-md">اختر المورد</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="col-span-1 md:col-span-2">
+<label class="block font-label-md text-label-md text-secondary mb-xs">اسم المورد</label>
+<div class="relative">
+<select class="w-full bg-transparent border border-outline rounded-lg py-sm pl-sm pr-10 font-body-lg text-body-lg text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none appearance-none">
+<option value="">اختر مورد...</option>
+<option value="1">مجوهرات الشرق</option>
+<option value="2">مؤسسة الذهب الخالص</option>
+</select>
+<span class="absolute right-sm top-1/2 -translate-y-1/2 material-symbols-outlined text-secondary pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-secondary mb-xs">رقم الهاتف</label>
+<input class="w-full bg-surface-variant/50 border border-outline-variant rounded-lg py-sm px-sm font-data-mono text-data-mono text-secondary cursor-not-allowed text-left dir-ltr" disabled="" type="text" value="+966 50 123 4567"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-secondary mb-xs">الرصيد الحالي (جرام عيار 21)</label>
+<div class="relative">
+<input class="w-full bg-surface-variant/50 border border-outline-variant rounded-lg py-sm pl-10 pr-sm font-data-mono text-data-mono text-secondary cursor-not-allowed text-left dir-ltr" disabled="" type="text" value="1,245.50"/>
+<span class="absolute left-sm top-1/2 -translate-y-1/2 font-label-md text-label-md text-primary">جم</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Step 2: Delivered Gold (Hidden initially) -->
+<div class="hidden opacity-0 transition-opacity duration-300" id="step-2">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-md">تفاصيل الذهب المورد</h3>
+<div class="space-y-md">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md items-end bg-surface-container-low p-md rounded-lg border border-outline-variant/30">
+<div>
+<label class="block font-label-md text-label-md text-secondary mb-xs">العيار</label>
+<select class="w-full bg-surface-container-lowest border border-outline rounded-lg py-sm px-sm font-body-lg text-body-lg text-on-surface focus:border-primary-container outline-none">
+<option>21 قيراط</option>
+<option>18 قيراط</option>
+<option>24 قيراط</option>
+</select>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-secondary mb-xs">الوزن الفعلي</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border border-outline rounded-lg py-sm pl-10 pr-sm font-data-mono text-data-mono text-on-surface focus:border-primary-container outline-none text-left dir-ltr" placeholder="0.00" type="number"/>
+<span class="absolute left-sm top-1/2 -translate-y-1/2 font-label-md text-label-md text-primary">جم</span>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-secondary mb-xs">الوزن المكافئ (عيار 21)</label>
+<div class="relative">
+<input class="w-full bg-surface-variant/50 border border-outline-variant rounded-lg py-sm pl-10 pr-sm font-data-mono text-data-mono text-secondary cursor-not-allowed text-left dir-ltr" disabled="" type="text" value="0.00"/>
+<span class="absolute left-sm top-1/2 -translate-y-1/2 font-label-md text-label-md text-secondary">جم</span>
+</div>
+</div>
+</div>
+<button class="text-primary font-label-md text-label-md flex items-center gap-xs hover:bg-surface-container-low py-2 px-4 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                                 إضافة صنف آخر
+                             </button>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="bg-surface-container-low px-xl py-md border-t border-outline-variant/30 flex justify-between items-center">
+<button class="hidden px-lg py-2 rounded-lg font-body-lg text-body-lg text-secondary border border-outline hover:bg-surface-container-highest transition-colors" id="btn-prev">
+                        السابق
+                    </button>
+<!-- Placeholder to keep 'Next' right aligned when 'Prev' is hidden -->
+<div class="flex-1" id="spacer"></div>
+<button class="bg-primary-container text-on-primary-container px-lg py-2 rounded-lg font-body-lg text-body-lg font-bold hover:opacity-90 transition-opacity flex items-center gap-sm" id="btn-next" onclick="nextStep()">
+                        التالي
+                        <span class="material-symbols-outlined text-[18px] mr-1">arrow_back</span> <!-- RTL arrow left means forward -->
+</button>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Minimal script to demonstrate step transition (1 to 2)
+        let currentStep = 1;
+        
+        function nextStep() {
+            if (currentStep === 1) {
+                // Hide Step 1
+                const s1 = document.getElementById('step-1');
+                s1.classList.remove('opacity-100');
+                s1.classList.add('opacity-0');
+                setTimeout(() => {
+                    s1.classList.remove('block');
+                    s1.classList.add('hidden');
+                    
+                    // Show Step 2
+                    const s2 = document.getElementById('step-2');
+                    s2.classList.remove('hidden');
+                    s2.classList.add('block');
+                    setTimeout(() => s2.classList.replace('opacity-0', 'opacity-100'), 50);
+                    
+                    // Update Progress UI
+                    document.getElementById('progress-line').style.width = '66%';
+                    
+                    const nav2 = document.getElementById('step-nav-2');
+                    nav2.classList.remove('opacity-50');
+                    nav2.querySelector('div').classList.replace('bg-surface-variant', 'bg-primary-container');
+                    nav2.querySelector('div').classList.replace('text-secondary', 'text-on-primary-container');
+                    nav2.querySelector('span').classList.replace('text-secondary', 'text-on-surface');
+
+                    // Update Buttons
+                    document.getElementById('btn-prev').classList.remove('hidden');
+                    document.getElementById('spacer').classList.add('hidden');
+                    
+                    currentStep = 2;
+                }, 300);
+            }
+        }
+    </script>
+</body></html>

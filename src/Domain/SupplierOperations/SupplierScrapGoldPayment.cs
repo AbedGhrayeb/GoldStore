@@ -15,8 +15,6 @@ public sealed class SupplierScrapGoldPayment : Entity
 
     public decimal Equivalent21KWeightInGrams { get; set; }
 
-    public Guid UserId { get; set; }
-
     public DateTime Date { get; set; }
 
     public string? Notes { get; set; }

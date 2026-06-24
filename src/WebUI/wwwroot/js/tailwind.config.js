@@ -1,0 +1,92 @@
+tailwind.config = {
+    darkMode: 'class',
+    theme: {
+        extend: {
+            "colors": {
+                "on-surface": "#1a1b22",
+                "error": "#ba1a1a",
+                "secondary": "#5f5e5e",
+                "on-tertiary": "#ffffff",
+                "tertiary-fixed": "#6ffbbe",
+                "secondary-fixed-dim": "#c8c6c5",
+                "surface-bright": "#fbf8ff",
+                "on-error-container": "#93000a",
+                "on-background": "#1a1b22",
+                "surface-container": "#eeedf7",
+                "on-secondary-fixed-variant": "#474746",
+                "primary-container": "#d4af37",
+                "on-primary-fixed": "#241a00",
+                "inverse-on-surface": "#f1effa",
+                "surface-container-lowest": "#ffffff",
+                "surface-container-highest": "#e3e1ec",
+                "tertiary-container": "#33ca90",
+                "surface-dim": "#dad9e3",
+                "on-secondary": "#ffffff",
+                "primary": "#735c00",
+                "on-primary-container": "#554300",
+                "outline-variant": "#d0c5af",
+                "on-tertiary-container": "#005035",
+                "primary-fixed": "#ffe088",
+                "on-error": "#ffffff",
+                "secondary-container": "#e2dfde",
+                "inverse-primary": "#e9c349",
+                "secondary-fixed": "#e5e2e1",
+                "surface": "#fbf8ff",
+                "inverse-surface": "#2f3038",
+                "on-secondary-fixed": "#1c1b1b",
+                "error-container": "#ffdad6",
+                "tertiary-fixed-dim": "#4edea3",
+                "surface-container-high": "#e8e7f1",
+                "on-tertiary-fixed-variant": "#005236",
+                "on-surface-variant": "#4d4635",
+                "surface-tint": "#735c00",
+                "on-primary-fixed-variant": "#574500",
+                "on-secondary-container": "#636262",
+                "on-primary": "#ffffff",
+                "surface-container-low": "#f4f2fd",
+                "tertiary": "#006c49",
+                "primary-fixed-dim": "#e9c349",
+                "on-tertiary-fixed": "#002113",
+                "surface-variant": "#e3e1ec",
+                "outline": "#7f7663",
+                "background": "#fbf8ff"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "base": "8px",
+                "xl": "64px",
+                "gutter": "24px",
+                "container-max": "1440px",
+                "md": "24px",
+                "lg": "40px",
+                "sm": "12px",
+                "xs": "4px"
+            },
+            "fontFamily": {
+                "headline-md": ["IBM Plex Sans Arabic"],
+                "headline-lg": ["IBM Plex Sans Arabic"],
+                "body-md": ["IBM Plex Sans Arabic"],
+                "body-lg": ["IBM Plex Sans Arabic"],
+                "display-lg": ["IBM Plex Sans Arabic"],
+                "label-md": ["IBM Plex Sans Arabic"],
+                "title-lg": ["IBM Plex Sans Arabic"],
+                "data-mono": ["IBM Plex Sans Arabic"]
+            },
+            "fontSize": {
+                "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                "display-lg": ["40px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+            }
+        }
+    }
+}

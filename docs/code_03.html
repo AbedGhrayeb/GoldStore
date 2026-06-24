@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>تسويات المخزون - بريق للذهب</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-surface": "#1a1b22",
+                        "error": "#ba1a1a",
+                        "secondary": "#5f5e5e",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#6ffbbe",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-bright": "#fbf8ff",
+                        "on-error-container": "#93000a",
+                        "on-background": "#1a1b22",
+                        "surface-container": "#eeedf7",
+                        "on-secondary-fixed-variant": "#474746",
+                        "primary-container": "#d4af37",
+                        "on-primary-fixed": "#241a00",
+                        "inverse-on-surface": "#f1effa",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#e3e1ec",
+                        "tertiary-container": "#33ca90",
+                        "surface-dim": "#dad9e3",
+                        "on-secondary": "#ffffff",
+                        "primary": "#735c00",
+                        "on-primary-container": "#554300",
+                        "outline-variant": "#d0c5af",
+                        "on-tertiary-container": "#005035",
+                        "primary-fixed": "#ffe088",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#e2dfde",
+                        "inverse-primary": "#e9c349",
+                        "secondary-fixed": "#e5e2e1",
+                        "surface": "#fbf8ff",
+                        "inverse-surface": "#2f3038",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "surface-container-high": "#e8e7f1",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "on-surface-variant": "#4d4635",
+                        "surface-tint": "#735c00",
+                        "on-primary-fixed-variant": "#574500",
+                        "on-secondary-container": "#636262",
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#f4f2fd",
+                        "tertiary": "#006c49",
+                        "primary-fixed-dim": "#e9c349",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-variant": "#e3e1ec",
+                        "outline": "#7f7663",
+                        "background": "#fbf8ff"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "base": "8px",
+                        "xl": "64px",
+                        "gutter": "24px",
+                        "container-max": "1440px",
+                        "md": "24px",
+                        "lg": "40px",
+                        "sm": "12px",
+                        "xs": "4px"
+                    },
+                    fontFamily: {
+                        "headline-md": ["IBM Plex Sans Arabic", "sans-serif"],
+                        "headline-lg": ["IBM Plex Sans Arabic", "sans-serif"],
+                        "body-md": ["IBM Plex Sans Arabic", "sans-serif"],
+                        "body-lg": ["IBM Plex Sans Arabic", "sans-serif"],
+                        "display-lg": ["IBM Plex Sans Arabic", "sans-serif"],
+                        "label-md": ["IBM Plex Sans Arabic", "sans-serif"],
+                        "title-lg": ["IBM Plex Sans Arabic", "sans-serif"],
+                        "data-mono": ["IBM Plex Sans Arabic", "monospace"]
+                    },
+                    fontSize: {
+                        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "600" }],
+                        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "display-lg": ["40px", { lineHeight: "52px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "500" }],
+                        "title-lg": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "data-mono": ["14px", { lineHeight: "20px", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #d0c5af;
+            border-radius: 10px;
+        }
+        
+        /* Subtle gold glow for active inputs */
+        .input-glow:focus-within {
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-lg text-body-lg min-h-screen custom-scrollbar antialiased">
+<!-- TopAppBar -->
+<header class="flex flex-row-reverse justify-between items-center px-gutter h-16 w-[calc(100%-280px)] fixed top-0 left-0 z-40 border-b border-outline-variant bg-surface/80 backdrop-blur-md">
+<!-- Actions & Profile -->
+<div class="flex items-center gap-sm">
+<button class="text-on-surface-variant hover:bg-surface-container-low rounded-full p-2 transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low rounded-full p-2 transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low rounded-full p-2 transition-all duration-150 active:scale-95 relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="w-px h-8 bg-outline-variant mx-sm"></div>
+<div class="flex items-center gap-sm cursor-pointer hover:bg-surface-container-low p-1 rounded-full transition-colors">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-title-lg text-title-lg">
+                    م
+                </div>
+</div>
+</div>
+<!-- Search (Left aligned in RTL container implies it's in the middle/left portion) -->
+<div class="flex-1 max-w-md ml-xl relative hidden md:block">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-secondary" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-full py-2 pr-10 pl-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-body-md font-body-md text-on-surface placeholder:text-secondary" placeholder="البحث في النظام..." type="text"/>
+</div>
+<!-- Brand (Hidden on desktop as it's in Sidebar, but JSON implies it might be here. Usually sidebar takes precedence for branding in ERPs. We'll show it only on mobile if sidebar is hidden, but per guidelines web layout means sidebar is visible.) -->
+<div class="hidden">
+<span class="font-headline-md text-headline-md font-black text-primary">بريق للذهب</span>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="bg-surface-container-lowest shadow-sm flex flex-col h-full w-[280px] fixed right-0 top-0 z-50 text-right fixed top-0 right-0 h-full w-[280px] border-l border-outline-variant">
+<!-- Brand Header -->
+<div class="p-gutter border-b border-outline-variant flex flex-col items-start">
+<h1 class="font-display-lg text-display-lg font-bold text-primary mb-xs">بريق للذهب</h1>
+<p class="font-body-md text-body-md text-secondary">نظام إدارة الذهب</p>
+</div>
+<!-- Main Navigation -->
+<div class="flex-1 overflow-y-auto py-md custom-scrollbar">
+<ul class="flex flex-col gap-xs px-sm">
+<!-- Tab 1: لوحة القيادة -->
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-lg text-body-lg">لوحة القيادة</span>
+</a>
+</li>
+<!-- Tab 2: المخزون (Active) -->
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-primary border-r-2 border-primary bg-surface-container-high font-bold scale-[0.99] transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="font-body-lg text-body-lg">المخزون</span>
+</a>
+</li>
+<!-- Tab 3: المبيعات -->
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-body-lg text-body-lg">المبيعات</span>
+</a>
+</li>
+<!-- Tab 4: الموردين -->
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-body-lg text-body-lg">الموردين</span>
+</a>
+</li>
+<!-- Tab 5: المالية -->
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-body-lg text-body-lg">المالية</span>
+</a>
+</li>
+<!-- Tab 6: التقارير -->
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-body-lg text-body-lg">التقارير</span>
+</a>
+</li>
+</ul>
+</div>
+<!-- CTA & Footer -->
+<div class="p-gutter border-t border-outline-variant flex flex-col gap-md">
+<button class="w-full bg-primary-container text-on-primary-container font-title-lg text-title-lg py-sm rounded-lg hover:bg-primary hover:text-on-primary transition-colors flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                عملية بيع جديدة
+            </button>
+<ul class="flex flex-col gap-xs mt-sm">
+<li>
+<a class="flex items-center gap-md px-sm py-xs rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md text-body-md">الإعدادات</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-sm py-xs rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-body-md text-body-md">تسجيل الخروج</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="mr-[280px] pt-16 min-h-screen flex flex-col">
+<div class="p-gutter max-w-container-max mx-auto w-full flex-1 flex flex-col gap-lg">
+<!-- Page Header -->
+<div class="flex items-center justify-between mt-sm">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-xs">تسويات المخزون</h2>
+<p class="font-body-md text-body-md text-secondary">إدارة وتوثيق التعديلات اليدوية على أرصدة المخزون.</p>
+</div>
+</div>
+<!-- Content Grid (Form and Stats/Recent) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+<!-- Adjustment Form Panel (Left/Main area) -->
+<div class="lg:col-span-8 bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] p-md border border-outline-variant/30">
+<h3 class="font-title-lg text-title-lg text-on-surface border-b border-outline-variant pb-sm mb-md flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="edit_document">edit_document</span>
+                        تسجيل تسوية جديدة
+                    </h3>
+<form action="#" class="flex flex-col gap-lg" method="POST">
+<!-- Adjustment Type Selection (Bento-style radio cards) -->
+<div>
+<label class="block font-label-md text-label-md text-secondary mb-sm uppercase">نوع التسوية</label>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-sm">
+<!-- Option 1 -->
+<label class="cursor-pointer">
+<input checked="" class="peer sr-only" name="adjustment_type" type="radio" value="increase"/>
+<div class="flex flex-col items-center gap-xs p-sm rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low peer-checked:border-primary peer-checked:bg-primary-fixed/10 peer-checked:text-primary transition-all text-center">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+<span class="font-body-md text-body-md font-medium">زيادة</span>
+</div>
+</label>
+<!-- Option 2 -->
+<label class="cursor-pointer">
+<input class="peer sr-only" name="adjustment_type" type="radio" value="decrease"/>
+<div class="flex flex-col items-center gap-xs p-sm rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low peer-checked:border-primary peer-checked:bg-primary-fixed/10 peer-checked:text-primary transition-all text-center">
+<span class="material-symbols-outlined" data-icon="remove_circle">remove_circle</span>
+<span class="font-body-md text-body-md font-medium">نقصان</span>
+</div>
+</label>
+<!-- Option 3 -->
+<label class="cursor-pointer">
+<input class="peer sr-only" name="adjustment_type" type="radio" value="damage"/>
+<div class="flex flex-col items-center gap-xs p-sm rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low peer-checked:border-error peer-checked:bg-error-container/20 peer-checked:text-error transition-all text-center">
+<span class="material-symbols-outlined" data-icon="broken_image">broken_image</span>
+<span class="font-body-md text-body-md font-medium">تالف</span>
+</div>
+</label>
+<!-- Option 4 -->
+<label class="cursor-pointer">
+<input class="peer sr-only" name="adjustment_type" type="radio" value="loss"/>
+<div class="flex flex-col items-center gap-xs p-sm rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low peer-checked:border-error peer-checked:bg-error-container/20 peer-checked:text-error transition-all text-center">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+<span class="font-body-md text-body-md font-medium">مفقود</span>
+</div>
+</label>
+<!-- Option 5 -->
+<label class="cursor-pointer">
+<input class="peer sr-only" name="adjustment_type" type="radio" value="correction"/>
+<div class="flex flex-col items-center gap-xs p-sm rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low peer-checked:border-secondary peer-checked:bg-surface-container peer-checked:text-on-surface transition-all text-center">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+<span class="font-body-md text-body-md font-medium text-xs">تصحيح يدوي</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Form Fields Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Date -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-secondary uppercase" for="adj_date">التاريخ</label>
+<div class="relative input-glow rounded-lg">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none" data-icon="calendar_today">calendar_today</span>
+<input class="w-full bg-surface border border-outline-variant rounded-lg py-2 pr-10 pl-3 focus:outline-none focus:border-primary text-body-md font-body-md text-on-surface" id="adj_date" name="adj_date" type="date" value="2023-10-27"/>
+</div>
+</div>
+<!-- Karat -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-secondary uppercase" for="adj_karat">العيار</label>
+<div class="relative input-glow rounded-lg">
+<select class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary text-body-md font-body-md text-on-surface appearance-none" id="adj_karat" name="adj_karat">
+<option value="24">عيار 24</option>
+<option value="22">عيار 22</option>
+<option selected="" value="21">عيار 21</option>
+<option value="18">عيار 18</option>
+</select>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+</div>
+<!-- Weight -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-secondary uppercase" for="adj_weight">الوزن الصافي</label>
+<div class="relative input-glow rounded-lg flex">
+<input class="w-full bg-surface border border-outline-variant rounded-r-lg py-2 px-3 focus:outline-none focus:border-primary text-data-mono font-data-mono text-on-surface border-l-0" dir="ltr" id="adj_weight" name="adj_weight" placeholder="0.00" step="0.01" text-align="right" type="number"/>
+<span class="bg-surface-container-low border border-outline-variant border-r-0 rounded-l-lg px-3 py-2 text-secondary font-label-md text-label-md flex items-center justify-center">جم</span>
+</div>
+</div>
+<!-- Reason (Short) -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-secondary uppercase" for="adj_reason">السبب الرئيسي</label>
+<input class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary input-glow text-body-md font-body-md text-on-surface" id="adj_reason" name="adj_reason" placeholder="مثال: جرد دوري، خطأ إدخال..." type="text"/>
+</div>
+<!-- Notes (Full width) -->
+<div class="flex flex-col gap-xs md:col-span-2">
+<label class="font-label-md text-label-md text-secondary uppercase" for="adj_notes">ملاحظات إضافية (اختياري)</label>
+<textarea class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary input-glow text-body-md font-body-md text-on-surface resize-none" id="adj_notes" name="adj_notes" rows="3"></textarea>
+</div>
+</div>
+<!-- Form Actions -->
+<div class="flex items-center justify-end gap-md pt-sm border-t border-outline-variant">
+<button class="px-xl py-2 rounded-lg text-primary font-title-lg text-title-lg hover:bg-surface-container-low transition-colors" type="button">
+                                إلغاء
+                            </button>
+<button class="px-xl py-2 rounded-lg bg-[#1a1b22] text-[#ffffff] font-title-lg text-title-lg hover:bg-black transition-colors shadow-sm" type="submit">
+                                تأكيد التسوية
+                            </button>
+</div>
+</form>
+</div>
+<!-- Summary / Quick Stats Panel (Right Area) -->
+<div class="lg:col-span-4 flex flex-col gap-md">
+<!-- Stat Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] p-md border border-outline-variant/30 flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md text-secondary uppercase mb-xs">إجمالي تسويات اليوم</p>
+<p class="font-display-lg text-display-lg text-on-surface font-bold">12<span class="text-title-lg font-normal text-secondary ml-1">عملية</span></p>
+</div>
+<div class="w-12 h-12 rounded-full bg-primary-container/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="sync_alt">sync_alt</span>
+</div>
+</div>
+<!-- Stat Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] p-md border border-outline-variant/30 flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md text-secondary uppercase mb-xs">صافي التغيير (جرام)</p>
+<p class="font-display-lg text-display-lg text-error font-bold flex items-center gap-2" dir="ltr">
+                                -4.50
+                                <span class="material-symbols-outlined text-title-lg">trending_down</span>
+</p>
+</div>
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" data-icon="scale">scale</span>
+</div>
+</div>
+</div>
+</div> <!-- End Grid -->
+<!-- Recent Adjustments Table -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 overflow-hidden flex-1 flex flex-col">
+<div class="p-md border-b border-outline-variant flex items-center justify-between bg-surface-container-lowest sticky top-0 z-10">
+<h3 class="font-title-lg text-title-lg text-on-surface">سجل التسويات الأخيرة</h3>
+<button class="text-primary font-label-md text-label-md flex items-center gap-xs hover:underline">
+                        عرض الكل
+                        <span class="material-symbols-outlined text-[16px]" data-icon="arrow_back">arrow_back</span>
+</button>
+</div>
+<div class="overflow-x-auto flex-1 custom-scrollbar">
+<table class="w-full text-right border-collapse">
+<thead class="bg-surface-container sticky top-0 z-10">
+<tr>
+<th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">رقم المرجع</th>
+<th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">التاريخ</th>
+<th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">النوع</th>
+<th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">العيار</th>
+<th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider text-left">الوزن (جم)</th>
+<th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">السبب</th>
+<th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider text-center">إجراء</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md">
+<!-- Row 1 -->
+<tr class="border-b border-outline-variant/50 hover:bg-primary-fixed/5 transition-colors">
+<td class="py-3 px-4 text-on-surface-variant font-data-mono">ADJ-0092</td>
+<td class="py-3 px-4 text-on-surface">2023-10-27</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-error-container/30 text-error text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]" data-icon="arrow_downward">arrow_downward</span>
+                                        نقصان
+                                    </span>
+</td>
+<td class="py-3 px-4 text-on-surface">عيار 21</td>
+<td class="py-3 px-4 font-data-mono text-left" dir="ltr">-2.50</td>
+<td class="py-3 px-4 text-secondary truncate max-w-[150px]">تصحيح خطأ إدخال سابق</td>
+<td class="py-3 px-4 text-center">
+<button class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="border-b border-outline-variant/50 hover:bg-primary-fixed/5 transition-colors">
+<td class="py-3 px-4 text-on-surface-variant font-data-mono">ADJ-0091</td>
+<td class="py-3 px-4 text-on-surface">2023-10-26</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary-container/20 text-on-primary-container text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]" data-icon="arrow_upward">arrow_upward</span>
+                                        زيادة
+                                    </span>
+</td>
+<td class="py-3 px-4 text-on-surface">عيار 18</td>
+<td class="py-3 px-4 font-data-mono text-left" dir="ltr">+5.00</td>
+<td class="py-3 px-4 text-secondary truncate max-w-[150px]">فائض جرد نهاية الشهر</td>
+<td class="py-3 px-4 text-center">
+<button class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="border-b border-outline-variant/50 hover:bg-primary-fixed/5 transition-colors">
+<td class="py-3 px-4 text-on-surface-variant font-data-mono">ADJ-0090</td>
+<td class="py-3 px-4 text-on-surface">2023-10-25</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-error-container/30 text-error text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]" data-icon="broken_image">broken_image</span>
+                                        تالف
+                                    </span>
+</td>
+<td class="py-3 px-4 text-on-surface">عيار 24</td>
+<td class="py-3 px-4 font-data-mono text-left" dir="ltr">-0.50</td>
+<td class="py-3 px-4 text-secondary truncate max-w-[150px]">تلف أثناء النقل للمخزن</td>
+<td class="py-3 px-4 text-center">
+<button class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-primary-fixed/5 transition-colors">
+<td class="py-3 px-4 text-on-surface-variant font-data-mono">ADJ-0089</td>
+<td class="py-3 px-4 text-on-surface">2023-10-20</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface-container text-on-surface text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]" data-icon="edit">edit</span>
+                                        تصحيح يدوي
+                                    </span>
+</td>
+<td class="py-3 px-4 text-on-surface">عيار 21</td>
+<td class="py-3 px-4 font-data-mono text-left" dir="ltr">0.00</td>
+<td class="py-3 px-4 text-secondary truncate max-w-[150px]">تعديل وصف القطعة فقط</td>
+<td class="py-3 px-4 text-center">
+<button class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,102 @@
+/* ── Store Operations Page ─────────────────── */
+
+:root {
+    --store-row-hover: rgba(212, 175, 55, 0.06);
+}
+
+#operationsTable tbody tr:hover {
+    background: var(--store-row-hover);
+}
+
+#operationsTable tbody tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+#operationsTable tbody tr:nth-child(even):hover {
+    background: var(--store-row-hover);
+}
+
+#operationsTable thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #eeedf7;
+}
+
+.op-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+    white-space: nowrap;
+}
+
+.op-badge-sale {
+    background: rgba(16, 185, 129, 0.12);
+    color: #047857;
+}
+
+.op-badge-buy {
+    background: rgba(212, 175, 55, 0.16);
+    color: #735c00;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 16px;
+    white-space: nowrap;
+}
+
+.status-badge-completed {
+    background: rgba(16, 185, 129, 0.10);
+    color: #047857;
+}
+
+.status-badge-partiallypaid {
+    background: rgba(234, 179, 8, 0.14);
+    color: #a16207;
+}
+
+.status-badge-draft {
+    background: rgba(100, 116, 139, 0.12);
+    color: #475569;
+}
+
+.status-badge-cancelled {
+    background: rgba(186, 26, 26, 0.10);
+    color: #991b1b;
+}
+
+.kpi-value {
+    font-feature-settings: 'tnum';
+    font-variant-numeric: tabular-nums;
+}
+
+.detail-item-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 1fr 1fr 1fr 1fr;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #d0c5af;
+    font-size: 14px;
+}
+
+.detail-item-row:last-child {
+    border-bottom: none;
+}
+
+.detail-item-header {
+    font-weight: 500;
+    color: #5f5e5e;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+}

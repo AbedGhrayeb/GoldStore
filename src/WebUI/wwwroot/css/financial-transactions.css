@@ -1,0 +1,47 @@
+/* ═══════════════════════════════════════════════════════
+   FINANCIAL TRANSACTIONS — Styles
+   ═══════════════════════════════════════════════════════ */
+
+/* Number inputs — hide spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* Focus ring */
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #d4af37 !important;
+    box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.3) !important;
+}
+
+/* Transaction row hover */
+#allTransactionsBody tr {
+    transition: background-color 0.15s;
+}
+
+#allTransactionsBody tr:hover {
+    background-color: rgba(115, 92, 0, 0.04);
+}
+
+.font-data-mono {
+    direction: ltr;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .sm\:grid-cols-2,
+    .lg\:grid-cols-5 {
+        grid-template-columns: 1fr !important;
+    }
+
+    #allTransactionsTable {
+        font-size: 0.875rem;
+    }
+}

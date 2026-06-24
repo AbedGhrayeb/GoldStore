@@ -1,0 +1,122 @@
+using Application.Abstractions.Data;
+using Application.Abstractions.Messaging;
+using Application.Abstractions.Services;
+using Domain.Common;
+using Domain.Inventory;
+using Microsoft.EntityFrameworkCore;
+using SharedKernel;
+
+namespace Application.Features.Inventory.GoldLedger.GetKpis;
+
+internal sealed class GetInventoryKpisQueryHandler(
+    IApplicationDbContext context)
+    : IQueryHandler<GetInventoryKpisQuery, InventoryKpiResponse>
+{
+    private static string FormatWeight(decimal grams) => grams >= 1000
+        ? $"{grams / 1000m:F3}"
+        : $"{grams:F3}";
+
+    private static string FormatCurrency(decimal amount) => $"{amount:N0}";
+
+    private static string GetKaratDescription(int karat) => karat switch
+    {
+        24 => "سبائك ذهب صافي",
+        21 => "مشغولات قياسية",
+        18 => "مشغولات حديثة",
+        _ => $"عيار {karat}"
+    };
+
+    public async Task<Result<InventoryKpiResponse>> Handle(GetInventoryKpisQuery query, CancellationToken cancellationToken)
+    {
+        var karatAggregates = await context.GoldLedgerEntries
+            .AsNoTracking()
+            .GroupBy(e => e.Karat)
+            .Select(g => new
+            {
+                Karat = g.Key,
+                NetWeight = g.Sum(e => e.MovementType == GoldMovementType.Increase ? e.WeightInGrams : -e.WeightInGrams),
+                NetEquivalent21K = g.Sum(e => e.MovementType == GoldMovementType.Increase ? e.Equivalent21KWeightInGrams : -e.Equivalent21KWeightInGrams)
+            })
+            .ToListAsync(cancellationToken);
+
+        decimal[] supportedKarats = SupportedValues.Karats.Cast<int>().Select(k => (decimal)k).ToArray();
+
+        var breakdowns = supportedKarats
+            .OrderByDescending(k => k)
+            .Select(k =>
+            {
+                decimal totalWeight = karatAggregates
+                    .Where(a => (int)a.Karat == k)
+                    .Select(a => Math.Max(a.NetWeight, 0m))
+                    .FirstOrDefault();
+
+                return new KaratBreakdown
+                {
+                    Karat = (int)k,
+                    KaratLabel = $"عيار {(int)k}",
+                    Description = GetKaratDescription((int)k),
+                    TotalWeightGrams = totalWeight,
+                    TotalWeightDisplay = FormatWeight(totalWeight),
+                    IsPrimary = (int)k == 21
+                };
+            }).ToList();
+
+        decimal totalEquivalent21K = Math.Max(karatAggregates.Sum(a => a.NetEquivalent21K), 0m);
+
+        GoldPriceData? priceData = null;
+        try
+        {
+            //priceData = await goldPriceService.GetCurrentPricesAsync(Currency.Jod, cancellationToken);
+        }
+        catch
+        {
+            // If gold price API is unavailable, KPIs will show without live pricing
+        }
+
+        decimal estimatedValue = totalEquivalent21K * (priceData?.PricePerGram21K ?? 0m);
+
+        return new InventoryKpiResponse
+        {
+            SpotPrice = new GoldPriceInfo
+            {
+                Price = priceData?.PricePerOunce ?? 0m,
+                DisplayPrice = priceData is not null ? FormatCurrency(priceData.PricePerOunce) : "—",
+                ChangePercent24H = priceData?.ChangePercent24H ?? 0m,
+                ChangeDirection = (priceData?.ChangePercent24H ?? 0m) switch
+                {
+                    > 0 => "up",
+                    < 0 => "down",
+                    _ => "none"
+                },
+                Currency = "JOD",
+                CurrencySymbol = "د.أ",
+                Unit = "أونصة"
+            },
+            PricePerGram24K = new GoldPriceInfo
+            {
+                Price = priceData?.PricePerGram24K ?? 0m,
+                DisplayPrice = priceData is not null ? $"{priceData.PricePerGram24K:F3}" : "—",
+                ChangePercent24H = priceData?.ChangePercent24H ?? 0m,
+                ChangeDirection = "none",
+                Currency = "JOD",
+                CurrencySymbol = "د.أ",
+                Unit = "جم"
+            },
+            PricePerGram21K = new GoldPriceInfo
+            {
+                Price = priceData?.PricePerGram21K ?? 0m,
+                DisplayPrice = priceData is not null ? $"{priceData.PricePerGram21K:F3}" : "—",
+                ChangePercent24H = priceData?.ChangePercent24H ?? 0m,
+                ChangeDirection = "none",
+                Currency = "JOD",
+                CurrencySymbol = "د.أ",
+                Unit = "جم"
+            },
+            TotalEquivalent21KGrams = totalEquivalent21K,
+            TotalEquivalent21KDisplay = FormatWeight(totalEquivalent21K),
+            EstimatedValueJod = estimatedValue,
+            EstimatedValueDisplay = priceData is not null ? FormatCurrency(estimatedValue) : "—",
+            KaratBreakdowns = breakdowns
+        };
+    }
+}

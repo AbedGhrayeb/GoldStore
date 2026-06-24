@@ -29,11 +29,6 @@ internal sealed class SupplierManufacturingPaymentConfiguration : IEntityTypeCon
             .HasForeignKey(payment => payment.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<User>()
-            .WithMany()
-            .HasForeignKey(payment => payment.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         builder.HasIndex(payment => new { payment.SupplierId, payment.Date });
     }
 }

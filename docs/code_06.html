@@ -1,0 +1,397 @@
+<!DOCTYPE html><html dir="rtl" lang="ar"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>الحسابات المالية والخزينة - بريق للذهب</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#1a1b22",
+                        "error": "#ba1a1a",
+                        "secondary": "#5f5e5e",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#6ffbbe",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-bright": "#fbf8ff",
+                        "on-error-container": "#93000a",
+                        "on-background": "#1a1b22",
+                        "surface-container": "#eeedf7",
+                        "on-secondary-fixed-variant": "#474746",
+                        "primary-container": "#d4af37",
+                        "on-primary-fixed": "#241a00",
+                        "inverse-on-surface": "#f1effa",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#e3e1ec",
+                        "tertiary-container": "#33ca90",
+                        "surface-dim": "#dad9e3",
+                        "on-secondary": "#ffffff",
+                        "primary": "#735c00",
+                        "on-primary-container": "#554300",
+                        "outline-variant": "#d0c5af",
+                        "on-tertiary-container": "#005035",
+                        "primary-fixed": "#ffe088",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#e2dfde",
+                        "inverse-primary": "#e9c349",
+                        "secondary-fixed": "#e5e2e1",
+                        "surface": "#fbf8ff",
+                        "inverse-surface": "#2f3038",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "surface-container-high": "#e8e7f1",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "on-surface-variant": "#4d4635",
+                        "surface-tint": "#735c00",
+                        "on-primary-fixed-variant": "#574500",
+                        "on-secondary-container": "#636262",
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#f4f2fd",
+                        "tertiary": "#006c49",
+                        "primary-fixed-dim": "#e9c349",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-variant": "#e3e1ec",
+                        "outline": "#7f7663",
+                        "background": "#fbf8ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "xl": "64px",
+                        "gutter": "24px",
+                        "container-max": "1440px",
+                        "md": "24px",
+                        "lg": "40px",
+                        "sm": "12px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["IBM Plex Sans Arabic"],
+                        "headline-lg": ["IBM Plex Sans Arabic"],
+                        "body-md": ["IBM Plex Sans Arabic"],
+                        "body-lg": ["IBM Plex Sans Arabic"],
+                        "display-lg": ["IBM Plex Sans Arabic"],
+                        "label-md": ["IBM Plex Sans Arabic"],
+                        "title-lg": ["IBM Plex Sans Arabic"],
+                        "data-mono": ["IBM Plex Sans Arabic"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-lg": ["40px", {"lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'IBM Plex Sans Arabic', sans-serif; }
+        .material-symbols-outlined {
+          font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- SideNavBar -->
+<nav class="fixed top-0 right-0 h-full w-[280px] border-l border-outline-variant bg-surface-container-lowest dark:bg-inverse-surface shadow-[0px_4px_20px_rgba(0,0,0,0.04)] flex flex-col z-50 text-right hidden md:flex">
+<div class="p-gutter border-b border-outline-variant flex flex-col items-center justify-center gap-sm">
+<div class="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container shadow-sm">
+<span class="material-symbols-outlined !text-3xl" style="font-variation-settings: 'FILL' 1;">diamond</span>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">ماؤهراؤ سران</h1>
+<p class="font-body-md text-body-md text-secondary">نظام إدارة الذهب</p>
+<button class="mt-md w-full py-sm px-md bg-primary-container text-on-primary-container rounded-lg font-label-md text-label-md hover:bg-inverse-primary transition-colors duration-200">عملية بيع جديدة</button>
+</div>
+<ul class="flex-1 py-md flex flex-col gap-xs overflow-y-auto">
+<li class="">
+<a class="flex items-center gap-sm px-gutter py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="">لوحة القيادة</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-sm px-gutter py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="">المخزون</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-sm px-gutter py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="">المبيعات</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-sm px-gutter py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="">الموردين</span>
+</a>
+</li>
+<li class="">
+<!-- Active Nav Item -->
+<a class="flex items-center gap-sm px-gutter py-sm text-primary dark:text-primary-fixed border-r-2 border-primary bg-surface-container-high dark:bg-surface-variant font-bold scale-[0.99] transition-transform font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+<span class="">المالية</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-sm px-gutter py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="">التقارير</span>
+</a>
+</li>
+</ul>
+<ul class="border-t border-outline-variant py-md flex flex-col gap-xs">
+<li class="">
+<a class="flex items-center gap-sm px-gutter py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="">الإعدادات</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-sm px-gutter py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="">تسجيل الخروج</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="md:pr-[280px] min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="flex flex-row-reverse justify-between items-center px-gutter h-16 w-full md:w-[calc(100%-280px)] fixed top-0 left-0 z-40 bg-surface/80 backdrop-blur-md border-b border-outline-variant">
+<div class="flex items-center gap-sm">
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant border border-outline ml-2 overflow-hidden">
+<img alt="صورة المستخدم الشخصية" class="w-full h-full object-cover" data-alt="A professional headshot of a Middle Eastern man in a tailored suit against a neutral white background. Soft, studio lighting highlights his features. Modern corporate aesthetic, clean and crisp." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCR77ID6pusYfDMj2GcF6hr-37kA_4nlWKILmfZYyJYZWw3g0Pg6cci7D1Qm0J2MLo6ObDRgNRQJPTRNnwdnwkmw5Fm5-bnNXlnQ5Dx1rPbZP3hpfL1RzkR0mGf-L_wjGL6E3jhp1nsNT1LBbvxP22aGzYyf4hxbKOeBvgDfkHF2G75KlTvkkUhDiltZqoauQuFKgZkLuApf7oso12bc4Lvrmq10ZGn55Laqzf60hNyj7Kb0325VrvW_-4eSvyz83xpMfYVRMCvZes">
+</div>
+</div>
+<div class="flex items-center gap-md">
+<!-- Search placeholder -->
+<div class="hidden md:flex items-center bg-surface-container-low rounded-full px-sm py-2 border border-outline-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<span class="material-symbols-outlined text-secondary ml-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md font-body-md text-on-surface placeholder-secondary-fixed-dim outline-none w-64" placeholder="بحث..." type="text">
+</div>
+<!-- Mobile Menu Toggle (Visible only on small screens) -->
+<button class="md:hidden p-2 text-on-surface">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</header>
+<!-- Page Content Canvas -->
+<main class="flex-1 mt-16 p-gutter max-w-container-max mx-auto w-full">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-xs">الحسابات المالية والخزينة</h2>
+<p class="font-body-lg text-body-lg text-secondary">نظرة عامة على الأرصدة النقدية والحسابات البنكية.</p>
+</div>
+<div class="flex gap-sm">
+<button class="flex items-center gap-xs px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-lg font-label-md text-label-md text-on-surface hover:bg-surface-container transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                        تصدير التقرير
+                    </button>
+<button class="flex items-center gap-xs px-md py-sm bg-primary-container text-on-primary-container rounded-lg font-label-md text-label-md hover:bg-inverse-primary transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        إضافة حساب
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Cash Accounts Column -->
+<div class="lg:col-span-1 flex flex-col gap-gutter">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary">payments</span>
+                        الخزينة النقدية
+                    </h3>
+<!-- Cash Card: JOD -->
+<div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.04)] relative overflow-hidden group hover:border-primary transition-colors">
+<div class="absolute top-0 right-0 w-1 h-full bg-primary-container rounded-r-xl"></div>
+<div class="flex justify-between items-start mb-md">
+<div>
+<p class="font-label-md text-label-md text-secondary uppercase tracking-wider mb-xs">دينار أردني</p>
+<h4 class="font-headline-md text-headline-md text-on-surface">الصندوق الرئيسي</h4>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-primary border border-outline-variant">
+<span class="font-data-mono text-data-mono">JOD</span>
+</div>
+</div>
+<div class="mb-md">
+<span class="font-display-lg text-display-lg text-on-surface">14,250.00</span>
+</div>
+<div class="flex items-center gap-xs text-tertiary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span class="">+450.00 اليوم</span>
+</div>
+</div>
+<!-- Cash Card: USD -->
+<div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.04)] relative overflow-hidden group hover:border-primary transition-colors">
+<div class="flex justify-between items-start mb-md">
+<div>
+<p class="font-label-md text-label-md text-secondary uppercase tracking-wider mb-xs">دولار أمريكي</p>
+<h4 class="font-title-lg text-title-lg text-on-surface">صندوق العملات الأجنبية</h4>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-secondary border border-outline-variant">
+<span class="font-data-mono text-data-mono">USD</span>
+</div>
+</div>
+<div class="mb-md">
+<span class="font-headline-lg text-headline-lg text-on-surface font-data-mono">8,400.00</span>
+</div>
+<div class="flex items-center gap-xs text-secondary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">horizontal_rule</span>
+<span class="">لا تغيير اليوم</span>
+</div>
+</div>
+<!-- Cash Card: ILS -->
+<div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.04)] relative overflow-hidden group hover:border-primary transition-colors">
+<div class="flex justify-between items-start mb-md">
+<div>
+<p class="font-label-md text-label-md text-secondary uppercase tracking-wider mb-xs">شيكل إسرائيلي</p>
+<h4 class="font-title-lg text-title-lg text-on-surface">صندوق المبيعات اليومية</h4>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-secondary border border-outline-variant">
+<span class="font-data-mono text-data-mono">ILS</span>
+</div>
+</div>
+<div class="mb-md">
+<span class="font-headline-lg text-headline-lg text-on-surface font-data-mono">45,120.00</span>
+</div>
+<div class="flex items-center gap-xs text-error font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">trending_down</span>
+<span class="">-1,200.00 اليوم</span>
+</div>
+</div>
+</div>
+<!-- Bank Accounts & Transactions Column -->
+<div class="lg:col-span-2 flex flex-col gap-gutter">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary">account_balance</span>
+                        الحسابات البنكية
+                    </h3>
+<!-- Glassmorphism Bank Card 1 -->
+<div class="bg-surface-container-lowest/80 backdrop-blur-md rounded-xl p-md border border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.04)] flex flex-col md:flex-row gap-md items-start md:items-center justify-between hover:shadow-[0px_10px_32px_rgba(0,0,0,0.08)] transition-shadow">
+<div class="flex items-center gap-md">
+<div class="w-14 h-14 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant shadow-sm shrink-0">
+<span class="material-symbols-outlined text-3xl text-primary">corporate_fare</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-surface">البنك الإسلامي الأردني</h4>
+<p class="font-body-md text-body-md text-secondary font-data-mono mt-1">**** **** **** 4590</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label-md text-label-md text-secondary uppercase mb-xs">الرصيد المتاح (JOD)</p>
+<span class="font-headline-lg text-headline-lg text-on-surface font-data-mono">124,500.00</span>
+</div>
+</div>
+<!-- Glassmorphism Bank Card 2 -->
+<div class="bg-surface-container-lowest/80 backdrop-blur-md rounded-xl p-md border border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.04)] flex flex-col md:flex-row gap-md items-start md:items-center justify-between hover:shadow-[0px_10px_32px_rgba(0,0,0,0.08)] transition-shadow">
+<div class="flex items-center gap-md">
+<div class="w-14 h-14 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant shadow-sm shrink-0">
+<span class="material-symbols-outlined text-3xl text-secondary">account_balance</span>
+</div>
+<div>
+<h4 class="font-title-lg text-title-lg text-on-surface">بنك الإسكان للتجارة والتمويل</h4>
+<p class="font-body-md text-body-md text-secondary font-data-mono mt-1">**** **** **** 1208</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label-md text-label-md text-secondary uppercase mb-xs">الرصيد المتاح (USD)</p>
+<span class="font-headline-md text-headline-md text-on-surface font-data-mono">45,000.00</span>
+</div>
+</div>
+<!-- Recent Transactions Table Section -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.04)] mt-md overflow-hidden">
+<div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+<h4 class="font-title-lg text-title-lg text-on-surface">أحدث الحركات</h4>
+<button class="text-primary hover:text-primary-fixed font-label-md text-label-md transition-colors">عرض الكل</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-right border-collapse">
+<thead>
+<tr class="bg-surface-container-highest/30">
+<th class="p-sm font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant">التاريخ</th>
+<th class="p-sm font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant">الوصف</th>
+<th class="p-sm font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant">الحساب</th>
+<th class="p-sm font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant">المبلغ</th>
+<th class="p-sm font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant text-center">الحالة</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md text-on-surface">
+<tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<td class="p-sm font-data-mono text-secondary">2023-10-27</td>
+<td class="p-sm">توريد نقدية من المبيعات</td>
+<td class="p-sm text-secondary">الصندوق الرئيسي</td>
+<td class="p-sm font-data-mono text-tertiary">+ 450.00</td>
+<td class="p-sm text-center">
+<span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-tertiary-container/20 text-tertiary">مكتمل</span>
+</td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<td class="p-sm font-data-mono text-secondary">2023-10-26</td>
+<td class="p-sm">دفعة لمورد (مجوهرات الشرق)</td>
+<td class="p-sm text-secondary">البنك الإسلامي الأردني</td>
+<td class="p-sm font-data-mono text-error">- 1,200.00</td>
+<td class="p-sm text-center">
+<span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-tertiary-container/20 text-tertiary">مكتمل</span>
+</td>
+</tr>
+<tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<td class="p-sm font-data-mono text-secondary">2023-10-26</td>
+<td class="p-sm">تحويل بين الحسابات</td>
+<td class="p-sm text-secondary">صندوق العملات الأجنبية</td>
+<td class="p-sm font-data-mono text-on-surface">+ 2,000.00</td>
+<td class="p-sm text-center">
+<span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-secondary-container text-on-secondary-container">قيد المعالجة</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="p-sm font-data-mono text-secondary">2023-10-25</td>
+<td class="p-sm">رسوم بنكية</td>
+<td class="p-sm text-secondary">بنك الإسكان</td>
+<td class="p-sm font-data-mono text-error">- 15.00</td>
+<td class="p-sm text-center">
+<span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-tertiary-container/20 text-tertiary">مكتمل</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+
+</body></html>

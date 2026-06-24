@@ -1,1 +1,0 @@
-import"./chunk-2NFLSA4Y.js";var t=[{path:"",loadComponent:()=>import("./chunk-ZURUIQDH.js").then(o=>o.GoldPurchasesListComponent)},{path:"create",loadComponent:()=>import("./chunk-R7PZQVQP.js").then(o=>o.GoldPurchaseFormComponent)}];export{t as default};

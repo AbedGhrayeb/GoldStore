@@ -1,0 +1,135 @@
+/* ═══════════════════════════════════════════════════════
+   SUPPLIER PAYMENTS — Styles
+   ═══════════════════════════════════════════════════════ */
+
+/* Material Symbols config */
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.material-symbols-outlined.icon-fill {
+    font-variation-settings: 'FILL' 1;
+}
+
+/* Number inputs — hide spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* Disabled inputs */
+input:disabled,
+select:disabled {
+    opacity: 0.5;
+}
+
+/* Focus ring — match primary container gold */
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #d4af37 !important;
+    box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.3) !important;
+}
+
+/* Transaction row hover — gold tint */
+#transactionsBody tr {
+    transition: background-color 0.15s;
+}
+
+#transactionsBody tr:hover {
+    background-color: rgba(115, 92, 0, 0.04);
+}
+
+/* KPI Cards — LTR for numbers */
+#goldBalanceValue,
+#mfgBalanceValue {
+    direction: ltr;
+}
+
+/* Form buttons hover */
+#btnSubmitScrapGold:hover:not(:disabled),
+#btnSubmitManufacturing:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+/* Type badges */
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: #eeedf7;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #4d4635;
+}
+
+/* Direction badges — using MD3 palette */
+.direction-increase {
+    color: #006c49;
+    background: rgba(0, 108, 73, 0.1);
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.direction-decrease {
+    color: #ba1a1a;
+    background: rgba(186, 26, 26, 0.1);
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Transaction tabs */
+.tx-tab {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #5f5e5e;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+
+.tx-tab:hover {
+    color: #1a1b22;
+}
+
+.tx-tab.active {
+    color: #735c00;
+    border-bottom-color: #d4af37;
+    font-weight: 600;
+}
+
+/* Balance hint colors */
+.hint-owed {
+    color: #ba1a1a;
+}
+
+.hint-credit {
+    color: #006c49;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .lg\:grid-cols-2,
+    .lg\:grid-cols-3 {
+        grid-template-columns: 1fr !important;
+    }
+
+    #transactionsTable {
+        font-size: 0.875rem;
+    }
+}

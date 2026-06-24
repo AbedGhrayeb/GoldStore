@@ -1,0 +1,409 @@
+﻿@model List<WebUI.Models.User.UserModel>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "إدارة المستخدمين";
+}
+<div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] hidden">
+    <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span id="toastMessage">تم الحفظ بنجاح</span>
+    </div>
+</div>
+
+<div class="bg-surface min-h-screen">
+    <div class="p-6 max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">إدارة المستخدمين والصلاحيات</h1>
+                <p class="text-gray-500 mt-1">التحكم في وصول المستخدمين وأدوارهم في النظام</p>
+            </div>
+            <button onclick="openCreateModal()" class="bg-gold hover:bg-gold/90 text-white px-5 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                إضافة مستخدم
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">إجمالي المستخدمين</p>
+                        <p class="text-2xl font-bold text-gray-900">@Model.Count</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">نشط حالياً</p>
+                        <p class="text-2xl font-bold text-gray-900">@Model.Count</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                        <th class="text-center py-4 px-6 text-sm font-semibold text-gray-700">الاسم</th>
+                        <th class="text-center py-4 px-6 text-sm font-semibold text-gray-700">البريد الإلكتروني</th>
+                        <th class="text-center py-4 px-6 text-sm font-semibold text-gray-700">إعدادات</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50 m-2" id="usersTableBody" m-2>
+                    @foreach (var user in Model)
+                    {
+                        <tr class="hover:bg-gray-50 transition-colors" data-user-id="@user.Id" data-user-email="@user.Email" data-user-firstname="@user.FirstName" data-user-lastname="@user.LastName">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center text-gold font-bold">
+                                        @(user.DispalyName.Length > 0 ? user.DispalyName.Substring(0, 1) : "?")
+                                    </div>
+                                    <span class="font-medium text-gray-900">@user.DispalyName</span>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6 text-gray-500 font-mono text-sm text-left" dir="ltr">@user.Email</td>
+             
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-2">
+                                    <button onclick="openEditModal('@user.Id')"
+                                            class="p-2 text-gray-400 hover:text-gold hover:bg-gold/5 rounded-lg transition-colors"
+                                            title="تعديل">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (Model.Count == 0)
+            {
+                <div class="text-center py-12">
+                    <svg class="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <p class="text-gray-500">لا يوجد مستخدمين</p>
+                    <button onclick="openCreateModal()" class="text-gold hover:underline mt-2 inline-block">إضافة مستخدم جديد</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Create User Modal -->
+<div id="createModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="closeCreateModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-6 border-b border-gray-100">
+                <h2 class="text-xl font-bold text-gray-900">إضافة مستخدم جديد</h2>
+                <button onclick="closeCreateModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <form method="post" asp-action="Create" id="createForm" class="p-6 space-y-5">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label for="createFirstName" class="block text-sm font-medium text-gray-700 mb-2">الاسم الأول</label>
+                    <input type="text" id="createFirstName" name="FirstName" required
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gold/20 focus:border-gold transition-colors"
+                           placeholder="أدخل الاسم الأول" />
+                    <p id="createFirstNameError" class="text-red-500 text-sm mt-1 hidden"></p>
+                </div>
+                <div>
+                    <label for="createLastName" class="block text-sm font-medium text-gray-700 mb-2">اسم العائلة</label>
+                    <input type="text" id="createLastName" name="LastName" required
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gold/20 focus:border-gold transition-colors"
+                           placeholder="أدخل اسم العائلة" />
+                    <p id="createLastNameError" class="text-red-500 text-sm mt-1 hidden"></p>
+                </div>
+                <div>
+                    <label for="createEmail" class="block text-sm font-medium text-gray-700 mb-2">البريد الإلكتروني</label>
+                    <input type="email" id="createEmail" name="Email" required
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gold/20 focus:border-gold transition-colors"
+                           placeholder="example@email.com" dir="ltr" />
+                    <p id="createEmailError" class="text-red-500 text-sm mt-1 hidden"></p>
+                </div>
+                <div>
+                    <label for="createPassword" class="block text-sm font-medium text-gray-700 mb-2">كلمة المرور</label>
+                    <input type="password" id="createPassword" name="Password" required minlength="8"
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gold/20 focus:border-gold transition-colors"
+                           placeholder="••••••••" dir="ltr" />
+                    <p id="createPasswordError" class="text-red-500 text-sm mt-1 hidden"></p>
+                    <p class="text-gray-500 text-xs mt-1">يجب أن تكون 8 أحرف على الأقل</p>
+                </div>
+                <div id="createError" class="hidden bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p class="text-red-600 text-sm" id="createErrorMessage"></p>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeCreateModal()" class="flex-1 px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        إلغاء
+                    </button>
+                    <button type="submit" class="flex-1 px-6 py-2.5 bg-gold hover:bg-gold/90 text-white rounded-lg font-medium transition-colors">
+                        حفظ
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="closeEditModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-6 border-b border-gray-100">
+                <h2 class="text-xl font-bold text-gray-900">تعديل بيانات المستخدم</h2>
+                <button onclick="closeEditModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <form method="post" asp-action="Edit" id="editForm" class="p-6 space-y-5">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="editId" name="Id" />
+                <div>
+                    <label for="editFirstName" class="block text-sm font-medium text-gray-700 mb-2">الاسم الأول</label>
+                    <input type="text" id="editFirstName" name="FirstName" required
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gold/20 focus:border-gold transition-colors"
+                           placeholder="أدخل الاسم الأول" />
+                    <p id="editFirstNameError" class="text-red-500 text-sm mt-1 hidden"></p>
+                </div>
+                <div>
+                    <label for="editLastName" class="block text-sm font-medium text-gray-700 mb-2">اسم العائلة</label>
+                    <input type="text" id="editLastName" name="LastName" required
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gold/20 focus:border-gold transition-colors"
+                           placeholder="أدخل اسم العائلة" />
+                    <p id="editLastNameError" class="text-red-500 text-sm mt-1 hidden"></p>
+                </div>
+                <div>
+                    <label for="editEmail" class="block text-sm font-medium text-gray-700 mb-2">البريد الإلكتروني</label>
+                    <input type="email" id="editEmail" name="Email" required
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gold/20 focus:border-gold transition-colors"
+                           placeholder="example@email.com" dir="ltr" />
+                    <p id="editEmailError" class="text-red-500 text-sm mt-1 hidden"></p>
+                </div>
+                <div>
+                    <label for="editPassword" class="block text-sm font-medium text-gray-700 mb-2">كلمة المرور الجديدة</label>
+                    <input type="password" id="editPassword" name="Password"
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gold/20 focus:border-gold transition-colors"
+                           placeholder="اتركها فارغة إذا لم ترغب بتغييرها" dir="ltr" />
+                    <p id="editPasswordError" class="text-red-500 text-sm mt-1 hidden"></p>
+                    <p class="text-gray-500 text-xs mt-1">اتركها فارغة إذا لم ترغب بتغيير كلمة المرور</p>
+                </div>
+                <div id="editError" class="hidden bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p class="text-red-600 text-sm" id="editErrorMessage"></p>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeEditModal()" class="flex-1 px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        إلغاء
+                    </button>
+                    <button type="submit" class="flex-1 px-6 py-2.5 bg-gold hover:bg-gold/90 text-white rounded-lg font-medium transition-colors">
+                        حفظ التغييرات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toast notification
+    function showToast(message, isSuccess = true) {
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+        toastMessage.textContent = message;
+        toast.querySelector('div').className = isSuccess
+            ? 'bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3'
+            : 'bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3';
+        toast.classList.remove('hidden');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 3000);
+    }
+
+    // Clear all validation errors
+    function clearValidationErrors(modalId) {
+        document.querySelectorAll(`#${modalId} .border-red-500`).forEach(el => {
+            el.classList.remove('border-red-500');
+        });
+        document.querySelectorAll(`#${modalId} [id$="Error"]`).forEach(el => {
+            el.classList.add('hidden');
+            el.textContent = '';
+        });
+        document.getElementById(`${modalId}Error`)?.classList.add('hidden');
+    }
+
+    // Show inline validation errors
+    function showFieldError(fieldId, message) {
+        const input = document.getElementById(fieldId);
+        const error = document.getElementById(fieldId + 'Error');
+        if (input) input.classList.add('border-red-500');
+        if (error) {
+            error.textContent = message;
+            error.classList.remove('hidden');
+        }
+    }
+
+    // Create Modal
+    function openCreateModal() {
+        document.getElementById('createFirstName').value = '';
+        document.getElementById('createLastName').value = '';
+        document.getElementById('createEmail').value = '';
+        document.getElementById('createPassword').value = '';
+        clearValidationErrors('create');
+        document.getElementById('createModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeCreateModal() {
+        document.getElementById('createModal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    function handleCreateSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+
+        clearValidationErrors('create');
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        }).then(response => response.json())
+          .then(data => {
+            if (data.success) {
+                closeCreateModal();
+                showToast('تم إضافة المستخدم بنجاح');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                if (data.errors) {
+                    for (const [field, messages] of Object.entries(data.errors)) {
+                        if (Array.isArray(messages)) {
+                            messages.forEach(msg => showFieldError('create' + field, msg));
+                        }
+                    }
+                }
+                if (data.error) {
+                    document.getElementById('createErrorMessage').textContent = data.error;
+                    document.getElementById('createError').classList.remove('hidden');
+                }
+            }
+        }).catch(() => {
+            document.getElementById('createErrorMessage').textContent = 'حدث خطأ أثناء الاتصال بالخادم';
+            document.getElementById('createError').classList.remove('hidden');
+        });
+
+        return false;
+    }
+
+    // Edit Modal
+    function openEditModal(userId) {
+        const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+        if (!row) {
+            console.error('Row not found for userId:', userId);
+            return;
+        }
+
+        const firstname = row.getAttribute('data-user-firstname') || '';
+        const lastname = row.getAttribute('data-user-lastname') || '';
+        const email = row.getAttribute('data-user-email') || '';
+
+        console.log('Editing user:', { userId, firstname, lastname, email });
+
+        document.getElementById('editId').value = userId;
+        document.getElementById('editFirstName').value = firstname;
+        document.getElementById('editLastName').value = lastname;
+        document.getElementById('editEmail').value = email;
+        document.getElementById('editPassword').value = '';
+        clearValidationErrors('edit');
+        document.getElementById('editModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    function handleEditSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+
+        clearValidationErrors('edit');
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        }).then(response => response.json())
+          .then(data => {
+            if (data.success) {
+                closeEditModal();
+                showToast('تم تحديث بيانات المستخدم بنجاح');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                if (data.errors) {
+                    for (const [field, messages] of Object.entries(data.errors)) {
+                        if (Array.isArray(messages)) {
+                            messages.forEach(msg => showFieldError('edit' + field, msg));
+                        }
+                    }
+                }
+                if (data.error) {
+                    document.getElementById('editErrorMessage').textContent = data.error;
+                    document.getElementById('editError').classList.remove('hidden');
+                }
+            }
+        }).catch(() => {
+            document.getElementById('editErrorMessage').textContent = 'حدث خطأ أثناء الاتصال بالخادم';
+            document.getElementById('editError').classList.remove('hidden');
+        });
+
+        return false;
+    }
+
+    // Form submit handlers
+    document.getElementById('createForm').addEventListener('submit', handleCreateSubmit);
+    document.getElementById('editForm').addEventListener('submit', handleEditSubmit);
+
+    // Close modals on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeCreateModal();
+            closeEditModal();
+        }
+    });
+</script>

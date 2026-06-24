@@ -1,5 +1,4 @@
 using Domain.Finance;
-using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -26,10 +25,11 @@ internal sealed class FinancialTransactionConfiguration : IEntityTypeConfigurati
             .HasForeignKey(transaction => transaction.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<User>()
+        builder.HasOne<Domain.Users.User>()
             .WithMany()
             .HasForeignKey(transaction => transaction.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         builder.HasIndex(transaction => new { transaction.AccountId, transaction.Date });
 

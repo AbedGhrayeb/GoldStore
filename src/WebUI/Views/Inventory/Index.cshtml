@@ -1,0 +1,163 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "المخزون والأسعار";
+}
+
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md">
+    <div>
+        <h2 class="font-headline-lg text-headline-lg text-on-surface mb-xs">المخزون والأسعار</h2>
+        <p class="font-body-lg text-body-lg text-secondary">إدارة مخزون الذهب وأسعار السوق المباشرة.</p>
+    </div>
+    <div class="flex gap-sm">
+        <button class="flex items-center gap-xs px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-lg font-label-md text-label-md text-on-surface hover:bg-surface-container transition-colors shadow-sm" onclick="refreshAll()">
+            <span class="material-symbols-outlined text-[18px]">refresh</span>
+            تحديث الأسعار
+        </button>
+    </div>
+</div>
+
+<!-- ROW 1: Live Market Prices (KPIs) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-xl">
+    <!-- KPI Card 1: Global Spot -->
+    <div class="bg-surface-container-lowest p-md rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-surface-variant flex flex-col gap-sm">
+        <div class="flex justify-between items-start">
+            <div class="flex items-center gap-xs text-secondary">
+                <span class="material-symbols-outlined text-primary-container text-lg">language</span>
+                <h3 class="font-label-md text-label-md uppercase tracking-wider">السعر العالمي (أونصة)</h3>
+            </div>
+            <span id="spotChange" class="flex items-center font-data-mono text-sm px-2 py-1 rounded"></span>
+        </div>
+        <div class="flex items-baseline gap-xs">
+            <span id="spotPrice" class="font-display-lg text-display-lg text-on-surface font-data-mono">—</span>
+            <span class="font-body-md text-secondary">د.أ</span>
+        </div>
+    </div>
+    <!-- KPI Card 2: 24K per gram -->
+    <div class="bg-surface-container-lowest p-md rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-surface-variant flex flex-col gap-sm">
+        <div class="flex justify-between items-start">
+            <div class="flex items-center gap-xs text-secondary">
+                <span class="material-symbols-outlined text-primary-container text-lg">monetization_on</span>
+                <h3 class="font-label-md text-label-md uppercase tracking-wider">عيار 24 (محلي)</h3>
+            </div>
+            <span id="k24Change" class="flex items-center font-data-mono text-sm px-2 py-1 rounded"></span>
+        </div>
+        <div class="flex items-baseline gap-xs">
+            <span id="k24Price" class="font-display-lg text-display-lg text-on-surface font-data-mono">—</span>
+            <span class="font-body-md text-secondary">د.أ/جم</span>
+        </div>
+    </div>
+    <!-- KPI Card 3: 21K per gram -->
+    <div class="bg-surface-container-lowest p-md rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-surface-variant flex flex-col gap-sm">
+        <div class="flex justify-between items-start">
+            <div class="flex items-center gap-xs text-secondary">
+                <span class="material-symbols-outlined text-primary-container text-lg">monetization_on</span>
+                <h3 class="font-label-md text-label-md uppercase tracking-wider">عيار 21 (محلي)</h3>
+            </div>
+            <span id="k21Change" class="flex items-center font-data-mono text-sm px-2 py-1 rounded"></span>
+        </div>
+        <div class="flex items-baseline gap-xs">
+            <span id="k21Price" class="font-display-lg text-display-lg text-on-surface font-data-mono">—</span>
+            <span class="font-body-md text-secondary">د.أ/جم</span>
+        </div>
+    </div>
+</div>
+
+<!-- ROW 2: Inventory Breakdown Bento Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-md mb-xl">
+    <!-- Main Focus: 21K Equivalent Total -->
+    <div class="lg:col-span-1 bg-on-surface text-surface-container-lowest p-md rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] flex flex-col justify-between relative overflow-hidden min-h-[220px]">
+        <div class="absolute -right-12 -top-12 w-48 h-48 bg-primary-container rounded-full opacity-10 blur-3xl"></div>
+        <div>
+            <h3 class="font-title-lg text-title-lg text-surface-variant mb-xs">إجمالي المخزون</h3>
+            <p class="font-label-md text-label-md text-outline-variant">مقوم بمعادل عيار 21</p>
+        </div>
+        <div class="mt-xl">
+            <div class="flex items-baseline gap-sm mb-xs">
+                <span id="totalEquivalent21K" class="font-display-lg text-[48px] font-data-mono text-primary-container">0.000</span>
+                <span class="font-body-lg text-surface-variant">جم</span>
+            </div>
+            <div class="h-px w-full bg-outline/30 my-sm"></div>
+            <div class="flex justify-between items-center text-surface-variant font-body-md">
+                <span>القيمة التقديرية</span>
+                <span id="estimatedValue" class="font-data-mono">— د.أ</span>
+            </div>
+        </div>
+    </div>
+    <!-- Breakdown Cards -->
+    <div class="lg:col-span-2 grid grid-cols-2 gap-sm" id="karatBreakdowns">
+        <!-- Populated by JS -->
+    </div>
+</div>
+
+<!-- ROW 3: Inventory Movement Log & Filters -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-surface-variant flex flex-col overflow-hidden">
+    <!-- Toolbar -->
+    <div class="p-md border-b border-outline-variant flex flex-wrap items-center justify-between gap-sm bg-surface">
+        <h3 class="font-title-lg text-title-lg font-bold text-on-surface">سجل حركة المخزون</h3>
+        <div class="flex items-center gap-sm">
+            <!-- Filter: Date From -->
+            <div class="flex items-center border border-outline-variant rounded bg-surface-container-lowest px-3 py-1.5">
+                <span class="material-symbols-outlined text-secondary text-sm ml-2">calendar_today</span>
+                <input type="date" id="filterFromDate" class="bg-transparent border-none outline-none font-body-md text-sm text-on-surface w-32" />
+            </div>
+            <!-- Filter: Date To -->
+            <div class="flex items-center border border-outline-variant rounded bg-surface-container-lowest px-3 py-1.5">
+                <input type="date" id="filterToDate" class="bg-transparent border-none outline-none font-body-md text-sm text-on-surface w-32" />
+            </div>
+            <!-- Filter: Karat -->
+            <select id="filterKarat" class="flex items-center border border-outline-variant rounded bg-surface-container-lowest px-3 py-1.5 font-body-md text-sm text-on-surface appearance-none cursor-pointer hover:border-primary transition-colors">
+                <option value="">كل العيارات</option>
+                <option value="24">عيار 24</option>
+                <option value="21">عيار 21</option>
+                <option value="18">عيار 18</option>
+            </select>
+            <!-- Filter: Reference Type -->
+            <select id="filterReferenceType" class="flex items-center border border-outline-variant rounded bg-surface-container-lowest px-3 py-1.5 font-body-md text-sm text-on-surface appearance-none cursor-pointer hover:border-primary transition-colors">
+                <option value="">كل الأنواع</option>
+                <option value="SupplierDelivery">توريد مورد</option>
+                <option value="CustomerGoldPurchase">شراء ذهب عميل</option>
+                <option value="Sale">بيع</option>
+                <option value="SupplierScrapPayment">دفع كسر مورد</option>
+                <option value="InventoryAdjustment">تسوية جردية</option>
+            </select>
+            <!-- Filter Button -->
+            <button class="bg-primary-container text-on-primary text-sm font-label-md px-4 py-2 rounded flex items-center gap-xs hover:opacity-90 transition-opacity" onclick="loadLedger(1)">
+                <span class="material-symbols-outlined text-sm">filter_list</span>
+                تصفية
+            </button>
+        </div>
+    </div>
+    <!-- Data Table -->
+    <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-right border-collapse" id="ledgerTable">
+            <thead class="bg-surface-container-low border-b border-outline-variant font-label-md text-secondary">
+                <tr>
+                    <th class="py-3 px-md font-medium">رقم العملية</th>
+                    <th class="py-3 px-md font-medium">التاريخ والوقت</th>
+                    <th class="py-3 px-md font-medium">البيان</th>
+                    <th class="py-3 px-md font-medium">العيار</th>
+                    <th class="py-3 px-md font-medium">الوزن (جم)</th>
+                    <th class="py-3 px-md font-medium">معادل 21K</th>
+                    <th class="py-3 px-md font-medium">النوع</th>
+                    <th class="py-3 px-md font-medium">الحالة</th>
+                </tr>
+            </thead>
+            <tbody id="ledgerBody" class="font-body-md text-on-surface divide-y divide-outline-variant/50">
+                <tr>
+                    <td colspan="8" class="py-12 text-center text-secondary">جاري التحميل...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <!-- Pagination -->
+    <div class="p-md border-t border-outline-variant flex justify-between items-center" id="paginationContainer" style="display:none;">
+        <span class="font-label-md text-label-md text-secondary" id="paginationInfo"></span>
+        <div class="flex gap-sm" id="paginationButtons"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/gold-prices.js" asp-append-version="true"></script>
+    <script src="~/js/inventory.js" asp-append-version="true"></script>
+}

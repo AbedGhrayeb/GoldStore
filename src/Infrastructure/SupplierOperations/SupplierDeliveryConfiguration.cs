@@ -31,11 +31,6 @@ internal sealed class SupplierDeliveryConfiguration : IEntityTypeConfiguration<S
             .HasForeignKey(delivery => delivery.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<User>()
-            .WithMany()
-            .HasForeignKey(delivery => delivery.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         builder.HasIndex(delivery => new { delivery.SupplierId, delivery.Date });
     }
 }

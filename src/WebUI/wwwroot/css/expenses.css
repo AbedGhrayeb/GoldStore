@@ -1,0 +1,22 @@
+/* ── Expenses Page ─────────────────────────── */
+
+:root {
+    --expense-row-hover: rgba(212, 175, 55, 0.06);
+}
+
+#expensesTable tbody tr:hover {
+    background: var(--expense-row-hover);
+}
+
+#expensesTable tbody tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+#expensesTable tbody tr:nth-child(even):hover {
+    background: var(--expense-row-hover);
+}
+
+.kpi-value {
+    font-feature-settings: 'tnum';
+    font-variant-numeric: tabular-nums;
+}

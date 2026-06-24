@@ -1,1 +1,0 @@
-import"./chunk-2NFLSA4Y.js";var t=[{path:"",loadComponent:()=>import("./chunk-PLRXMLHN.js").then(o=>o.GoldPriceDashboardComponent)},{path:"history",loadComponent:()=>import("./chunk-PMJIPFRB.js").then(o=>o.GoldPriceHistoryComponent)}];export{t as default};

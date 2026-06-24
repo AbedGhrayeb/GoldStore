@@ -1,0 +1,182 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "تسويات المخزون";
+}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-xl">
+    <div>
+        <h2 class="font-headline-lg text-headline-lg text-on-surface mb-xs">تسويات المخزون</h2>
+        <p class="font-body-md text-body-md text-secondary">إدارة وتوثيق التعديلات اليدوية على أرصدة المخزون.</p>
+    </div>
+</div>
+
+<!-- Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start mb-xl">
+    <!-- Adjustment Form Panel -->
+    <div class="lg:col-span-8 bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] p-md border border-outline-variant/30">
+        <h3 class="font-title-lg text-title-lg text-on-surface border-b border-outline-variant pb-sm mb-md flex items-center gap-sm">
+            <span class="material-symbols-outlined text-primary">edit_document</span>
+            تسجيل تسوية جديدة
+        </h3>
+        <form id="adjustmentForm" class="flex flex-col gap-lg" novalidate>
+            @Html.AntiForgeryToken()
+            <!-- Adjustment Type Selection -->
+            <div>
+                <label class="block font-label-md text-label-md text-secondary mb-sm uppercase">نوع التسوية</label>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-sm">
+                    <label class="cursor-pointer">
+                        <input checked class="peer sr-only" name="adjustmentType" type="radio" value="1" />
+                        <div class="flex flex-col items-center gap-xs p-sm rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low peer-checked:border-primary peer-checked:bg-primary-fixed/10 peer-checked:text-primary transition-all text-center">
+                            <span class="material-symbols-outlined">add_circle</span>
+                            <span class="font-body-md text-body-md font-medium">زيادة</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input class="peer sr-only" name="adjustmentType" type="radio" value="2" />
+                        <div class="flex flex-col items-center gap-xs p-sm rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low peer-checked:border-primary peer-checked:bg-primary-fixed/10 peer-checked:text-primary transition-all text-center">
+                            <span class="material-symbols-outlined">remove_circle</span>
+                            <span class="font-body-md text-body-md font-medium">نقصان</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input class="peer sr-only" name="adjustmentType" type="radio" value="3" />
+                        <div class="flex flex-col items-center gap-xs p-sm rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low peer-checked:border-error peer-checked:bg-error-container/20 peer-checked:text-error transition-all text-center">
+                            <span class="material-symbols-outlined">broken_image</span>
+                            <span class="font-body-md text-body-md font-medium">تالف</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input class="peer sr-only" name="adjustmentType" type="radio" value="4" />
+                        <div class="flex flex-col items-center gap-xs p-sm rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low peer-checked:border-error peer-checked:bg-error-container/20 peer-checked:text-error transition-all text-center">
+                            <span class="material-symbols-outlined">warning</span>
+                            <span class="font-body-md text-body-md font-medium">مفقود</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input class="peer sr-only" name="adjustmentType" type="radio" value="5" />
+                        <div class="flex flex-col items-center gap-xs p-sm rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low peer-checked:border-secondary peer-checked:bg-surface-container peer-checked:text-on-surface transition-all text-center">
+                            <span class="material-symbols-outlined">edit</span>
+                            <span class="font-body-md text-body-md font-medium">تصحيح يدوي</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <!-- Form Fields Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+                <div class="flex flex-col gap-xs">
+                    <label class="font-label-md text-label-md text-secondary uppercase" for="adjDate">التاريخ</label>
+                    <div class="relative input-glow rounded-lg">
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">calendar_today</span>
+                        <input class="w-full bg-surface border border-outline-variant rounded-lg py-2 pr-10 pl-3 focus:outline-none focus:border-primary text-body-md font-body-md text-on-surface" id="adjDate" name="adjDate" type="date" />
+                    </div>
+                </div>
+                <div class="flex flex-col gap-xs">
+                    <label class="font-label-md text-label-md text-secondary uppercase" for="adjKarat">العيار</label>
+                    <div class="relative input-glow rounded-lg">
+                        <select class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary text-body-md font-body-md text-on-surface appearance-none" id="adjKarat" name="adjKarat">
+                            <option value="24">عيار 24</option>
+                            <option selected value="21">عيار 21</option>
+                            <option value="18">عيار 18</option>
+                        </select>
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">arrow_drop_down</span>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-xs">
+                    <label class="font-label-md text-label-md text-secondary uppercase" for="adjWeight">الوزن الصافي</label>
+                    <div class="relative input-glow rounded-lg flex">
+                        <input class="w-full bg-surface border border-outline-variant rounded-r-lg py-2 px-3 focus:outline-none focus:border-primary font-data-mono text-data-mono text-on-surface border-l-0" dir="ltr" id="adjWeight" name="adjWeight" placeholder="0.000" step="0.001" type="number" />
+                        <span class="bg-surface-container-low border border-outline-variant border-r-0 rounded-l-lg px-3 py-2 text-secondary font-label-md text-label-md flex items-center justify-center">جم</span>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-xs">
+                    <label class="font-label-md text-label-md text-secondary uppercase" for="adjReason">السبب الرئيسي</label>
+                    <input class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary input-glow text-body-md font-body-md text-on-surface" id="adjReason" name="adjReason" placeholder="مثال: جرد دوري، خطأ إدخال..." type="text" />
+                </div>
+                <div class="flex flex-col gap-xs md:col-span-2">
+                    <label class="font-label-md text-label-md text-secondary uppercase" for="adjNotes">ملاحظات إضافية (اختياري)</label>
+                    <textarea class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary input-glow text-body-md font-body-md text-on-surface resize-none" id="adjNotes" name="adjNotes" rows="3"></textarea>
+                </div>
+            </div>
+            <!-- Form Actions -->
+            <div class="flex items-center justify-end gap-md pt-sm border-t border-outline-variant">
+                <button class="px-xl py-2 rounded-lg text-primary font-title-lg text-title-lg hover:bg-surface-container-low transition-colors" type="button" onclick="resetForm()">
+                    إلغاء
+                </button>
+                <button class="px-xl py-2 rounded-lg bg-on-surface text-surface-container-lowest font-title-lg text-title-lg hover:bg-black transition-colors shadow-sm" type="button" onclick="submitAdjustment()">
+                    تأكيد التسوية
+                </button>
+            </div>
+        </form>
+    </div>
+    <!-- Stats Panel -->
+    <div class="lg:col-span-4 flex flex-col gap-md">
+        <div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] p-md border border-outline-variant/30 flex items-center justify-between">
+            <div>
+                <p class="font-label-md text-label-md text-secondary uppercase mb-xs">إجمالي تسويات اليوم</p>
+                <p class="font-display-lg text-display-lg text-on-surface font-bold"><span id="kpiTodayCount">0</span><span class="text-title-lg font-normal text-secondary mr-1">عملية</span></p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-primary-container/20 flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined">sync_alt</span>
+            </div>
+        </div>
+        <div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] p-md border border-outline-variant/30 flex items-center justify-between">
+            <div>
+                <p class="font-label-md text-label-md text-secondary uppercase mb-xs">صافي التغيير (جرام)</p>
+                <p class="font-display-lg text-display-lg font-bold flex items-center gap-2" id="kpiNetWeightContainer" dir="ltr">
+                    <span id="kpiNetWeight">0.000</span>
+                    <span class="material-symbols-outlined text-title-lg" id="kpiNetTrend"></span>
+                </p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-secondary">
+                <span class="material-symbols-outlined">scale</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Adjustments Table -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 overflow-hidden flex flex-col">
+    <div class="p-md border-b border-outline-variant flex items-center justify-between bg-surface-container-lowest">
+        <h3 class="font-title-lg text-title-lg text-on-surface">سجل التسويات الأخيرة</h3>
+        <div class="flex items-center gap-sm">
+            <select id="filterType" class="border border-outline-variant rounded bg-surface-container-lowest px-3 py-1.5 font-body-md text-sm text-on-surface appearance-none cursor-pointer hover:border-primary transition-colors" onchange="loadAdjustments(1)">
+                <option value="">كل الأنواع</option>
+                <option value="Increase">زيادة</option>
+                <option value="Decrease">نقصان</option>
+                <option value="Damage">تالف</option>
+                <option value="Loss">مفقود</option>
+                <option value="Correction">تصحيح يدوي</option>
+            </select>
+            <input type="date" id="filterFromDate" class="border border-outline-variant rounded bg-surface-container-lowest px-3 py-1.5 font-body-md text-sm text-on-surface" onchange="loadAdjustments(1)" />
+            <input type="date" id="filterToDate" class="border border-outline-variant rounded bg-surface-container-lowest px-3 py-1.5 font-body-md text-sm text-on-surface" onchange="loadAdjustments(1)" />
+        </div>
+    </div>
+    <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-right border-collapse">
+            <thead class="bg-surface-container">
+                <tr>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">رقم المرجع</th>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">التاريخ</th>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">النوع</th>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">العيار</th>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider text-left">الوزن (جم)</th>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">السبب</th>
+                </tr>
+            </thead>
+            <tbody id="adjustmentsBody" class="font-body-md text-body-md">
+                <tr>
+                    <td colspan="6" class="py-12 text-center text-secondary">جاري التحميل...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="p-md border-t border-outline-variant flex justify-between items-center" id="paginationContainer" style="display:none;">
+        <span class="font-label-md text-label-md text-secondary" id="paginationInfo"></span>
+        <div class="flex gap-sm" id="paginationButtons"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/inventory-adjustments.js" asp-append-version="true"></script>
+}

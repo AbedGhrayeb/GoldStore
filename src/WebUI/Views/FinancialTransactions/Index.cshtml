@@ -1,0 +1,92 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "سجل الحركات المالية";
+}
+
+<link rel="stylesheet" href="~/css/financial-transactions.css" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+<div class="max-w-container-max mx-auto">
+    <!-- Header -->
+    <div class="flex items-center gap-md mb-xl">
+        <a asp-controller="FinancialAccounts" asp-action="Index" class="p-2 text-secondary hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors">
+            <span class="material-symbols-outlined">arrow_forward</span>
+        </a>
+        <div>
+            <h2 class="font-headline-lg text-headline-lg text-on-surface mb-xs">سجل الحركات المالية</h2>
+            <p class="font-body-lg text-body-lg text-secondary">جميع المعاملات المالية مرتبة حسب التاريخ.</p>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant p-md mb-lg">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-md">
+            <div>
+                <label class="font-label-md text-label-md text-secondary mb-xs block">بحث بالحساب</label>
+                <input type="text" id="filterAccountName" class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 font-body-md text-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all" placeholder="اسم الحساب..." />
+            </div>
+            <div>
+                <label class="font-label-md text-label-md text-secondary mb-xs block">من تاريخ</label>
+                <input type="date" id="filterFromDate" class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 font-body-md text-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all" />
+            </div>
+            <div>
+                <label class="font-label-md text-label-md text-secondary mb-xs block">إلى تاريخ</label>
+                <input type="date" id="filterToDate" class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 font-body-md text-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all" />
+            </div>
+            <div>
+                <label class="font-label-md text-label-md text-secondary mb-xs block">العملة</label>
+                <select id="filterCurrency" class="w-full appearance-none bg-surface border border-outline-variant rounded-lg py-2 px-3 pr-10 font-body-md text-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all">
+                    <option value="">الكل</option>
+                </select>
+            </div>
+            <div>
+                <label class="font-label-md text-label-md text-secondary mb-xs block">نوع الحساب</label>
+                <select id="filterAccountType" class="w-full appearance-none bg-surface border border-outline-variant rounded-lg py-2 px-3 pr-10 font-body-md text-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all">
+                    <option value="">الكل</option>
+                    <option value="Cash">نقدي</option>
+                    <option value="Bank">بنكي</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex justify-end mt-md gap-sm">
+            <button class="px-md py-sm bg-surface border border-outline-variant rounded-lg font-label-md text-label-md text-on-surface hover:bg-surface-container transition-colors" onclick="resetFilters()">إعادة تعيين</button>
+            <button class="px-md py-sm bg-primary-container text-on-primary-container rounded-lg font-label-md text-label-md hover:bg-inverse-primary transition-colors" onclick="applyFilters()">بحث</button>
+        </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-right border-collapse" id="allTransactionsTable">
+                <thead>
+                    <tr class="bg-surface-container-highest/30">
+                        <th class="px-md py-3 font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant">التاريخ</th>
+                        <th class="px-md py-3 font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant">الوصف</th>
+                        <th class="px-md py-3 font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant">الحساب</th>
+                        <th class="px-md py-3 font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant">المبلغ</th>
+                        <th class="px-md py-3 font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant text-center">الاتجاه</th>
+                    </tr>
+                </thead>
+                <tbody id="allTransactionsBody" class="font-body-md text-body-md text-on-surface">
+                    <tr>
+                        <td colspan="5" class="py-12 text-center text-secondary">جاري التحميل...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="p-md border-t border-outline-variant flex justify-between items-center" id="paginationContainer" style="display:none;">
+            <span class="font-body-md text-body-md text-secondary" id="paginationInfo"></span>
+            <div class="flex gap-sm">
+                <button class="px-sm py-1 bg-surface border border-outline-variant rounded-lg font-label-md text-label-md text-on-surface hover:bg-surface-container transition-colors disabled:opacity-50" id="btnPrevPage" onclick="goToPage(currentPage - 1)">السابق</button>
+                <span class="px-sm py-1 font-label-md text-label-md text-secondary" id="pageIndicator"></span>
+                <button class="px-sm py-1 bg-surface border border-outline-variant rounded-lg font-label-md text-label-md text-on-surface hover:bg-surface-container transition-colors disabled:opacity-50" id="btnNextPage" onclick="goToPage(currentPage + 1)">التالي</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/financial-transactions.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,121 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "الحسابات المالية والخزينة";
+}
+
+<link rel="stylesheet" href="~/css/financial-accounts.css" />
+
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-md">
+    <div>
+        <h2 class="font-headline-lg text-headline-lg text-on-surface mb-xs">الحسابات المالية والخزينة</h2>
+        <p class="font-body-lg text-body-lg text-secondary">نظرة عامة على الأرصدة النقدية والحسابات البنكية.</p>
+    </div>
+    <div class="flex gap-sm">
+        <button class="flex items-center gap-xs px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-lg font-label-md text-label-md text-on-surface hover:bg-surface-container transition-colors shadow-sm" onclick="exportReport()">
+            <span class="material-symbols-outlined text-[18px]">download</span>
+            تصدير التقرير
+        </button>
+        <button class="flex items-center gap-xs px-md py-sm bg-primary-container text-on-primary-container rounded-lg font-label-md text-label-md hover:bg-inverse-primary transition-colors shadow-sm" onclick="openCreateAccountModal()">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            إضافة حساب
+        </button>
+    </div>
+</div>
+
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+    <!-- Cash Accounts Column -->
+    <div class="lg:col-span-1 flex flex-col gap-gutter">
+        <h3 class="font-title-lg text-title-lg text-on-surface mb-sm flex items-center gap-xs">
+            <span class="material-symbols-outlined text-primary">payments</span>
+            الخزينة النقدية
+        </h3>
+        <div id="cashAccountsContainer" class="flex flex-col gap-md">
+            <!-- Cash cards loaded via AJAX -->
+        </div>
+    </div>
+
+    <!-- Bank Accounts & Transactions Column -->
+    <div class="lg:col-span-2 flex flex-col gap-gutter">
+        <h3 class="font-title-lg text-title-lg text-on-surface mb-sm flex items-center gap-xs">
+            <span class="material-symbols-outlined text-primary">account_balance</span>
+            الحسابات البنكية
+        </h3>
+        <div id="bankAccountsContainer" class="flex flex-col gap-md max-h-[675px] overflow-y-auto">
+            <!-- Bank cards loaded via AJAX -->
+        </div>
+
+        <!-- Recent Transactions Table -->
+    </div>
+
+</div>
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.04)] overflow-hidden">
+    <div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+        <h4 class="font-title-lg text-title-lg text-on-surface">أحدث الحركات</h4>
+        <a asp-controller="FinancialTransactions" asp-action="Index" class="text-primary hover:text-primary-fixed font-label-md text-label-md transition-colors">عرض الكل</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-right border-collapse" id="recentTransactionsTable">
+            <thead>
+                <tr class="bg-surface-container-highest/30">
+                    <th class="px-md py-3 font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant">التاريخ</th>
+                    <th class="px-md py-3 font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant">الوصف</th>
+                    <th class="px-md py-3 font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant">الحساب</th>
+                    <th class="px-md py-3 font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant">المبلغ</th>
+                    <th class="px-md py-3 font-label-md text-label-md text-secondary uppercase tracking-wider border-b border-outline-variant text-center">الحالة</th>
+                </tr>
+            </thead>
+            <tbody id="recentTransactionsBody" class="font-body-md text-body-md text-on-surface">
+                <tr>
+                    <td colspan="5" class="py-12 text-center text-secondary">جاري التحميل...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create Bank Account Modal -->
+<div id="createAccountModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" id="createAccountModalOverlay" onclick="closeCreateAccountModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" id="createAccountModalContent">
+            <div class="p-md border-b border-outline-variant flex justify-between items-center">
+                <h3 class="font-title-lg text-title-lg text-on-surface">إضافة حساب بنكي</h3>
+                <button class="p-1 text-secondary hover:text-on-surface transition-colors" onclick="closeCreateAccountModal()">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form id="createAccountForm" class="p-md space-y-md" novalidate>
+                @Html.AntiForgeryToken()
+                <div>
+                    <label class="font-label-md text-label-md text-secondary mb-xs block">اسم الحساب</label>
+                    <input type="text" id="accountName" class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 font-body-md text-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm" placeholder="مثال: البنك العربي - جاري" />
+                    <span class="text-xs text-error hidden" id="accountNameError">اسم الحساب مطلوب</span>
+                </div>
+                <div>
+                    <label class="font-label-md text-label-md text-secondary mb-xs block">العملة</label>
+                    <select id="accountCurrency" class="w-full appearance-none bg-surface border border-outline-variant rounded-lg py-2 px-3 pr-10 font-body-lg text-body-lg focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm">
+                    </select>
+                </div>
+                <div>
+                    <label class="font-label-md text-label-md text-secondary mb-xs block">رقم الحساب</label>
+                    <input type="text" id="accountNumber" class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 font-data-mono text-data-mono text-left focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm" placeholder="اختياري — يتم توليده تلقائياً" />
+                </div>
+                <div>
+                    <label class="font-label-md text-label-md text-secondary mb-xs block">ملاحظات</label>
+                    <input type="text" id="accountNotes" class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 font-body-md text-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm" placeholder="ملاحظات اختيارية..." />
+                </div>
+                <div class="pt-sm">
+                    <button type="button" id="btnSubmitAccount" class="w-full bg-primary-container text-on-primary-container font-body-lg text-body-lg font-bold py-2 rounded-lg hover:bg-inverse-primary transition-colors shadow-sm" onclick="submitCreateAccount()">
+                        إنشاء الحساب
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/financial-accounts.js" asp-append-version="true"></script>
+}

@@ -1,5 +1,4 @@
 using Domain.Suppliers;
-using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -26,11 +25,6 @@ internal sealed class SupplierGoldLedgerEntryConfiguration : IEntityTypeConfigur
         builder.HasOne<Supplier>()
             .WithMany()
             .HasForeignKey(entry => entry.SupplierId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasOne<User>()
-            .WithMany()
-            .HasForeignKey(entry => entry.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(entry => new { entry.SupplierId, entry.Date });

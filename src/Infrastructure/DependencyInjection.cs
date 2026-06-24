@@ -1,16 +1,21 @@
 ﻿using System.Text;
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
+using Application.Abstractions.Services;
 using Infrastructure.Authentication;
 using Infrastructure.Authorization;
 using Infrastructure.Data;
 using Infrastructure.Database;
 using Infrastructure.DomainEvents;
+using Infrastructure.GoldPrices;
 using Infrastructure.Time;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -24,17 +29,25 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration) =>
         services
-            .AddServices()
+            .AddServices(configuration)
             .AddDatabase(configuration)
-            .AddHealthChecks(configuration)
-            .AddAuthenticationInternal(configuration)
+            .AddAuthenticationInternal()
             .AddAuthorizationInternal();
 
-    private static IServiceCollection AddServices(this IServiceCollection services)
+    private static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
         services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
+
+        services.Configure<GoldApiOptions>(configuration.GetSection("GoldApi"));
+        services.AddMemoryCache();
+        services.AddHttpClient("GoldApi", client =>
+        {
+            client.BaseAddress = new Uri("https://www.goldapi.io");
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+        services.AddScoped<IGoldPriceService, GoldPriceService>();
 
         return services;
     }
@@ -53,36 +66,33 @@ public static class DependencyInjection
         return services;
     }
 
-    private static IServiceCollection AddHealthChecks(this IServiceCollection services, IConfiguration configuration)
-    {
-        services
-            .AddHealthChecks()
-            .AddNpgSql(configuration.GetConnectionString("Database")!);
-
-        return services;
-    }
-
     private static IServiceCollection AddAuthenticationInternal(
-        this IServiceCollection services,
-        IConfiguration configuration)
+        this IServiceCollection services)
     {
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(o =>
-            {
-                o.RequireHttpsMetadata = false;
-                o.TokenValidationParameters = new TokenValidationParameters
-                {
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Secret"]!)),
-                    ValidIssuer = configuration["Jwt:Issuer"],
-                    ValidAudience = configuration["Jwt:Audience"],
-                    ClockSkew = TimeSpan.Zero
-                };
-            });
+           services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(opts =>
+    {
+        opts.LoginPath = "/Account/Login";
+        opts.LogoutPath = "/Account/Logout";
+        opts.AccessDeniedPath = "/Account/AccessDenied";
+
+        // Sliding session — each request resets the expiry
+        opts.SlidingExpiration = true;
+        opts.ExpireTimeSpan = TimeSpan.FromHours(8);
+
+        // Cookie hardening
+        opts.Cookie.Name = "GoldStoreAuth.Session";
+        opts.Cookie.HttpOnly = true;              // JS cannot read the cookie
+        opts.Cookie.SecurePolicy = CookieSecurePolicy.Always; // HTTPS only in prod
+        opts.Cookie.SameSite = SameSiteMode.Strict;
+        opts.Cookie.IsEssential = true;
+    });
 
         services.AddHttpContextAccessor();
         services.AddScoped<IUserContext, UserContext>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
-        services.AddSingleton<ITokenProvider, TokenProvider>();
+        services.AddScoped<IAuthSessionManager, CookieAuthSessionManager>();
 
         return services;
     }

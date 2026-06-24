@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html class="light" dir="rtl" lang="ar" style="width: 1280px; height: 1024px; overflow: hidden; position: relative;">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>@ViewData["Title"] - مجوهرات سرحان</title>
+    <!-- Tailwind CSS (pre-built static) -->
+    <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
+    <!-- Google Fonts: IBM Plex Sans Arabic (preloaded) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&amp;display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+    <!-- Material Symbols Outlined (non-blocking) -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <!-- Custom CSS -->
+    <link href="~/css/identity.css" rel="stylesheet" />
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex selection:bg-primary-container selection:text-on-primary-container">
+    <!-- Main Container: Asymmetric Split Screen -->
+    <main class="flex flex-col md:flex-row w-full h-screen">
+        @RenderBody()
+
+    </main>
+
+    <div id="snapdom-sandbox" data-snapdom-sandbox="true" aria-hidden="true" style="position: absolute; left: -9999px; top: -9999px; width: 0px; height: 0px; overflow: hidden;"></div></body>
+</html>

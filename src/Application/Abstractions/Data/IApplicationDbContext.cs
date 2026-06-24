@@ -1,6 +1,10 @@
-using Domain.Catalog;
+﻿using Domain.Catalog;
+using Domain.CustomerPurchases;
+using Domain.Debts;
+using Domain.Expenses;
 using Domain.Finance;
 using Domain.Inventory;
+using Domain.Sales;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
 using Domain.Todos;
@@ -17,12 +21,27 @@ public interface IApplicationDbContext
     DbSet<FinancialAccount> FinancialAccounts { get; }
     DbSet<Category> Categories { get; }
     DbSet<GoldLedgerEntry> GoldLedgerEntries { get; }
+    DbSet<InventoryAdjustment> InventoryAdjustments { get; }
     DbSet<Supplier> Suppliers { get; }
     DbSet<SupplierGoldLedgerEntry> SupplierGoldLedgerEntries { get; }
     DbSet<SupplierManufacturingLedgerEntry> SupplierManufacturingLedgerEntries { get; }
     DbSet<SupplierDelivery> SupplierDeliveries { get; }
     DbSet<SupplierScrapGoldPayment> SupplierScrapGoldPayments { get; }
     DbSet<SupplierManufacturingPayment> SupplierManufacturingPayments { get; }
+    DbSet<Expense> Expenses { get; }
+    DbSet<ExpenseCategory> ExpenseCategories { get; }
+
+    DbSet<Debt> Debts { get; }
+
+    DbSet<DebtLedgerEntry> DebtLedgerEntries { get; }
+
+    DbSet<SalesInvoice> SalesInvoices { get; }
+
+    DbSet<SalesInvoiceItem> SalesInvoiceItems { get; }
+
+    DbSet<CustomerPurchaseInvoice> CustomerPurchaseInvoices { get; }
+
+    DbSet<CustomerPurchaseInvoiceItem> CustomerPurchaseInvoiceItems { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

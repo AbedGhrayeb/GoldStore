@@ -1,0 +1,151 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "توريد مورد";
+}
+
+<link rel="stylesheet" href="~/css/supplier-delivery.css" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h2 class="font-headline-lg text-headline-lg text-on-surface">توريد مورد جديد</h2>
+            <p class="font-body-lg text-body-lg text-secondary mt-1">إدخال تفاصيل الذهب المورد وحساب المصنعية</p>
+        </div>
+        <a asp-controller="Suppliers" asp-action="Index" class="text-secondary hover:text-on-surface p-2 rounded-full hover:bg-surface-variant transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </a>
+    </div>
+
+    <!-- Wizard Container -->
+    <div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/50 overflow-hidden">
+        <!-- Progress Indicator -->
+        <div class="bg-surface-container-low px-4 py-3 border-b border-outline-variant/30 flex justify-between items-center relative">
+            <div class="absolute right-4 left-4 top-1/2 -translate-y-1/2 h-[2px] bg-surface-variant -z-0"></div>
+            <div class="absolute right-4 h-[2px] bg-primary-container z-0 transition-all duration-500" id="progress-line" style="width: 0%"></div>
+
+            <div class="flex flex-col items-center z-10 bg-surface-container-low px-2 step-nav active" data-step="1" id="step-nav-1">
+                <div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-title-lg text-title-lg mb-1 border-2 border-surface-container-low">1</div>
+                <span class="font-label-md text-label-md text-on-surface">المورد</span>
+            </div>
+            <div class="flex flex-col items-center z-10 bg-surface-container-low px-2 step-nav" data-step="2" id="step-nav-2">
+                <div class="w-8 h-8 rounded-full bg-surface-variant text-secondary flex items-center justify-center font-title-lg text-title-lg mb-1 border-2 border-surface-container-low">2</div>
+                <span class="font-label-md text-label-md text-secondary">الذهب</span>
+            </div>
+            <div class="flex flex-col items-center z-10 bg-surface-container-low px-2 step-nav" data-step="3" id="step-nav-3">
+                <div class="w-8 h-8 rounded-full bg-surface-variant text-secondary flex items-center justify-center font-title-lg text-title-lg mb-1 border-2 border-surface-container-low">3</div>
+                <span class="font-label-md text-label-md text-secondary">المصنعية</span>
+            </div>
+            <div class="flex flex-col items-center z-10 bg-surface-container-low px-2 step-nav" data-step="4" id="step-nav-4">
+                <div class="w-8 h-8 rounded-full bg-surface-variant text-secondary flex items-center justify-center font-title-lg text-title-lg mb-1 border-2 border-surface-container-low">4</div>
+                <span class="font-label-md text-label-md text-secondary">تأكيد</span>
+            </div>
+        </div>
+
+        <!-- Form Steps Area -->
+        <form id="deliveryForm" class="p-6 relative min-h-[400px]" novalidate>
+            @Html.AntiForgeryToken()
+
+            <!-- Step 1: Supplier Selection -->
+            <div class="delivery-step block" id="step-1">
+                <h3 class="font-title-lg text-title-lg text-on-surface mb-4">اختر المورد</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="col-span-1 md:col-span-2">
+                        <label class="block font-label-md text-label-md text-secondary mb-1">اسم المورد</label>
+                        <select id="supplierSelect" class="w-full bg-transparent border border-outline rounded-lg py-2 px-3 font-body-lg text-body-lg text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none appearance-none" onchange="onSupplierSelected()">
+                            <option value="">اختر مورد...</option>
+                        </select>
+                        <span class="text-xs text-error hidden" id="supplierError">يجب اختيار المورد</span>
+                    </div>
+                    <div>
+                        <label class="block font-label-md text-label-md text-secondary mb-1">رصيد الذهب (عيار 21)</label>
+                        <div class="relative">
+                            <input type="text" id="supplierGoldBalance" class="w-full bg-surface-variant/50 border border-outline-variant rounded-lg py-2 pl-10 pr-3 font-data-mono text-data-mono text-secondary cursor-not-allowed text-left dir-ltr" disabled placeholder="—" />
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 font-label-md text-label-md text-primary">جم</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-label-md text-label-md text-secondary mb-1">أجور التصنيع المستحقة</label>
+                        <div class="relative">
+                            <input type="text" id="supplierMfgBalance" class="w-full bg-surface-variant/50 border border-outline-variant rounded-lg py-2 pl-10 pr-3 font-data-mono text-data-mono text-secondary cursor-not-allowed text-left dir-ltr" disabled placeholder="—" />
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 font-label-md text-label-md text-primary">د.إ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Gold Details -->
+            <div class="delivery-step hidden" id="step-2">
+                <h3 class="font-title-lg text-title-lg text-on-surface mb-4">تفاصيل الذهب المورد</h3>
+                <div class="space-y-4" id="goldLines">
+                    <!-- Line items will be rendered by JS -->
+                </div>
+                <button type="button" onclick="addGoldLine()" class="text-primary font-label-md text-label-md flex items-center gap-1 hover:bg-surface-container-low py-2 px-3 rounded-lg transition-colors mt-4">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                    إضافة صنف آخر
+                </button>
+            </div>
+
+            <!-- Step 3: Manufacturing Fee -->
+            <div class="delivery-step hidden" id="step-3">
+                <h3 class="font-title-lg text-title-lg text-on-surface mb-4">أجور التصنيع</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-label-md text-label-md text-secondary mb-1">أجور التصنيع لكل جرام (عيار 21)</label>
+                        <div class="relative">
+                            <input type="number" id="mfgFeePerGram" step="0.01" min="0" class="w-full bg-surface-container-lowest border border-outline rounded-lg py-2 pl-16 pr-3 font-data-mono text-data-mono text-on-surface focus:border-primary-container outline-none text-left dir-ltr" placeholder="0.00" oninput="calculateTotalMfg()" />
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 font-label-md text-label-md text-primary">/جم</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-label-md text-label-md text-secondary mb-1">العملة</label>
+                        <select id="mfgCurrency" class="w-full bg-transparent border border-outline rounded-lg py-2 px-3 font-body-lg text-body-lg text-on-surface focus:border-primary-container outline-none appearance-none">
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4 p-4 bg-surface-container rounded-lg border border-outline-variant/30">
+                    <div class="flex justify-between items-center">
+                        <span class="font-body-lg text-body-lg text-secondary">إجمالي أجور التصنيع</span>
+                        <span class="font-title-lg text-title-lg text-on-surface font-bold" id="totalMfgFee" dir="ltr">0.00</span>
+                    </div>
+                    <p class="text-xs text-secondary mt-1">= أجور التصنيع/جم × مجموع الوزن المكافئ (عيار 21)</p>
+                </div>
+            </div>
+
+            <!-- Step 4: Review & Confirm -->
+            <div class="delivery-step hidden" id="step-4">
+                <h3 class="font-title-lg text-title-lg text-on-surface mb-4">مراجعة وتأكيد</h3>
+                <div class="space-y-4" id="reviewSection">
+                    <!-- Filled by JS -->
+                </div>
+                <div class="mt-4">
+                    <label class="block font-label-md text-label-md text-secondary mb-1">ملاحظات (اختياري)</label>
+                    <textarea id="deliveryNotes" rows="3" class="w-full bg-surface-container-lowest border border-outline rounded-lg py-2 px-3 font-body-lg text-body-lg text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none resize-y" placeholder="أي ملاحظات إضافية..."></textarea>
+                </div>
+            </div>
+        </form>
+
+        <!-- Footer Actions -->
+        <div class="bg-surface-container-low px-6 py-3 border-t border-outline-variant/30 flex justify-between items-center">
+            <button type="button" class="hidden px-5 py-2 rounded-lg font-body-lg text-body-lg text-secondary border border-outline hover:bg-surface-container-highest transition-colors" id="btn-prev" onclick="prevStep()">
+                السابق
+            </button>
+            <div class="flex-1" id="spacer"></div>
+            <button type="button" class="bg-primary text-white px-5 py-2 rounded-lg font-body-lg text-body-lg font-bold hover:opacity-90 transition-opacity flex items-center gap-2" id="btn-next" onclick="nextStep()">
+                التالي
+                <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+            <button type="button" class="hidden bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-body-lg text-body-lg font-bold transition-colors flex items-center gap-2" id="btn-submit" onclick="submitDelivery()">
+                تأكيد التوريد
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/supplier-delivery.js" asp-append-version="true"></script>
+}

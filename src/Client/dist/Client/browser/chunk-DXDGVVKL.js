@@ -1,1 +1,0 @@
-import"./chunk-2NFLSA4Y.js";var t=[{path:"",loadComponent:()=>import("./chunk-MJX3NY5F.js").then(e=>e.ExpensesListComponent)},{path:"create",loadComponent:()=>import("./chunk-PWLS5AI4.js").then(e=>e.CreateExpenseComponent)}];export{t as default};

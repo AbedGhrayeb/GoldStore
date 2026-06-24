@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>إدارة أسعار الذهب - بريق للذهب</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#1a1b22",
+                        "error": "#ba1a1a",
+                        "secondary": "#5f5e5e",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#6ffbbe",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-bright": "#fbf8ff",
+                        "on-error-container": "#93000a",
+                        "on-background": "#1a1b22",
+                        "surface-container": "#eeedf7",
+                        "on-secondary-fixed-variant": "#474746",
+                        "primary-container": "#d4af37",
+                        "on-primary-fixed": "#241a00",
+                        "inverse-on-surface": "#f1effa",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#e3e1ec",
+                        "tertiary-container": "#33ca90",
+                        "surface-dim": "#dad9e3",
+                        "on-secondary": "#ffffff",
+                        "primary": "#735c00",
+                        "on-primary-container": "#554300",
+                        "outline-variant": "#d0c5af",
+                        "on-tertiary-container": "#005035",
+                        "primary-fixed": "#ffe088",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#e2dfde",
+                        "inverse-primary": "#e9c349",
+                        "secondary-fixed": "#e5e2e1",
+                        "surface": "#fbf8ff",
+                        "inverse-surface": "#2f3038",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "surface-container-high": "#e8e7f1",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "on-surface-variant": "#4d4635",
+                        "surface-tint": "#735c00",
+                        "on-primary-fixed-variant": "#574500",
+                        "on-secondary-container": "#636262",
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#f4f2fd",
+                        "tertiary": "#006c49",
+                        "primary-fixed-dim": "#e9c349",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-variant": "#e3e1ec",
+                        "outline": "#7f7663",
+                        "background": "#fbf8ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "xl": "64px",
+                        "gutter": "24px",
+                        "container-max": "1440px",
+                        "md": "24px",
+                        "lg": "40px",
+                        "sm": "12px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["IBM Plex Sans Arabic"],
+                        "headline-lg": ["IBM Plex Sans Arabic"],
+                        "body-md": ["IBM Plex Sans Arabic"],
+                        "body-lg": ["IBM Plex Sans Arabic"],
+                        "display-lg": ["IBM Plex Sans Arabic"],
+                        "label-md": ["IBM Plex Sans Arabic"],
+                        "title-lg": ["IBM Plex Sans Arabic"],
+                        "data-mono": ["IBM Plex Sans Arabic"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["40px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'IBM Plex Sans Arabic', sans-serif; background-color: #fbf8ff; color: #1a1b22; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- TopAppBar -->
+<header class="flex flex-row-reverse justify-between items-center px-gutter h-16 w-[calc(100%-280px)] fixed top-0 left-0 z-40 bg-surface/80 backdrop-blur-md border-b border-outline-variant flat no shadows">
+<div class="flex items-center gap-md">
+<h1 class="font-headline-md text-headline-md font-black text-primary dark:text-primary-fixed">بريق للذهب</h1>
+</div>
+<div class="flex items-center gap-sm">
+<button class="text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full p-2 transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full p-2 transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-full p-2 transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden ml-sm">
+<img alt="صورة المستخدم الشخصية" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCuAASMgrnjL4MyYmallv6W6vKZT8OSCJcefe53mtYJA5wB4rU5HLUxhOGnwta1UNFhmdO5gGBHWFacWMtrY6QGTNhcHAqbR1kCNtJJ_O5UMeft_-l_Bu5R7q2VbtRXQEdjH-b15cY6NXb1PVBjswY5d3yDAcMA9Z2ogNOLgmj__svgsZeTaB6ORmwtzaH2HXhp2UdVFuU_ofyCteA2Vu2af3SSLWAyAXlYNP3BIs74M__S1HvDHliUT1p3TOigbnZSsJRcjPpwxE"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="flex flex-col h-full w-[280px] fixed right-0 top-0 z-50 text-right bg-surface-container-lowest dark:bg-inverse-surface border-l border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+<div class="p-gutter border-b border-outline-variant flex items-center gap-sm">
+<div class="w-10 h-10 rounded bg-primary-container flex items-center justify-center text-on-primary-container font-bold text-lg">ب</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed">بريق للذهب</h2>
+<p class="font-label-md text-label-md text-secondary">نظام إدارة الذهب</p>
+</div>
+</div>
+<div class="p-md">
+<button class="w-full bg-primary-container text-on-tertiary font-body-lg text-body-lg py-sm rounded-lg hover:bg-primary transition-colors flex items-center justify-center gap-2 mb-md">
+<span class="material-symbols-outlined text-on-tertiary">add</span>
+                عملية بيع جديدة
+            </button>
+</div>
+<ul class="flex-1 overflow-y-auto px-sm py-sm space-y-1">
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>لوحة القيادة</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span>المخزون</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>المبيعات</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>الموردين</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-primary dark:text-primary-fixed border-r-2 border-primary bg-surface-container-high dark:bg-surface-variant font-bold font-body-lg text-body-lg active:scale-[0.99] transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span>المالية</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span>التقارير</span>
+</a>
+</li>
+</ul>
+<div class="p-sm border-t border-outline-variant">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>الإعدادات</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>تسجيل الخروج</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-0 mr-[280px] mt-16 p-gutter min-h-[calc(100vh-64px)]">
+<!-- Header Section -->
+<div class="mb-xl flex justify-between items-end">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-xs">إدارة أسعار الذهب</h2>
+<p class="font-body-md text-body-md text-secondary">تحديث ومراقبة أسعار السوق الحية.</p>
+</div>
+<div class="font-data-mono text-data-mono text-secondary flex items-center gap-sm">
+<span class="material-symbols-outlined text-sm">schedule</span>
+                آخر تحديث: اليوم، 10:45 ص
+            </div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- KPIs Row -->
+<div class="col-span-12 grid grid-cols-3 gap-gutter mb-gutter">
+<!-- Current Price Card -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-2 h-full bg-primary-container"></div>
+<div class="flex justify-between items-start mb-sm">
+<h3 class="font-title-lg text-title-lg text-on-surface-variant">عيار 21</h3>
+<span class="material-symbols-outlined text-primary-container">monetization_on</span>
+</div>
+<div class="flex items-end gap-sm mb-xs">
+<span class="font-display-lg text-display-lg text-on-surface">2,450</span>
+<span class="font-label-md text-label-md text-secondary pb-2">ر.س / جرام</span>
+</div>
+<div class="flex items-center gap-xs text-tertiary font-label-md text-label-md">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>+1.2% من الأمس</span>
+</div>
+</div>
+<!-- Highest Price Card -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant relative overflow-hidden">
+<div class="flex justify-between items-start mb-sm">
+<h3 class="font-title-lg text-title-lg text-on-surface-variant">أعلى سعر (30 يوم)</h3>
+<span class="material-symbols-outlined text-secondary">show_chart</span>
+</div>
+<div class="flex items-end gap-sm mb-xs">
+<span class="font-display-lg text-display-lg text-on-surface">2,510</span>
+<span class="font-label-md text-label-md text-secondary pb-2">ر.س / جرام</span>
+</div>
+<div class="flex items-center gap-xs text-secondary font-label-md text-label-md">
+<span>سجل في 12 أكتوبر</span>
+</div>
+</div>
+<!-- Lowest Price Card -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant relative overflow-hidden">
+<div class="flex justify-between items-start mb-sm">
+<h3 class="font-title-lg text-title-lg text-on-surface-variant">أدنى سعر (30 يوم)</h3>
+<span class="material-symbols-outlined text-secondary">bar_chart</span>
+</div>
+<div class="flex items-end gap-sm mb-xs">
+<span class="font-display-lg text-display-lg text-on-surface">2,380</span>
+<span class="font-label-md text-label-md text-secondary pb-2">ر.س / جرام</span>
+</div>
+<div class="flex items-center gap-xs text-secondary font-label-md text-label-md">
+<span>سجل في 28 سبتمبر</span>
+</div>
+</div>
+</div>
+<!-- Chart & Form Row -->
+<div class="col-span-12 lg:col-span-8 flex flex-col gap-gutter">
+<!-- Main Chart Container (Placeholder) -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant h-full min-h-[400px] flex flex-col">
+<div class="flex justify-between items-center mb-lg">
+<h3 class="font-title-lg text-title-lg text-on-surface">اتجاهات السوق</h3>
+<div class="flex gap-2">
+<button class="px-sm py-xs text-label-md font-label-md rounded bg-surface-container text-on-surface-variant hover:bg-surface-variant transition-colors">يومي</button>
+<button class="px-sm py-xs text-label-md font-label-md rounded bg-primary-container text-on-primary-container">شهري</button>
+<button class="px-sm py-xs text-label-md font-label-md rounded bg-surface-container text-on-surface-variant hover:bg-surface-variant transition-colors">سنوي</button>
+</div>
+</div>
+<!-- Stylized Chart Area Placeholder -->
+<div class="flex-1 w-full relative bg-surface-container-low rounded-lg border border-surface-dim overflow-hidden flex items-end px-md pb-md pt-xl gap-2">
+<!-- Decorative Bars for visual representation of chart -->
+<div class="w-full flex justify-between items-end h-full gap-2 opacity-70">
+<div class="w-full bg-primary-container rounded-t-sm h-[40%] hover:opacity-100 transition-opacity relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-data-mono text-xs bg-surface-variant px-2 rounded">2400</div></div>
+<div class="w-full bg-primary-container rounded-t-sm h-[45%] hover:opacity-100 transition-opacity relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-data-mono text-xs bg-surface-variant px-2 rounded">2420</div></div>
+<div class="w-full bg-surface-dim rounded-t-sm h-[35%] hover:opacity-100 transition-opacity relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-data-mono text-xs bg-surface-variant px-2 rounded">2380</div></div>
+<div class="w-full bg-primary-container rounded-t-sm h-[50%] hover:opacity-100 transition-opacity relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-data-mono text-xs bg-surface-variant px-2 rounded">2430</div></div>
+<div class="w-full bg-primary-container rounded-t-sm h-[60%] hover:opacity-100 transition-opacity relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-data-mono text-xs bg-surface-variant px-2 rounded">2460</div></div>
+<div class="w-full bg-primary-container rounded-t-sm h-[55%] hover:opacity-100 transition-opacity relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-data-mono text-xs bg-surface-variant px-2 rounded">2450</div></div>
+<div class="w-full bg-surface-dim rounded-t-sm h-[48%] hover:opacity-100 transition-opacity relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-data-mono text-xs bg-surface-variant px-2 rounded">2410</div></div>
+<div class="w-full bg-primary-container rounded-t-sm h-[65%] hover:opacity-100 transition-opacity relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-data-mono text-xs bg-surface-variant px-2 rounded">2480</div></div>
+<div class="w-full bg-primary-container rounded-t-sm h-[70%] hover:opacity-100 transition-opacity relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-data-mono text-xs bg-surface-variant px-2 rounded">2500</div></div>
+<div class="w-full bg-surface-dim rounded-t-sm h-[60%] hover:opacity-100 transition-opacity relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-data-mono text-xs bg-surface-variant px-2 rounded">2460</div></div>
+<div class="w-full bg-primary-container rounded-t-sm h-[80%] hover:opacity-100 transition-opacity relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-data-mono text-xs bg-surface-variant px-2 rounded">2510</div></div>
+<div class="w-full bg-primary-container rounded-t-sm h-[65%] hover:opacity-100 transition-opacity relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-data-mono text-xs bg-surface-variant px-2 rounded">2450</div></div>
+</div>
+<!-- Horizontal grid lines -->
+<div class="absolute inset-0 pointer-events-none flex flex-col justify-between py-md opacity-20">
+<div class="border-b border-outline-variant w-full"></div>
+<div class="border-b border-outline-variant w-full"></div>
+<div class="border-b border-outline-variant w-full"></div>
+<div class="border-b border-outline-variant w-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Update Form -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-gutter">
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant h-full">
+<div class="flex items-center gap-sm mb-lg">
+<span class="material-symbols-outlined text-primary-container">edit_square</span>
+<h3 class="font-title-lg text-title-lg text-on-surface">تحديث الأسعار اليومية</h3>
+</div>
+<form class="space-y-md">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs">عيار 24</label>
+<div class="relative flex items-center">
+<span class="absolute right-3 font-data-mono text-secondary">ر.س</span>
+<input class="w-full bg-transparent border border-outline-variant rounded-lg py-sm pr-12 pl-3 font-data-mono text-right focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all" type="number" value="2800"/>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs">عيار 22</label>
+<div class="relative flex items-center">
+<span class="absolute right-3 font-data-mono text-secondary">ر.س</span>
+<input class="w-full bg-transparent border border-outline-variant rounded-lg py-sm pr-12 pl-3 font-data-mono text-right focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all" type="number" value="2566"/>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs">عيار 21 (الرئيسي)</label>
+<div class="relative flex items-center">
+<span class="absolute right-3 font-data-mono text-primary-container">ر.س</span>
+<input class="w-full bg-surface-container-low border border-primary-container rounded-lg py-sm pr-12 pl-3 font-data-mono text-right focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all shadow-[0_0_8px_rgba(212,175,55,0.15)]" type="number" value="2450"/>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs">عيار 18</label>
+<div class="relative flex items-center">
+<span class="absolute right-3 font-data-mono text-secondary">ر.س</span>
+<input class="w-full bg-transparent border border-outline-variant rounded-lg py-sm pr-12 pl-3 font-data-mono text-right focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all" type="number" value="2100"/>
+</div>
+</div>
+<div class="pt-sm mt-md border-t border-outline-variant flex justify-end gap-sm">
+<button class="px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant border border-outline-variant hover:bg-surface-container transition-colors" type="button">إلغاء</button>
+<button class="px-md py-sm rounded-lg font-label-md text-label-md bg-on-background text-on-tertiary hover:opacity-90 transition-opacity" type="button">حفظ التحديث</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+</main>
+</body></html>

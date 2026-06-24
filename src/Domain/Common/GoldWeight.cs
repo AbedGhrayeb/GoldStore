@@ -25,6 +25,10 @@ public sealed record GoldWeight
         return new GoldWeight(weightInGrams, karat);
     }
 
-    public static decimal CalculateEquivalent21KWeight(decimal weightInGrams, Karat karat) =>
-        weightInGrams * (decimal)karat / (decimal)Karat.K21;
+    public static decimal CalculateEquivalent21KWeight(decimal weightInGrams, Karat karat)
+    {
+      return Math.Round(karat == Karat.K24 ? weightInGrams / 875*1000 : karat == Karat.K18 ? weightInGrams *700 / 875 : weightInGrams,3);
+    }
+
+    //weightInGrams * (decimal)karat / (decimal)Karat.K21;
 }

@@ -7,5 +7,7 @@ public enum FinancialReferenceType
     SupplierManufacturingPayment = 3,
     Expense = 4,
     SalaryPayment = 5,
-    ManualAdjustment = 6
+    ManualAdjustment = 6,
+    DebtCreation = 7,
+    DebtPayment = 8
 }

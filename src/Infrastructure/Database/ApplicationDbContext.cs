@@ -1,7 +1,11 @@
-using Application.Abstractions.Data;
+﻿using Application.Abstractions.Data;
 using Domain.Catalog;
+using Domain.CustomerPurchases;
+using Domain.Debts;
+using Domain.Expenses;
 using Domain.Finance;
 using Domain.Inventory;
+using Domain.Sales;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
 using Domain.Todos;
@@ -29,6 +33,8 @@ public sealed class ApplicationDbContext(
 
     public DbSet<GoldLedgerEntry> GoldLedgerEntries { get; set; }
 
+    public DbSet<InventoryAdjustment> InventoryAdjustments { get; set; }
+
     public DbSet<Supplier> Suppliers { get; set; }
 
     public DbSet<SupplierGoldLedgerEntry> SupplierGoldLedgerEntries { get; set; }
@@ -40,6 +46,22 @@ public sealed class ApplicationDbContext(
     public DbSet<SupplierScrapGoldPayment> SupplierScrapGoldPayments { get; set; }
 
     public DbSet<SupplierManufacturingPayment> SupplierManufacturingPayments { get; set; }
+
+    public DbSet<Expense> Expenses { get; set; }
+
+    public DbSet<ExpenseCategory> ExpenseCategories { get; set; }
+
+    public DbSet<Debt> Debts { get; set; }
+
+    public DbSet<DebtLedgerEntry> DebtLedgerEntries { get; set; }
+
+    public DbSet<SalesInvoice> SalesInvoices { get; set; }
+
+    public DbSet<SalesInvoiceItem> SalesInvoiceItems { get; set; }
+
+    public DbSet<CustomerPurchaseInvoice> CustomerPurchaseInvoices { get; set; }
+
+    public DbSet<CustomerPurchaseInvoiceItem> CustomerPurchaseInvoiceItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
