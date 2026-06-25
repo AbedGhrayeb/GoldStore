@@ -36,7 +36,7 @@ internal sealed class CreateSupplierScrapGoldPaymentCommandHandler(
 
         var payment = new SupplierScrapGoldPayment
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             SupplierId = command.SupplierId,
             Karat = karat,
             WeightInGrams = command.WeightInGrams,
@@ -49,7 +49,7 @@ internal sealed class CreateSupplierScrapGoldPaymentCommandHandler(
 
         context.SupplierGoldLedgerEntries.Add(new SupplierGoldLedgerEntry
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             SupplierId = command.SupplierId,
             Karat = karat,
             WeightInGrams = command.WeightInGrams,
@@ -63,7 +63,7 @@ internal sealed class CreateSupplierScrapGoldPaymentCommandHandler(
 
         context.GoldLedgerEntries.Add(new GoldLedgerEntry
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Karat = karat,
             WeightInGrams = command.WeightInGrams,
             Equivalent21KWeightInGrams = equivalent21K,

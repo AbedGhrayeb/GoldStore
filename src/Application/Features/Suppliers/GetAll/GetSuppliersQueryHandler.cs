@@ -12,7 +12,7 @@ internal sealed class GetSuppliersQueryHandler(IApplicationDbContext context)
     public async Task<Result<List<SupplierResponse>>> Handle(GetSuppliersQuery query, CancellationToken cancellationToken)
     {
         List<SupplierResponse> suppliers = await context.Suppliers.AsNoTracking()
-            .OrderBy(s => s.Name)
+            .OrderByDescending(s => s)
             .Select(s => new SupplierResponse
             {
                 Id = s.Id,

@@ -31,7 +31,7 @@ internal sealed class CreateDebtCommandHandler(
             return Result.Failure<Guid>(DebtErrors.AccountCurrencyMismatch);
         }
 
-        var debtId = Guid.NewGuid();
+        var debtId = Guid.CreateVersion7();
 
         var debt = new Debt
         {
@@ -49,7 +49,7 @@ internal sealed class CreateDebtCommandHandler(
 
         context.DebtLedgerEntries.Add(new DebtLedgerEntry
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             DebtId = debtId,
             Amount = command.Amount,
             MovementType = DebtBalanceMovementType.Increase,
@@ -66,7 +66,7 @@ internal sealed class CreateDebtCommandHandler(
 
         context.FinancialTransactions.Add(new FinancialTransaction
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             AccountId = command.AccountId,
             Currency = account.Currency,
             Amount = command.Amount,

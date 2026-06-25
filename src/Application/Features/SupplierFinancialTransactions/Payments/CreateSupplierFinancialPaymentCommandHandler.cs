@@ -43,7 +43,7 @@ internal sealed class CreateSupplierFinancialPaymentCommandHandler(
         if (command.Amount > outstandingBalance)
             return Result.Failure<Guid>(SupplierFinancialErrors.PaymentExceedsBalance(command.Amount, outstandingBalance));
 
-        var paymentId = Guid.NewGuid();
+        var paymentId = Guid.CreateVersion7();
 
         context.SupplierFinancialPayments.Add(new SupplierFinancialPayment
         {
@@ -57,7 +57,7 @@ internal sealed class CreateSupplierFinancialPaymentCommandHandler(
 
         context.SupplierFinancialLedgerEntries.Add(new SupplierFinancialLedgerEntry
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             SupplierFinancialTransactionId = command.TransactionId,
             Amount = command.Amount,
             MovementType = SupplierBalanceMovementType.Decrease,
@@ -74,7 +74,7 @@ internal sealed class CreateSupplierFinancialPaymentCommandHandler(
 
         context.FinancialTransactions.Add(new FinancialTransaction
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             AccountId = command.AccountId,
             Currency = account.Currency,
             Amount = command.Amount,

@@ -15,7 +15,7 @@ internal sealed class GetExpenseCategoriesQueryHandler(IApplicationDbContext con
         List<ExpenseCategoryResponse> categories = await context.ExpenseCategories
             .AsNoTracking()
             .Where(c => query.ActiveOnly ? c.IsActive : true)
-            .OrderBy(c => c.Name)
+            .OrderByDescending(c => c)
             .Select(c => new ExpenseCategoryResponse
             {
                 Id = c.Id,

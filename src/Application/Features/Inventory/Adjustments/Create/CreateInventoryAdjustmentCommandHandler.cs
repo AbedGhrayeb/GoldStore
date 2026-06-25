@@ -25,7 +25,7 @@ internal sealed class CreateInventoryAdjustmentCommandHandler(
 
         var adjustment = new InventoryAdjustment
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Type = adjustmentType,
             Karat = karat,
             WeightInGrams = command.WeightInGrams,
@@ -52,7 +52,7 @@ internal sealed class CreateInventoryAdjustmentCommandHandler(
 
             context.GoldLedgerEntries.Add(new GoldLedgerEntry
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 Karat = karat,
                 WeightInGrams = command.WeightInGrams,
                 Equivalent21KWeightInGrams = equivalent21K,

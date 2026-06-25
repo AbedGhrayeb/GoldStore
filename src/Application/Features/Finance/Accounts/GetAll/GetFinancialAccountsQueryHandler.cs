@@ -19,7 +19,7 @@ internal sealed class GetFinancialAccountsQueryHandler(IApplicationDbContext con
         }
 
         List<FinancialAccountResponse> result = await accounts
-            .OrderBy(a => a.Name)
+            .OrderByDescending(a => a)
             .Select(a => new FinancialAccountResponse
             {
                 Id = a.Id,

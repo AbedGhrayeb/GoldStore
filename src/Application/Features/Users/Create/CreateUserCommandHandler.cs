@@ -19,7 +19,7 @@ internal sealed class CreateUserCommandHandler(IApplicationDbContext context, IP
 
         var user = new User
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Email = command.Email,
             FirstName = command.FirstName,
             LastName = command.LastName,

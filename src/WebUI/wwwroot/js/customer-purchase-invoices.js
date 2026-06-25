@@ -209,7 +209,7 @@ async function submitPurchaseInvoice() {
     const sellerYearOfBirth = document.getElementById('sellerYearOfBirth').value;
     const sellerPhone = document.getElementById('sellerPhone').value.trim();
     const sellerAddress = document.getElementById('sellerAddress').value.trim();
-    const buyerName = getSelectedbuyerName();
+    const buyerName = document.getElementById('buyerName')?.value || '';
     const dateVal = document.getElementById('invoiceDate').dataset.date || new Date().toISOString();
     const currency = getSelectedCurrency();
     const paymentMethod = getSelectedPaymentMethod();
@@ -263,6 +263,9 @@ async function submitPurchaseInvoice() {
     const payload = {
         sellerName,
         sellerPhone: sellerPhone || null,
+        sellerIdNumber,
+        sellerYearOfBirth: sellerYearOfBirth ? parseInt(sellerYearOfBirth) : null,
+        sellerAddress: sellerAddress || null,
         buyerName,
         date: new Date(dateVal).toISOString(),
         currency,
@@ -276,7 +279,7 @@ async function submitPurchaseInvoice() {
         amountPaid,
         paymentMethod,
         accountId,
-        referenceNumber: referenceNumber || null,
+        sellerAccountNumber: sellerAccountNumber || null,
         notes: notes || null
     };
 

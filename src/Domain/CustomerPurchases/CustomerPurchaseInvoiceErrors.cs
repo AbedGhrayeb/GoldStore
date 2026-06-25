@@ -19,5 +19,9 @@ public static class CustomerPurchaseInvoiceErrors
     public static readonly Error AccountDoesNotMatchPayment = Error.Problem(
         "CustomerPurchaseInvoices.AccountDoesNotMatchPayment",
         "Ø§Ù„Ø­Ø³Ø§Ø¨ Ø§Ù„Ù…Ø­Ø¯Ø¯ Ù„Ø§ ÙŠØ·Ø§Ø¨Ù‚ Ø§Ù„Ø¹Ù…Ù„Ø© ÙˆØ·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø¯ÙØ¹");
+
+    public static Error DatabaseError(Exception ex) => Error.Failure(
+        "CustomerPurchaseInvoices.DatabaseError",
+        $"Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª: {ex.Message}");
 }
 

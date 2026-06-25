@@ -21,7 +21,7 @@ internal sealed class CreateSupplierCommandHandler(IApplicationDbContext context
 
         var supplier = new Supplier
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             Name = command.Name,
             PrimaryPhone = command.PrimaryPhone,
             SecondaryPhone = command.SecondaryPhone,

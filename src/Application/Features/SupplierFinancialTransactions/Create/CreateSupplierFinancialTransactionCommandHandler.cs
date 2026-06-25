@@ -38,7 +38,7 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
         if (account.Currency != currency)
             return Result.Failure<Guid>(SupplierFinancialErrors.AccountCurrencyMismatch);
 
-        var transactionId = Guid.NewGuid();
+        var transactionId = Guid.CreateVersion7();
 
         var transaction = new SupplierFinancialTransaction
         {
@@ -56,7 +56,7 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
 
         context.SupplierFinancialLedgerEntries.Add(new SupplierFinancialLedgerEntry
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             SupplierFinancialTransactionId = transactionId,
             Amount = command.Amount,
             MovementType = SupplierBalanceMovementType.Increase,
@@ -73,7 +73,7 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
 
         context.FinancialTransactions.Add(new FinancialTransaction
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             AccountId = command.AccountId,
             Currency = account.Currency,
             Amount = command.Amount,

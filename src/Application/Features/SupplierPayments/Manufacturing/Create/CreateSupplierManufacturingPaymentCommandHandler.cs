@@ -47,7 +47,7 @@ internal sealed class CreateSupplierManufacturingPaymentCommandHandler(
 
         var payment = new SupplierManufacturingPayment
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             SupplierId = command.SupplierId,
             AccountId = command.AccountId,
             Amount = command.Amount,
@@ -60,7 +60,7 @@ internal sealed class CreateSupplierManufacturingPaymentCommandHandler(
 
         context.SupplierManufacturingLedgerEntries.Add(new SupplierManufacturingLedgerEntry
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             SupplierId = command.SupplierId,
             Amount = command.Amount,
             Currency = currency,
@@ -73,7 +73,7 @@ internal sealed class CreateSupplierManufacturingPaymentCommandHandler(
 
         context.FinancialTransactions.Add(new FinancialTransaction
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             AccountId = command.AccountId,
             Currency = currency,
             Amount = command.Amount,

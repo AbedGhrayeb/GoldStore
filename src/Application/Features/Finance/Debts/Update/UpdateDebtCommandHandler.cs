@@ -73,7 +73,7 @@ internal sealed class UpdateDebtCommandHandler(
                 {
                     context.FinancialTransactions.Add(new FinancialTransaction
                     {
-                        Id = Guid.NewGuid(),
+                        Id = Guid.CreateVersion7(),
                         AccountId = tx.AccountId,
                         Currency = tx.Currency,
                         Amount = tx.Amount,
@@ -92,7 +92,7 @@ internal sealed class UpdateDebtCommandHandler(
                 {
                     context.FinancialTransactions.Add(new FinancialTransaction
                     {
-                        Id = Guid.NewGuid(),
+                        Id = Guid.CreateVersion7(),
                         AccountId = targetAccountId!.Value,
                         Currency = targetAccount.Currency,
                         Amount = tx.Amount,
@@ -120,7 +120,7 @@ internal sealed class UpdateDebtCommandHandler(
 
                     context.FinancialTransactions.Add(new FinancialTransaction
                     {
-                        Id = Guid.NewGuid(),
+                        Id = Guid.CreateVersion7(),
                         AccountId = targetAccountId!.Value,
                         Currency = targetAccount.Currency,
                         Amount = netBalance,
@@ -150,7 +150,7 @@ internal sealed class UpdateDebtCommandHandler(
             {
                 context.DebtLedgerEntries.Add(new DebtLedgerEntry
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     DebtId = command.Id,
                     Amount = Math.Abs(diff),
                     MovementType = diff > 0 ? DebtBalanceMovementType.Increase : DebtBalanceMovementType.Decrease,
@@ -183,7 +183,7 @@ internal sealed class UpdateDebtCommandHandler(
 
                     context.FinancialTransactions.Add(new FinancialTransaction
                     {
-                        Id = Guid.NewGuid(),
+                        Id = Guid.CreateVersion7(),
                         AccountId = effectiveAccountId.Value,
                         Currency = account.Currency,
                         Amount = Math.Abs(diff),

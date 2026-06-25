@@ -14,7 +14,7 @@ public class CreateCustomerPurchaseInvoiceModel
     [StringLength(20)]
     public string SellerIdNumber { get; set; }
     [Required]
-    [MinLength(1940)]
+    [Range(1940, 2100)]
     public int? SellerYearOfBirth{ get; set; }
     [StringLength(200)]
     public string? SellerAddress { get; set; }
