@@ -294,7 +294,7 @@ async function submitInvoice() {
         customerPhone: customerPhone || null,
         date: new Date(dateVal).toISOString(),
         currency,
-        items: validItems.map(i => ({
+        items: items.map(i => ({
             categoryId: i.categoryId,
             karat: i.karat,
             weightInGrams: i.weight,

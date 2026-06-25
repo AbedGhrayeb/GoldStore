@@ -59,7 +59,10 @@ app.UseRequestContextLogging();
 
 app.UseSerilogRequestLogging();
 
-app.UseResponseCompression();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseResponseCompression();
+}
 app.UseCors("AllowAngularApp");
 
 app.UseExceptionHandler();

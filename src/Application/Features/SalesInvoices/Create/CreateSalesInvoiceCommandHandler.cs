@@ -81,7 +81,7 @@ internal sealed class CreateSalesInvoiceCommandHandler(
 
         foreach ((SalesInvoiceItemDto? dto, decimal equivalent21K, decimal goldAmount) in parsedItems)
         {
-            var itemId = Guid.NewGuid();
+            var itemId = Guid.CreateVersion7();
 
             context.SalesInvoiceItems.Add(new SalesInvoiceItem
             {
@@ -114,7 +114,7 @@ internal sealed class CreateSalesInvoiceCommandHandler(
         {
             context.FinancialTransactions.Add(new FinancialTransaction
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 AccountId = command.AccountId.Value,
                 Currency = currency,
                 Amount = command.AmountPaid,
