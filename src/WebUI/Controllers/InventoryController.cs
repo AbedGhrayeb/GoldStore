@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Application.Features.GoldPrices.GetCurrent;
 using Application.Features.Inventory.GoldLedger;
 using Application.Features.Inventory.GoldLedger.GetKpis;
 using Application.Features.Inventory.GoldLedger.GetPaged;
@@ -10,10 +11,25 @@ namespace WebUI.Controllers;
 
 [Authorize]
 public class InventoryController(
+    IQueryHandler<GetGoldPricesQuery, GoldPricesResponse> getGoldPricesHandler,
     IQueryHandler<GetInventoryKpisQuery, InventoryKpiResponse> getKpisHandler,
     IQueryHandler<GetGoldLedgerQuery, PagedGoldLedgerResponse> getLedgerHandler) : BaseController
 {
     public IActionResult Index() => View();
+
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<JsonResult> GetGoldPrices(CancellationToken cancellationToken)
+    {
+        Result<GoldPricesResponse> result = await getGoldPricesHandler.Handle(new GetGoldPricesQuery(), cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return Json(new { success = false, error = result.Error.Description });
+        }
+
+        return Json(result.Value);
+    }
 
     [HttpGet]
     [AllowAnonymous]

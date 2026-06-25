@@ -90,27 +90,29 @@
 <script src="~/js/gold-prices.js" asp-append-version="true"></script>
 <script>
     document.addEventListener('DOMContentLoaded', async function () {
-        const data = await loadGoldPricesKpis();
-        if (!data) return;
+        // Gold prices: cached in localStorage for 1 day
+        // Inventory KPIs: fresh from the DB on every page load
+        const [gold, inv] = await Promise.all([loadGoldPrices(), loadInventoryKpis()]);
+        if (!gold && !inv) return;
 
         const grid = document.getElementById('loginKpiGrid');
         if (!grid) return;
 
         const cards = [];
 
-        if (data.pricePerGram24K) {
-            cards.push(buildLoginCard('عيار 24', data.pricePerGram24K.displayPrice, data.pricePerGram24K.changePercent24H, data.pricePerGram24K.changeDirection, 'bg-primary-container'));
+        if (gold?.pricePerGram24K) {
+            cards.push(buildLoginCard('عيار 24', gold.pricePerGram24K.displayPrice, gold.pricePerGram24K.changePercent24H, gold.pricePerGram24K.changeDirection, 'bg-primary-container'));
         }
-        if (data.pricePerGram21K) {
-            cards.push(buildLoginCard('عيار 21', data.pricePerGram21K.displayPrice, data.pricePerGram21K.changePercent24H, data.pricePerGram21K.changeDirection, 'bg-outline'));
-        }
-
-        if (data.totalEquivalent21KDisplay) {
-            cards.push(buildLoginStockCard('إجمالي المخزون', data.totalEquivalent21KDisplay, data.estimatedValueDisplay));
+        if (gold?.pricePerGram21K) {
+            cards.push(buildLoginCard('عيار 21', gold.pricePerGram21K.displayPrice, gold.pricePerGram21K.changePercent24H, gold.pricePerGram21K.changeDirection, 'bg-outline'));
         }
 
-        if (data.spotPrice) {
-            cards.push(buildLoginCard('السعر العالمي (أونصة)', data.spotPrice.displayPrice, data.spotPrice.changePercent24H, data.spotPrice.changeDirection, 'bg-primary-container'));
+        if (inv?.totalEquivalent21KDisplay) {
+            cards.push(buildLoginStockCard('إجمالي المخزون', inv.totalEquivalent21KDisplay, inv.totalEquivalent21KUnit || 'جم', inv.estimatedValueDisplay));
+        }
+
+        if (gold?.spotPrice) {
+            cards.push(buildLoginCard('السعر العالمي (أونصة)', gold.spotPrice.displayPrice, gold.spotPrice.changePercent24H, gold.spotPrice.changeDirection, 'bg-primary-container'));
         }
 
         grid.innerHTML = cards.join('');
@@ -130,7 +132,7 @@
         '</div>';
     }
 
-    function buildLoginStockCard(label, totalGrams, estimatedValue) {
+    function buildLoginStockCard(label, totalGrams, unit, estimatedValue) {
         return '<div class="bg-surface p-5 rounded-lg border border-outline-variant hover:border-primary/50 transition-colors">' +
             '<div class="flex items-center gap-2 mb-3">' +
                 '<span class="w-2 h-2 rounded-full bg-primary-container"></span>' +
@@ -138,7 +140,7 @@
             '</div>' +
             '<div class="flex items-baseline gap-1">' +
                 '<span class="font-display-lg text-display-lg font-bold text-on-surface">' + (totalGrams || '0.000') + '</span>' +
-                '<span class="font-label-md text-label-md text-secondary">جم (عيار 21)</span>' +
+                '<span class="font-label-md text-label-md text-secondary">' + (unit || 'جم') + ' (عيار 21)</span>' +
             '</div>' +
             '<div class="mt-2 flex items-center gap-1 text-secondary">' +
                 '<span class="font-data-mono text-data-mono text-sm">القيمة: ' + (estimatedValue || '—') + ' د.أ</span>' +

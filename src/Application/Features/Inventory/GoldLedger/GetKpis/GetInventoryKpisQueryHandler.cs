@@ -9,12 +9,11 @@ using SharedKernel;
 namespace Application.Features.Inventory.GoldLedger.GetKpis;
 
 internal sealed class GetInventoryKpisQueryHandler(
-    IApplicationDbContext context)
+    IApplicationDbContext context,
+    IGoldPriceService goldPriceService)
     : IQueryHandler<GetInventoryKpisQuery, InventoryKpiResponse>
 {
-    private static string FormatWeight(decimal grams) => grams >= 1000
-        ? $"{grams / 1000m:F3}"
-        : $"{grams:F3}";
+    private static string FormatWeight(decimal grams) => $"{grams:F3}";
 
     private static string FormatCurrency(decimal amount) => $"{amount:N0}";
 
@@ -57,6 +56,7 @@ internal sealed class GetInventoryKpisQueryHandler(
                     Description = GetKaratDescription((int)k),
                     TotalWeightGrams = totalWeight,
                     TotalWeightDisplay = FormatWeight(totalWeight),
+                    Unit = "جم",
                     IsPrimary = (int)k == 21
                 };
             }).ToList();
@@ -66,54 +66,20 @@ internal sealed class GetInventoryKpisQueryHandler(
         GoldPriceData? priceData = null;
         try
         {
-            //priceData = await goldPriceService.GetCurrentPricesAsync(Currency.Jod, cancellationToken);
+            priceData = await goldPriceService.GetCurrentPricesAsync(Currency.Jod, cancellationToken);
         }
         catch
         {
-            // If gold price API is unavailable, KPIs will show without live pricing
+            // If gold price API is unavailable, estimated value shows without live pricing
         }
 
         decimal estimatedValue = totalEquivalent21K * (priceData?.PricePerGram21K ?? 0m);
 
         return new InventoryKpiResponse
         {
-            SpotPrice = new GoldPriceInfo
-            {
-                Price = priceData?.PricePerOunce ?? 0m,
-                DisplayPrice = priceData is not null ? FormatCurrency(priceData.PricePerOunce) : "—",
-                ChangePercent24H = priceData?.ChangePercent24H ?? 0m,
-                ChangeDirection = (priceData?.ChangePercent24H ?? 0m) switch
-                {
-                    > 0 => "up",
-                    < 0 => "down",
-                    _ => "none"
-                },
-                Currency = "JOD",
-                CurrencySymbol = "د.أ",
-                Unit = "أونصة"
-            },
-            PricePerGram24K = new GoldPriceInfo
-            {
-                Price = priceData?.PricePerGram24K ?? 0m,
-                DisplayPrice = priceData is not null ? $"{priceData.PricePerGram24K:F3}" : "—",
-                ChangePercent24H = priceData?.ChangePercent24H ?? 0m,
-                ChangeDirection = "none",
-                Currency = "JOD",
-                CurrencySymbol = "د.أ",
-                Unit = "جم"
-            },
-            PricePerGram21K = new GoldPriceInfo
-            {
-                Price = priceData?.PricePerGram21K ?? 0m,
-                DisplayPrice = priceData is not null ? $"{priceData.PricePerGram21K:F3}" : "—",
-                ChangePercent24H = priceData?.ChangePercent24H ?? 0m,
-                ChangeDirection = "none",
-                Currency = "JOD",
-                CurrencySymbol = "د.أ",
-                Unit = "جم"
-            },
             TotalEquivalent21KGrams = totalEquivalent21K,
             TotalEquivalent21KDisplay = FormatWeight(totalEquivalent21K),
+            TotalEquivalent21KUnit = "جم",
             EstimatedValueJod = estimatedValue,
             EstimatedValueDisplay = priceData is not null ? FormatCurrency(estimatedValue) : "—",
             KaratBreakdowns = breakdowns

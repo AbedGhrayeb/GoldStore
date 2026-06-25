@@ -4,9 +4,6 @@ let currentPage = 1;
 const pageSize = 20;
 
 function formatWeight(grams) {
-    if (grams >= 1000) {
-        return (grams / 1000).toFixed(3);
-    }
     return grams.toFixed(3);
 }
 
@@ -58,27 +55,30 @@ async function refreshAll() {
 // ─── KPIs ───────────────────────────────────
 
 async function loadKpis() {
-    const data = await loadGoldPricesKpis();
-    if (!data) return;
+    // Gold prices: cached in localStorage for 1 day (slow-changing display cards)
+    // Inventory KPIs: always fresh from the DB on every page load
+    const [gold, inv] = await Promise.all([loadGoldPrices(), loadInventoryKpis()]);
+    if (!gold && !inv) return;
 
     // Spot price
-    document.getElementById('spotPrice').textContent = data.spotPrice?.displayPrice || '—';
-    renderChangeBadgeElement('spotChange', data.spotPrice?.changePercent24H || 0, data.spotPrice?.changeDirection || 'none');
+    document.getElementById('spotPrice').textContent = gold?.spotPrice?.displayPrice || '—';
+    renderChangeBadgeElement('spotChange', gold?.spotPrice?.changePercent24H || 0, gold?.spotPrice?.changeDirection || 'none');
 
     // 24K per gram
-    document.getElementById('k24Price').textContent = data.pricePerGram24K?.displayPrice || '—';
-    renderChangeBadgeElement('k24Change', data.pricePerGram24K?.changePercent24H || 0, data.pricePerGram24K?.changeDirection || 'none');
+    document.getElementById('k24Price').textContent = gold?.pricePerGram24K?.displayPrice || '—';
+    renderChangeBadgeElement('k24Change', gold?.pricePerGram24K?.changePercent24H || 0, gold?.pricePerGram24K?.changeDirection || 'none');
 
     // 21K per gram
-    document.getElementById('k21Price').textContent = data.pricePerGram21K?.displayPrice || '—';
-    renderChangeBadgeElement('k21Change', data.pricePerGram21K?.changePercent24H || 0, data.pricePerGram21K?.changeDirection || 'none');
+    document.getElementById('k21Price').textContent = gold?.pricePerGram21K?.displayPrice || '—';
+    renderChangeBadgeElement('k21Change', gold?.pricePerGram21K?.changePercent24H || 0, gold?.pricePerGram21K?.changeDirection || 'none');
 
-    // Total equivalent 21K
-    document.getElementById('totalEquivalent21K').textContent = data.totalEquivalent21KDisplay || '0.000';
-    document.getElementById('estimatedValue').textContent = (data.estimatedValueDisplay || '—') + ' د.أ';
+    // Total equivalent 21K + estimated value (always fresh)
+    document.getElementById('totalEquivalent21K').textContent = inv?.totalEquivalent21KDisplay || '0.000';
+    document.getElementById('totalEquivalent21KUnit').textContent = inv?.totalEquivalent21KUnit || 'جم';
+    document.getElementById('estimatedValue').textContent = (inv?.estimatedValueDisplay || '—') + ' د.أ';
 
-    // Karat breakdowns
-    renderKaratBreakdowns(data.karatBreakdowns || []);
+    // Karat breakdowns (always fresh)
+    renderKaratBreakdowns(inv?.karatBreakdowns || []);
 }
 
 function renderKaratBreakdowns(breakdowns) {
@@ -92,9 +92,6 @@ function renderKaratBreakdowns(breakdowns) {
         const isPrimary = b.isPrimary;
         const borderClass = isPrimary ? 'border-r-4 border-r-primary-container' : '';
         const badgeClass = isPrimary ? 'bg-primary-container/20 text-on-primary-container' : 'bg-surface-container';
-        const weightDisplay = b.totalWeightGrams >= 1000
-            ? `${(b.totalWeightGrams / 1000).toFixed(3)} جم`
-            : `${b.totalWeightGrams.toFixed(3)} جم`;
 
         return `
         <div class="bg-surface-container-lowest p-sm rounded-lg border border-outline-variant flex flex-col justify-center ${borderClass}">
@@ -104,7 +101,7 @@ function renderKaratBreakdowns(breakdowns) {
             </div>
             <div class="flex items-baseline gap-xs">
                 <span class="font-headline-lg text-headline-lg font-data-mono text-on-surface">${b.totalWeightDisplay}</span>
-                <span class="text-secondary text-sm">جم</span>
+                <span class="text-secondary text-sm">${b.unit || 'جم'}</span>
             </div>
         </div>`;
     }).join('');

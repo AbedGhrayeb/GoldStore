@@ -1,27 +1,46 @@
 /* ═══════════════════════════════════════════════════════
-   GOLD PRICES — Shared KPI loader with localStorage caching
+   GOLD PRICES — Shared loaders
    Used on: Login page, Inventory page
-   Cache TTL: 1 day (86400000 ms)
+
+   loadGoldPrices()     → GET /Inventory/GetGoldPrices
+                          cached in localStorage for 1 day
+                          (gold prices change slowly on the cards)
+
+   loadInventoryKpis()  → GET /Inventory/GetKpis
+                          NEVER cached — inventory totals are
+                          re-computed from the DB on every page load
    ═══════════════════════════════════════════════════════ */
 
-const GOLD_PRICES_CACHE_KEY = 'goldStore_kpis';
+const GOLD_PRICES_CACHE_KEY = 'goldStore_goldPrices';
 const GOLD_PRICES_CACHE_TTL = 86400000; // 1 day in ms
 
-async function loadGoldPricesKpis() {
+async function loadGoldPrices() {
     const cached = readGoldPricesCache();
     if (cached) {
         return cached;
     }
 
     try {
-        const res = await fetch('/Inventory/GetKpis');
+        const res = await fetch('/Inventory/GetGoldPrices');
         const data = await res.json();
         if (!data || data.success === false) return null;
 
         writeGoldPricesCache(data);
         return data;
     } catch (e) {
-        console.error('Failed to load gold prices KPIs', e);
+        console.error('Failed to load gold prices', e);
+        return null;
+    }
+}
+
+async function loadInventoryKpis() {
+    try {
+        const res = await fetch('/Inventory/GetKpis');
+        const data = await res.json();
+        if (!data || data.success === false) return null;
+        return data;
+    } catch (e) {
+        console.error('Failed to load inventory KPIs', e);
         return null;
     }
 }
