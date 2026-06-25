@@ -21,5 +21,15 @@ internal sealed class UpdateDebtCommandValidator : AbstractValidator<UpdateDebtC
         RuleFor(x => x.Notes)
             .MaximumLength(1000)
             .When(x => x.Notes is not null);
+
+        RuleFor(x => x.NewAmount)
+            .GreaterThan(0)
+            .When(x => x.NewAmount.HasValue)
+            .WithMessage("المبلغ الجديد يجب أن يكون أكبر من صفر");
+
+        RuleFor(x => x.NewAccountId)
+            .NotEmpty()
+            .When(x => x.NewAccountId.HasValue)
+            .WithMessage("الحساب المالي الجديد غير صالح");
     }
 }

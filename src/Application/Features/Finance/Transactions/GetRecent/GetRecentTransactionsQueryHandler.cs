@@ -71,6 +71,7 @@ internal sealed class GetRecentTransactionsQueryHandler(IApplicationDbContext co
             FinancialReferenceType.ManualAdjustment => "تسوية يدوية",
             FinancialReferenceType.DebtCreation => "إنشاء دين",
             FinancialReferenceType.DebtPayment => "دفعة دين",
+            FinancialReferenceType.DebtAdjustment => "تعديل دين",
             _ => referenceType.ToString()
         };
     }

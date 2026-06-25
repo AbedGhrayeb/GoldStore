@@ -17,7 +17,8 @@ public class CreateDebtModel
     [Required]
     public string Currency { get; set; } = "Jod";
 
-    public Guid? AccountId { get; set; }
+    [Required]
+public Guid AccountId { get; set; }
 
     [Required]
     [Range(0.001, double.MaxValue)]

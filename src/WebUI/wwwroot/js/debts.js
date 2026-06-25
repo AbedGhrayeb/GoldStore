@@ -32,20 +32,6 @@ async function loadKpis() {
         const data = await res.json();
         if (!data) return;
 
-        // document.getElementById('kpiReceivables').textContent = data.totalReceivablesDisplay ?? '0.000';
-        // document.getElementById('kpiPayables').textContent = data.totalPayablesDisplay ?? '0.000';
-        // document.getElementById('kpiNetBalance').textContent = data.netBalanceDisplay ?? '0.000';
-        // document.getElementById('kpiActiveCount').textContent = (data.receivableCount + data.payableCount) ?? 0;
-
-        // const netEl = document.getElementById('kpiNetContainer');
-        // if (data.isNetPositive) {
-        //     netEl.classList.add('text-on-surface');
-        //     netEl.classList.remove('text-error');
-        // } else {
-        //     netEl.classList.add('text-error');
-        //     netEl.classList.remove('text-on-surface');
-        // }
-
         renderDebtsByCurrency(data.byCurrency);
     } catch (e) {
         console.error('Failed to load KPIs', e);
@@ -104,6 +90,30 @@ async function loadAccounts() {
     }
 }
 
+function populateCreateAccountSelect() {
+    const currency = document.getElementById('debtCurrency').value;
+    const sel = document.getElementById('debtAccount');
+    const filtered = allAccounts.filter(a => a.currency === currency);
+    if (filtered.length === 0) {
+        sel.innerHTML = '<option value="">لا توجد حسابات بنفس العملة</option>';
+    } else {
+        sel.innerHTML = '<option value="">اختر حساب</option>' +
+            filtered.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+    }
+}
+
+function populateEditAccountSelect(currency, selectedId) {
+    const sel = document.getElementById('editDebtAccount');
+    const filtered = allAccounts.filter(a => a.currency === currency);
+    if (filtered.length === 0) {
+        sel.innerHTML = '<option value="">لا توجد حسابات بنفس العملة</option>';
+    } else {
+        sel.innerHTML = filtered.map(a =>
+            `<option value="${a.id}" ${a.id === selectedId ? 'selected' : ''}>${a.name}</option>`
+        ).join('');
+    }
+}
+
 // ─── Debts Table ─────────────────────────────
 
 async function loadDebts(page = 1) {
@@ -147,7 +157,7 @@ async function loadDebts(page = 1) {
                         <button class="p-1.5 rounded hover:bg-surface-container-low text-secondary" onclick="openPaymentModal('${d.id}', '${escapeHtml(d.name)}', ${parseFloat(d.outstandingBalance).toFixed(3)}, '${d.currency}')" title="تسديد دفعة">
                             <span class="material-symbols-outlined text-[18px]">payments</span>
                         </button>
-                        <button class="p-1.5 rounded hover:bg-surface-container-low text-secondary" onclick="openEditModal('${d.id}', '${escapeHtml(d.name)}', '${escapeHtml(d.phone || '')}', '${escapeHtml(d.notes || '')}')" title="تعديل">
+                        <button class="p-1.5 rounded hover:bg-surface-container-low text-secondary" onclick="openEditModal('${d.id}', '${escapeHtml(d.name)}', '${escapeHtml(d.phone || '')}', ${parseFloat(d.outstandingBalance).toFixed(3)}, '${d.currency}', '${d.accountId || ''}', '${escapeHtml(d.notes || '')}')" title="تعديل">
                             <span class="material-symbols-outlined text-[18px]">edit</span>
                         </button>
                     </div>
@@ -194,6 +204,7 @@ function renderPagination(totalCount, page, pageSize) {
 // ─── Create Debt ─────────────────────────────
 
 function openCreateModal() {
+    populateCreateAccountSelect();
     document.getElementById('createModal').classList.remove('hidden');
 }
 
@@ -205,12 +216,13 @@ async function submitDebt() {
     const directionRadio = document.querySelector('input[name="direction"]:checked');
     const name = document.getElementById('debtName').value.trim();
     const phone = document.getElementById('debtPhone').value.trim();
+    const accountId = document.getElementById('debtAccount').value;
     const amount = parseFloat(document.getElementById('debtAmount').value) || 0;
     const currency = document.getElementById('debtCurrency').value;
     const dateVal = document.getElementById('debtDate').value;
     const notes = document.getElementById('debtNotes').value.trim();
 
-    if (!directionRadio || !name || !dateVal || amount <= 0) {
+    if (!directionRadio || !name || !accountId || !dateVal || amount <= 0) {
         toastr.error('يرجى تعبئة جميع الحقول المطلوبة');
         return;
     }
@@ -220,7 +232,7 @@ async function submitDebt() {
         phone: phone || null,
         direction: parseInt(directionRadio.value),
         currency: currency,
-        accountId: null,
+        accountId: accountId,
         amount: amount,
         notes: notes || null,
         date: new Date(dateVal).toISOString()
@@ -316,11 +328,18 @@ async function submitPayment() {
 
 // ─── Edit Debt ───────────────────────────────
 
-function openEditModal(id, name, phone, notes) {
+function openEditModal(id, name, phone, amount, currency, accountId, notes) {
     document.getElementById('editDebtId').value = id;
     document.getElementById('editDebtName').value = name;
     document.getElementById('editDebtPhone').value = phone;
+    document.getElementById('editDebtAmount').value = amount;
     document.getElementById('editDebtNotes').value = notes;
+
+    const symbols = { Jod: 'د.أ', Usd: '$', Ils: '₪' };
+    document.getElementById('editDebtAmountSuffix').textContent = symbols[currency] ?? currency;
+
+    populateEditAccountSelect(currency, accountId);
+
     document.getElementById('editModal').classList.remove('hidden');
 }
 
@@ -332,6 +351,8 @@ async function submitEdit() {
     const id = document.getElementById('editDebtId').value;
     const name = document.getElementById('editDebtName').value.trim();
     const phone = document.getElementById('editDebtPhone').value.trim();
+    const amount = parseFloat(document.getElementById('editDebtAmount').value) || null;
+    const accountId = document.getElementById('editDebtAccount').value;
     const notes = document.getElementById('editDebtNotes').value.trim();
 
     if (!id) {
@@ -343,6 +364,8 @@ async function submitEdit() {
         id: id,
         name: name || null,
         phone: phone || null,
+        newAmount: amount,
+        newAccountId: accountId || null,
         notes: notes || null
     };
 
@@ -373,4 +396,9 @@ window.refreshDebts = function () {
     closeCreateModal();
     closePaymentModal();
     closeEditModal();
+};
+
+window.refreshDebtsAndAccounts = function () {
+    refreshDebts();
+    if (typeof refreshAccountsPage === 'function') refreshAccountsPage();
 };

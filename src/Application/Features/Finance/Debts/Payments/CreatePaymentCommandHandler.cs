@@ -21,6 +21,20 @@ internal sealed class CreatePaymentCommandHandler(
             return Result.Failure<Guid>(DebtErrors.NotFound(command.DebtId));
         }
 
+        FinancialAccount? account = await context.FinancialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == command.AccountId, cancellationToken);
+
+        if (account is null)
+        {
+            return Result.Failure<Guid>(DebtErrors.AccountNotFound(command.AccountId));
+        }
+
+        if (account.Currency != debt.Currency)
+        {
+            return Result.Failure<Guid>(DebtErrors.AccountCurrencyMismatch);
+        }
+
         if (command.Amount <= 0)
         {
             return Result.Failure<Guid>(DebtErrors.PaymentAmountMustBePositive);
@@ -61,7 +75,7 @@ internal sealed class CreatePaymentCommandHandler(
         {
             Id = Guid.CreateVersion7(),
             AccountId = command.AccountId,
-            Currency = debt.Currency,
+            Currency = account.Currency,
             Amount = command.Amount,
             TransactionType = financialTransactionType,
             ReferenceType = FinancialReferenceType.DebtPayment,

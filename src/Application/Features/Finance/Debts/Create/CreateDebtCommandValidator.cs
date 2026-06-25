@@ -33,6 +33,10 @@ internal sealed class CreateDebtCommandValidator : AbstractValidator<CreateDebtC
             .MaximumLength(1000)
             .When(x => x.Notes is not null);
 
+        RuleFor(x => x.AccountId)
+            .NotEmpty()
+            .WithMessage("الحساب المالي مطلوب");
+
         RuleFor(x => x.Date)
             .NotEmpty()
             .WithMessage("التاريخ مطلوب");

@@ -3,6 +3,7 @@ using Application.Abstractions.Messaging;
 using Domain.Common;
 using Domain.Debts;
 using Domain.Finance;
+using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 
 namespace Application.Features.Finance.Debts.Create;
@@ -15,6 +16,20 @@ internal sealed class CreateDebtCommandHandler(
     {
         var direction = (DebtDirection)command.Direction;
         var currency = Enum.Parse<Currency>(command.Currency);
+
+        FinancialAccount? account = await context.FinancialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == command.AccountId, cancellationToken);
+
+        if (account is null)
+        {
+            return Result.Failure<Guid>(DebtErrors.AccountNotFound(command.AccountId));
+        }
+
+        if (account.Currency != currency)
+        {
+            return Result.Failure<Guid>(DebtErrors.AccountCurrencyMismatch);
+        }
 
         var debtId = Guid.NewGuid();
 
@@ -49,21 +64,18 @@ internal sealed class CreateDebtCommandHandler(
             _ => FinancialTransactionType.Outflow
         };
 
-        if (command.AccountId.HasValue)
+        context.FinancialTransactions.Add(new FinancialTransaction
         {
-            context.FinancialTransactions.Add(new FinancialTransaction
-            {
-                Id = Guid.NewGuid(),
-                AccountId = command.AccountId.Value,
-                Currency = currency,
-                Amount = command.Amount,
-                TransactionType = financialTransactionType,
-                ReferenceType = FinancialReferenceType.DebtCreation,
-                ReferenceId = debtId,
-                Date = command.Date,
-                Notes = $"إنشاء {GetDirectionLabel(direction)}: {command.Name}"
-            });
-        }
+            Id = Guid.NewGuid(),
+            AccountId = command.AccountId,
+            Currency = account.Currency,
+            Amount = command.Amount,
+            TransactionType = financialTransactionType,
+            ReferenceType = FinancialReferenceType.DebtCreation,
+            ReferenceId = debtId,
+            Date = command.Date,
+            Notes = $"إنشاء {GetDirectionLabel(direction)}: {command.Name}"
+        });
 
         await context.SaveChangesAsync(cancellationToken);
 

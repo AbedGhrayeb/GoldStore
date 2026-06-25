@@ -88,7 +88,7 @@ public class DebtsController(
             return Json(ToastResult.ErrorResult(result.Error.Description, "الذمم"));
         }
 
-        return Json(ToastResult.SuccessResult("تم إنشاء الدين بنجاح", "الذمم", "", "refreshDebts"));
+        return Json(ToastResult.SuccessResult("تم إنشاء الدين بنجاح", "الذمم", "", "refreshDebtsAndAccounts"));
     }
 
     [HttpPost]
@@ -105,7 +105,13 @@ public class DebtsController(
                 "الذمم"));
         }
 
-        var command = new UpdateDebtCommand(model.Id, model.Name, model.Phone, model.Notes);
+        var command = new UpdateDebtCommand(
+            model.Id,
+            model.Name,
+            model.Phone,
+            model.NewAmount,
+            model.NewAccountId,
+            model.Notes);
 
         Result<Guid> result = await updateHandler.Handle(command, cancellationToken);
 
@@ -114,7 +120,7 @@ public class DebtsController(
             return Json(ToastResult.ErrorResult(result.Error.Description, "الذمم"));
         }
 
-        return Json(ToastResult.SuccessResult("تم تحديث الدين بنجاح", "الذمم", "", "refreshDebts"));
+        return Json(ToastResult.SuccessResult("تم تحديث الدين بنجاح", "الذمم", "", "refreshDebtsAndAccounts"));
     }
 
     [HttpPost]
@@ -145,6 +151,6 @@ public class DebtsController(
             return Json(ToastResult.ErrorResult(result.Error.Description, "الذمم"));
         }
 
-        return Json(ToastResult.SuccessResult("تم تسجيل الدفعة بنجاح", "الذمم", "", "refreshDebts"));
+        return Json(ToastResult.SuccessResult("تم تسجيل الدفعة بنجاح", "الذمم", "", "refreshDebtsAndAccounts"));
     }
 }

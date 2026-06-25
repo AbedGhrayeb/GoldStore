@@ -7,7 +7,7 @@ public sealed record CreateDebtCommand(
     string? Phone,
     int Direction,
     string Currency,
-    Guid? AccountId,
+    Guid AccountId,
     decimal Amount,
     string? Notes,
     DateTime Date) : ICommand<Guid>;
