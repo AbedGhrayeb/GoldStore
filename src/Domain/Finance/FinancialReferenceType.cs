@@ -10,5 +10,6 @@ public enum FinancialReferenceType
     ManualAdjustment = 6,
     DebtCreation = 7,
     DebtPayment = 8,
-    DebtAdjustment = 9
+    DebtAdjustment = 9,
+    SupplierLoan = 10
 }

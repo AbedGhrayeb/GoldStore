@@ -1,0 +1,218 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "المعاملات المالية";
+}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-xl">
+    <div>
+        <h2 class="font-headline-lg text-headline-lg text-on-surface mb-xs">المعاملات المالية</h2>
+        <p class="font-body-md text-body-md text-secondary">إدارة السلف والدفعات للموردين عبر حسابات مالية محددة.</p>
+    </div>
+    <button class="flex items-center gap-xs px-md py-sm bg-on-surface text-surface-container-lowest rounded-lg font-label-md text-label-md hover:bg-black transition-colors shadow-sm" onclick="openCreateModal()">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        معاملة مالية جديدة
+    </button>
+</div>
+
+<!-- KPI Cards -->
+<div id="kpiCards" class="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-xl">
+    <div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] p-md border border-outline-variant/30 md:col-span-3 flex items-center justify-center py-8 text-secondary">
+        جاري التحميل...
+    </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 overflow-hidden flex flex-col">
+    <div class="p-md border-b border-outline-variant flex items-center justify-between bg-surface-container-lowest flex-wrap gap-sm">
+        <h3 class="font-title-lg text-title-lg text-on-surface">سجل المعاملات المالية</h3>
+        <div class="flex items-center gap-sm">
+            <select id="filterDirection" class="border border-outline-variant rounded bg-surface-container-lowest px-3 py-1.5 font-body-md text-sm text-on-surface appearance-none cursor-pointer hover:border-primary transition-colors" onchange="loadTransactions(1)">
+                <option value="">الاتجاه</option>
+                <option value="1">له</option>
+                <option value="2">لنا</option>
+            </select>
+            <input type="text" id="filterSearch" class="border border-outline-variant rounded bg-surface-container-lowest px-3 py-1.5 font-body-md text-sm text-on-surface w-40" placeholder="بحث..." />
+            <button class="bg-primary-container text-on-primary text-sm font-label-md px-4 py-1.5 rounded flex items-center gap-xs hover:opacity-90 transition-opacity" onclick="loadTransactions(1)">
+                <span class="material-symbols-outlined text-sm">search</span>
+                بحث
+            </button>
+        </div>
+    </div>
+    <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-right border-collapse">
+            <thead class="bg-surface-container">
+                <tr>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">المورد</th>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">النوع</th>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider text-left">المبلغ</th>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider text-left">الرصيد المتبقي</th>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">العملة</th>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">التاريخ</th>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">الحساب</th>
+                    <th class="py-3 px-4 font-label-md text-label-md text-secondary uppercase tracking-wider">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="transactionsBody" class="font-body-md text-body-md">
+                <tr>
+                    <td colspan="8" class="py-12 text-center text-secondary">جاري التحميل...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="p-md border-t border-outline-variant flex justify-between items-center" id="paginationContainer" style="display:none;">
+        <span class="font-label-md text-label-md text-secondary" id="paginationInfo"></span>
+        <div class="flex gap-sm" id="paginationButtons"></div>
+    </div>
+</div>
+
+<!-- Create Modal -->
+<div id="createModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="closeCreateModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-md">
+            <div class="flex items-center justify-between mb-md">
+                <h3 class="font-title-lg text-title-lg text-on-surface">معاملة مالية جديدة</h3>
+                <button class="p-1 rounded hover:bg-surface-container-low text-secondary" onclick="closeCreateModal()">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form id="createForm" class="flex flex-col gap-md" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+                    <div class="flex flex-col gap-xs">
+                        <label class="font-label-md text-label-md text-secondary" for="transactionSupplier">المورد</label>
+                        <select class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary input-glow text-body-md font-body-md text-on-surface appearance-none cursor-pointer" id="transactionSupplier" required>
+                            <option value="">اختر مورد</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-xs md:col-span-2">
+                        <label class="font-label-md text-label-md text-secondary">نوع المعاملة</label>
+                        <div class="flex gap-sm">
+                            <label class="cursor-pointer flex-1">
+                                <input checked class="peer sr-only" name="direction" type="radio" value="1" />
+                                <div class="flex items-center justify-center gap-xs p-sm rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low peer-checked:border-primary peer-checked:bg-primary-container/20 peer-checked:text-primary transition-all text-center">
+                                    <span class="material-symbols-outlined">call_received</span>
+                                    <span class="font-body-md text-body-md">له</span>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer flex-1">
+                                <input class="peer sr-only" name="direction" type="radio" value="2" />
+                                <div class="flex items-center justify-center gap-xs p-sm rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low peer-checked:border-error peer-checked:bg-error-container/20 peer-checked:text-error transition-all text-center">
+                                    <span class="material-symbols-outlined">call_made</span>
+                                    <span class="font-body-md text-body-md">لنا</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-xs">
+                        <label class="font-label-md text-label-md text-secondary" for="transactionCurrency">العملة</label>
+                        <select class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary input-glow text-body-md font-body-md text-on-surface appearance-none cursor-pointer" id="transactionCurrency" onchange="updateAmountSuffix(); populateCreateAccountSelect()">
+                            <option value="Jod">دينار أردني (د.أ)</option>
+                            <option value="Usd">دولار أمريكي ($)</option>
+                            <option value="Ils">شيكل إسرائيلي (₪)</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-xs">
+                        <label class="font-label-md text-label-md text-secondary" for="transactionAccount">الحساب المالي</label>
+                        <select class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary input-glow text-body-md font-body-md text-on-surface appearance-none cursor-pointer" id="transactionAccount" required>
+                            <option value="">اختر العملة أولاً</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-xs">
+                        <label class="font-label-md text-label-md text-secondary" for="transactionAmount">المبلغ</label>
+                        <div class="relative input-glow rounded-lg flex">
+                            <input class="w-full bg-surface border border-outline-variant rounded-r-lg py-2 px-3 focus:outline-none focus:border-primary font-data-mono text-data-mono text-on-surface border-l-0" dir="ltr" id="transactionAmount" placeholder="0.000" step="0.001" type="number" required />
+                            <span class="bg-surface-container-low border border-outline-variant border-r-0 rounded-l-lg px-3 py-2 text-secondary font-label-md text-label-md flex items-center justify-center" id="transactionAmountSuffix">د.أ</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-xs">
+                        <label class="font-label-md text-label-md text-secondary" for="transactionDate">التاريخ</label>
+                        <div class="relative input-glow rounded-lg">
+                            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">calendar_today</span>
+                            <input class="w-full bg-surface border border-outline-variant rounded-lg py-2 pr-10 pl-3 focus:outline-none focus:border-primary text-body-md font-body-md text-on-surface" id="transactionDate" type="date" required />
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-xs md:col-span-2">
+                        <label class="font-label-md text-label-md text-secondary" for="transactionNotes">ملاحظات (اختياري)</label>
+                        <textarea class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary input-glow text-body-md font-body-md text-on-surface resize-none" id="transactionNotes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-md pt-sm border-t border-outline-variant">
+                    <button class="px-xl py-2 rounded-lg text-primary font-title-lg text-title-lg hover:bg-surface-container-low transition-colors" type="button" onclick="closeCreateModal()">إلغاء</button>
+                    <button class="px-xl py-2 rounded-lg bg-on-surface text-surface-container-lowest font-title-lg text-title-lg hover:bg-black transition-colors shadow-sm" type="button" onclick="submitTransaction()">تأكيد</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="closePaymentModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-md">
+            <div class="flex items-center justify-between mb-md">
+                <h3 class="font-title-lg text-title-lg text-on-surface">تسجيل دفعة</h3>
+                <button class="p-1 rounded hover:bg-surface-container-low text-secondary" onclick="closePaymentModal()">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form id="paymentForm" class="flex flex-col gap-md" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="paymentTransactionId" />
+                <p class="font-body-md text-secondary">الرصيد المتبقي: <strong id="paymentOutstanding" class="font-data-mono text-on-surface"></strong> <span id="paymentCurrencyLabel">د.أ</span></p>
+                <div class="flex flex-col gap-xs">
+                    <label class="font-label-md text-label-md text-secondary" for="paymentAccount">الحساب</label>
+                    <select class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary text-body-md font-body-md text-on-surface appearance-none" id="paymentAccount">
+                        <option value="">اختر حساب</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-xs">
+                    <label class="font-label-md text-label-md text-secondary" for="paymentAmount">المبلغ</label>
+                    <div class="relative input-glow rounded-lg flex">
+                        <input class="w-full bg-surface border border-outline-variant rounded-r-lg py-2 px-3 focus:outline-none focus:border-primary font-data-mono text-data-mono text-on-surface border-l-0" dir="ltr" id="paymentAmount" placeholder="0.000" step="0.001" type="number" required />
+                        <span class="bg-surface-container-low border border-outline-variant border-r-0 rounded-l-lg px-3 py-2 text-secondary font-label-md text-label-md flex items-center justify-center" id="paymentAmountSuffix">د.أ</span>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-xs">
+                    <label class="font-label-md text-label-md text-secondary" for="paymentDate">التاريخ</label>
+                    <div class="relative input-glow rounded-lg">
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">calendar_today</span>
+                        <input class="w-full bg-surface border border-outline-variant rounded-lg py-2 pr-10 pl-3 focus:outline-none focus:border-primary text-body-md font-body-md text-on-surface" id="paymentDate" type="date" required />
+                    </div>
+                </div>
+                <div class="flex flex-col gap-xs">
+                    <label class="font-label-md text-label-md text-secondary" for="paymentNotes">ملاحظات (اختياري)</label>
+                    <textarea class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary input-glow text-body-md font-body-md text-on-surface resize-none" id="paymentNotes" rows="2"></textarea>
+                </div>
+                <div class="flex items-center justify-end gap-md pt-sm border-t border-outline-variant">
+                    <button class="px-xl py-2 rounded-lg text-primary font-title-lg text-title-lg hover:bg-surface-container-low transition-colors" type="button" onclick="closePaymentModal()">إلغاء</button>
+                    <button class="px-xl py-2 rounded-lg bg-on-surface text-surface-container-lowest font-title-lg text-title-lg hover:bg-black transition-colors shadow-sm" type="button" onclick="submitPayment()">تأكيد الدفعة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Payments Modal -->
+<div id="viewPaymentsModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="closePaymentsModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-md">
+            <div class="flex items-center justify-between mb-md">
+                <h3 class="font-title-lg text-title-lg text-on-surface">دفعات المعاملة المالية</h3>
+                <button class="p-1 rounded hover:bg-surface-container-low text-secondary" onclick="closePaymentsModal()">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="paymentsList" class="flex flex-col gap-2">
+                <div class="text-center text-secondary py-8">جاري التحميل...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/supplier-financial-transactions.js" asp-append-version="true"></script>
+}

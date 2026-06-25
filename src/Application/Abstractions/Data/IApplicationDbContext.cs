@@ -28,6 +28,9 @@ public interface IApplicationDbContext
     DbSet<SupplierDelivery> SupplierDeliveries { get; }
     DbSet<SupplierScrapGoldPayment> SupplierScrapGoldPayments { get; }
     DbSet<SupplierManufacturingPayment> SupplierManufacturingPayments { get; }
+    DbSet<SupplierFinancialTransaction> SupplierFinancialTransactions { get; }
+    DbSet<SupplierFinancialLedgerEntry> SupplierFinancialLedgerEntries { get; }
+    DbSet<SupplierFinancialPayment> SupplierFinancialPayments { get; }
     DbSet<Expense> Expenses { get; }
     DbSet<ExpenseCategory> ExpenseCategories { get; }
 

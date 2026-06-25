@@ -244,6 +244,19 @@ function renderDetailPanel(container, data) {
     const mfgDisplay = formatNumber(Math.abs(mfgBalance));
     const goldHint = balanceHintHtml(goldBalance);
     const mfgHint = balanceHintHtml(mfgBalance);
+    let finHtml = '';
+    if (data.financialBalancesByCurrency && data.financialBalancesByCurrency.length > 0) {
+        finHtml = data.financialBalancesByCurrency.map(c => {
+            const cls = c.balance < 0 ? 'text-error' : c.balance > 0 ? 'text-success' : 'text-on-surface';
+            const sign = c.balance > 0 ? 'له' : c.balance < 0 ? 'لنا' : '';
+            return `<div class="flex items-center justify-between py-0.5">
+                <span class="text-xs text-secondary">${escapeHtml(c.currency)}</span>
+                <span class="data-mono text-sm font-medium ${cls}" dir="ltr">${formatNumber(Math.abs(c.balance))} <span class="text-xs">${sign}</span></span>
+            </div>`;
+        }).join('');
+    } else {
+        finHtml = '<div class="text-secondary text-xs text-center py-2">لا توجد معاملات مالية</div>';
+    }
     let transactionsHtml = '';
     if (data.recentTransactions && data.recentTransactions.length > 0) {
         transactionsHtml = data.recentTransactions.map(t => {
@@ -272,6 +285,7 @@ function renderDetailPanel(container, data) {
         <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
             <div class="kpi-gold"><div class="flex items-center justify-between mb-2"><span class="text-secondary text-xs font-medium">رصيد الذهب الحالي</span><span class="material-symbols-outlined text-primary text-[20px]">grid_goldenratio</span></div><div class="flex items-end gap-2"><span class="text-2xl font-bold text-on-surface tracking-tight" dir="ltr">${goldDisplay}</span><span class="text-secondary text-sm mb-1">جم عيار 21</span></div>${goldHint}</div>
             <div class="kpi-finance"><div class="flex items-center justify-between mb-2"><span class="text-secondary text-xs font-medium">أجور التصنيع المستحقة</span><span class="material-symbols-outlined text-secondary text-[20px]">payments</span></div><div class="flex items-end gap-2"><span class="text-xl font-bold text-on-surface tracking-tight" dir="ltr">${mfgDisplay}</span><span class="text-secondary text-xs mb-1">د.إ</span></div>${mfgHint}</div>
+            <div class="kpi-finance" style="border-right: 3px solid var(--color-primary);"><div class="flex items-center justify-between mb-2"><span class="text-secondary text-xs font-medium">المعاملات المالية</span><span class="material-symbols-outlined text-primary text-[20px]">account_balance</span></div>${finHtml}</div>
             <div><h4 class="text-secondary text-xs font-medium uppercase tracking-wider mb-2">معلومات التواصل</h4><div class="bg-surface-container rounded-lg border border-outline-variant p-3 flex flex-col gap-2">
                 <div class="contact-item"><svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg><span class="text-on-surface" dir="ltr">${escapeHtml(data.primaryPhone)}</span></div>
                 ${data.secondaryPhone ? `<div class="contact-item"><svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg><span class="text-on-surface" dir="ltr">${escapeHtml(data.secondaryPhone)}</span></div>` : ''}
@@ -303,6 +317,19 @@ function renderMobileDetail(container, data) {
     const mfgDisplay = formatNumber(Math.abs(data.manufacturingBalance));
     const goldHint = balanceHintHtml(data.goldBalance);
     const mfgHint = balanceHintHtml(data.manufacturingBalance);
+    let mobileFinHtml = '';
+    if (data.financialBalancesByCurrency && data.financialBalancesByCurrency.length > 0) {
+        mobileFinHtml = data.financialBalancesByCurrency.map(c => {
+            const cls = c.balance < 0 ? 'text-error' : c.balance > 0 ? 'text-success' : 'text-on-surface';
+            const sign = c.balance > 0 ? 'له' : c.balance < 0 ? 'لنا' : '';
+            return `<div class="flex items-center justify-between py-0.5">
+                <span class="text-xs text-secondary">${escapeHtml(c.currency)}</span>
+                <span class="data-mono text-sm font-medium ${cls}" dir="ltr">${formatNumber(Math.abs(c.balance))} <span class="text-xs">${sign}</span></span>
+            </div>`;
+        }).join('');
+    } else {
+        mobileFinHtml = '<div class="text-secondary text-xs text-center py-2">لا توجد معاملات مالية</div>';
+    }
     container.innerHTML = `
         <div class="flex items-center gap-3 mb-4">
             <div class="supplier-avatar-lg">${data.name.charAt(0)}</div>
@@ -314,6 +341,7 @@ function renderMobileDetail(container, data) {
         </div>
         <div class="kpi-gold mb-3"><div class="flex items-center justify-between mb-1"><span class="text-secondary text-xs">رصيد الذهب</span></div><div class="data-mono text-lg text-on-surface" dir="ltr">${goldDisplay} جم</div>${goldHint}</div>
         <div class="kpi-finance mb-3"><div class="flex items-center justify-between mb-1"><span class="text-secondary text-xs">أجور التصنيع</span></div><div class="data-mono text-on-surface text-lg" dir="ltr">${mfgDisplay} د.إ</div>${mfgHint}</div>
+        <div class="kpi-finance mb-3" style="border-right: 3px solid var(--color-primary);"><div class="flex items-center justify-between mb-1"><span class="text-secondary text-xs">المعاملات المالية</span></div>${mobileFinHtml}</div>
         <div class="mb-3"><h4 class="text-secondary text-xs font-medium uppercase tracking-wider mb-2">معلومات التواصل</h4><div class="bg-surface-container rounded-lg border border-outline-variant p-3 flex flex-col gap-2">
             <div class="contact-item"><svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg><span class="text-on-surface" dir="ltr">${escapeHtml(data.primaryPhone)}</span></div>
             ${data.secondaryPhone ? `<div class="contact-item"><svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg><span dir="ltr">${escapeHtml(data.secondaryPhone)}</span></div>` : ''}

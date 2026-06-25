@@ -12,7 +12,14 @@ public sealed record SupplierDetailResponse
     public DateTime CreatedAt { get; init; }
     public decimal GoldBalance { get; init; }
     public decimal ManufacturingBalance { get; init; }
+    public List<FinancialBalanceByCurrency> FinancialBalancesByCurrency { get; init; } = [];
     public List<SupplierTransactionResponse> RecentTransactions { get; init; } = [];
+}
+
+public sealed record FinancialBalanceByCurrency
+{
+    public string Currency { get; init; } = string.Empty;
+    public decimal Balance { get; init; }
 }
 
 public sealed record SupplierTransactionResponse

@@ -47,6 +47,12 @@ public sealed class ApplicationDbContext(
 
     public DbSet<SupplierManufacturingPayment> SupplierManufacturingPayments { get; set; }
 
+    public DbSet<SupplierFinancialTransaction> SupplierFinancialTransactions { get; set; }
+
+    public DbSet<SupplierFinancialLedgerEntry> SupplierFinancialLedgerEntries { get; set; }
+
+    public DbSet<SupplierFinancialPayment> SupplierFinancialPayments { get; set; }
+
     public DbSet<Expense> Expenses { get; set; }
 
     public DbSet<ExpenseCategory> ExpenseCategories { get; set; }

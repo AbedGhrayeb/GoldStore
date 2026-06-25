@@ -99,6 +99,11 @@ public class SuppliersController(
                 amount = t.Amount,
                 unit = t.Unit,
                 direction = t.Direction
+            }),
+            financialBalancesByCurrency = detail.FinancialBalancesByCurrency.Select(c => new
+            {
+                currency = c.Currency,
+                balance = c.Balance
             })
         });
     }

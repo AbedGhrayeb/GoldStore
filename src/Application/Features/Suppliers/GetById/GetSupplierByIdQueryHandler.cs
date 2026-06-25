@@ -29,7 +29,33 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
             .Where(e => e.SupplierId == query.Id)
             .SumAsync(e => e.MovementType == SupplierBalanceMovementType.Increase ? e.Amount : -e.Amount, cancellationToken);
 
-        List<SupplierTransactionResponse> recentTransactions = await GetRecentTransactions(query.Id, cancellationToken);
+        List<SupplierFinancialTransaction> financialTransactions = await context.SupplierFinancialTransactions
+            .Where(t => t.SupplierId == query.Id)
+            .ToListAsync(cancellationToken);
+
+        List<Guid> financialTxIds = financialTransactions.Select(t => t.Id).ToList();
+
+        List<FinancialBalanceByCurrency> financialBalancesByCurrency = [];
+
+        if (financialTxIds.Count != 0)
+        {
+            Dictionary<Guid, decimal> financialBalances = await context.SupplierFinancialLedgerEntries
+                .Where(e => financialTxIds.Contains(e.SupplierFinancialTransactionId))
+                .GroupBy(e => e.SupplierFinancialTransactionId)
+                .Select(g => new { TransactionId = g.Key, Balance = g.Sum(e => e.MovementType == SupplierBalanceMovementType.Increase ? e.Amount : -e.Amount) })
+                .ToDictionaryAsync(x => x.TransactionId, x => x.Balance, cancellationToken);
+
+            financialBalancesByCurrency = financialTransactions
+                .GroupBy(t => t.Currency)
+                .Select(g => new FinancialBalanceByCurrency
+                {
+                    Currency = g.Key.ToString(),
+                    Balance = g.Sum(t => financialBalances.GetValueOrDefault(t.Id, 0m))
+                })
+                .ToList();
+        }
+
+        List<SupplierTransactionResponse> recentTransactions = await GetRecentTransactions(query.Id, financialTxIds, cancellationToken);
 
         return new SupplierDetailResponse
         {
@@ -43,11 +69,12 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
             CreatedAt = supplier.CreatedAt,
             GoldBalance = goldBalance,
             ManufacturingBalance = manufacturingBalance,
+            FinancialBalancesByCurrency = financialBalancesByCurrency,
             RecentTransactions = recentTransactions
         };
     }
 
-    private async Task<List<SupplierTransactionResponse>> GetRecentTransactions(Guid supplierId, CancellationToken cancellationToken)
+    private async Task<List<SupplierTransactionResponse>> GetRecentTransactions(Guid supplierId, List<Guid> financialTxIds, CancellationToken cancellationToken)
     {
         List<SupplierTransactionResponse> goldEntries = await context.SupplierGoldLedgerEntries
             .Where(e => e.SupplierId == supplierId)
@@ -85,7 +112,23 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
             })
             .ToListAsync(cancellationToken);
 
-        return goldEntries.Concat(mfgEntries)
+        List<SupplierTransactionResponse> financialEntries = await context.SupplierFinancialLedgerEntries
+            .Where(e => financialTxIds.Contains(e.SupplierFinancialTransactionId))
+            .OrderByDescending(e => e.Date)
+            .Take(5)
+            .Select(e => new SupplierTransactionResponse
+            {
+                Id = e.Id,
+                Description = e.MovementType == SupplierBalanceMovementType.Increase ? "سلفة" : "دفعة سلفة",
+                Date = e.Date,
+                Type = "مالي",
+                Amount = e.Amount,
+                Unit = "د.إ",
+                Direction = e.MovementType == SupplierBalanceMovementType.Increase ? "+" : "-"
+            })
+            .ToListAsync(cancellationToken);
+
+        return goldEntries.Concat(mfgEntries).Concat(financialEntries)
             .OrderByDescending(t => t.Date)
             .Take(10)
             .ToList();
