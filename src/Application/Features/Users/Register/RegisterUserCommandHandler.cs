@@ -3,7 +3,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Users.Register;
 
@@ -14,22 +14,17 @@ internal sealed class RegisterUserCommandHandler(IApplicationDbContext context, 
     {
         if (await context.Users.AnyAsync(u => u.Email == command.Email, cancellationToken))
         {
-            return Result.Failure<Guid>(UserErrors.EmailNotUnique);
+            return UserErrors.EmailNotUnique;
         }
 
-        var user = new User
+        Result<User> user = User.Create(Guid.CreateVersion7(), command.Email, command.FirstName, command.LastName, passwordHasher.Hash(command.Password));
+        if (user.IsError)
         {
-            Id = Guid.CreateVersion7(),
-            Email = command.Email,
-            FirstName = command.FirstName,
-            LastName = command.LastName,
-            PasswordHash = passwordHasher.Hash(command.Password)
-        };
-
-        context.Users.Add(user);
-
+            return user.Errors;
+        }
+        context.Users.Add(user.Value);
         await context.SaveChangesAsync(cancellationToken);
 
-        return user.Id;
+        return user.Value.Id;
     }
 }

@@ -1,4 +1,4 @@
-﻿using SharedKernel;
+﻿using SharedKernel.Result;
 
 namespace Application.Abstractions.Messaging;
 
