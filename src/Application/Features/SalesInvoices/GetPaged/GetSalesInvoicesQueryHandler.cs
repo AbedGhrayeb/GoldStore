@@ -52,7 +52,19 @@ internal sealed class GetSalesInvoicesQueryHandler(IApplicationDbContext context
             .Where(u => employeeIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => $"{u.FirstName} {u.LastName}", cancellationToken);
 
-        IQueryable<SalesInvoiceResponse> invoiceResponse = invoicesQuery.Select(invoice => new SalesInvoiceResponse
+        int page = Math.Max(query.Page, 1);
+        int pageSize = Math.Clamp(query.PageSize, 1, 50);
+
+        int totalCount = await invoicesQuery.CountAsync(cancellationToken);
+
+        List<SalesInvoice> pageItems = await invoicesQuery
+            .OrderByDescending(i => i.Date)
+            .ThenByDescending(i => i.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        List<SalesInvoiceResponse> items = pageItems.Select(invoice => new SalesInvoiceResponse
         {
             Id = invoice.Id,
             InvoiceNumber = invoice.InvoiceNumber,
@@ -66,7 +78,9 @@ internal sealed class GetSalesInvoicesQueryHandler(IApplicationDbContext context
             PaymentMethod = invoice.PaymentMethod.ToString(),
             Status = invoice.Status.ToString(),
             StatusLabel = invoice.Status.ToStatusLabel(),
-            UserName = employeeNames.GetValueOrDefault(invoice.EmployeeId!.Value, "—"),
+            UserName = invoice.EmployeeId.HasValue
+                ? employeeNames.GetValueOrDefault(invoice.EmployeeId.Value, "—")
+                : "—",
             Notes = invoice.Notes,
             CreatedAt = invoice.CreatedAtUtc!.Value.LocalDateTime,
             Items = invoice.SaleInvoiceItems.Select(ii => new SalesInvoiceItemResponse
@@ -78,7 +92,8 @@ internal sealed class GetSalesInvoicesQueryHandler(IApplicationDbContext context
                 PricePerGram = ii.PricePerGram,
                 GoldAmount = ii.GoldAmount
             }).ToList()
-        });
-        return await PaginatedList<SalesInvoiceResponse>.CreateAsync(invoiceResponse, query.Page, query.PageSize);
+        }).ToList();
+
+        return new PaginatedList<SalesInvoiceResponse>(items, page, pageSize, totalCount);
     }
 }

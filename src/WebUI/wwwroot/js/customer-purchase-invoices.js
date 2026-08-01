@@ -1,6 +1,7 @@
 ﻿let purchaseItems = [];
 let categories = [];
 let accounts = [];
+let employees = [];
 let karatTotals = { 24: 0, 21: 0, 18: 0 };
 
 function formatDate(d) {
@@ -16,6 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadNextNumber();
     await loadCategories();
     await loadAccounts();
+    await loadEmployees();
     addItemRow();
     updateAccountSelect();
 });
@@ -47,6 +49,21 @@ async function loadAccounts() {
         accounts = data.items ?? [];
     } catch (e) {
         accounts = [];
+    }
+}
+
+async function loadEmployees() {
+    try {
+        const res = await fetch('/Employees/List');
+        const data = await res.json();
+        employees = Array.isArray(data) ? data : [];
+        const select = document.getElementById('employeeSelect');
+        if (!select) return;
+        const active = employees.filter(e => e.isActive);
+        select.innerHTML = '<option value="">اختر الموظف</option>' +
+            active.map(e => `<option value="${e.id}">${escapeHtml(e.fullName || (e.firstName + ' ' + e.lastName))}</option>`).join('');
+    } catch (e) {
+        employees = [];
     }
 }
 
@@ -209,6 +226,7 @@ async function submitPurchaseInvoice() {
     const sellerYearOfBirth = document.getElementById('sellerYearOfBirth').value;
     const sellerPhone = document.getElementById('sellerPhone').value.trim();
     const sellerAddress = document.getElementById('sellerAddress').value.trim();
+    const employeeId = document.getElementById('employeeSelect').value;
     const buyerName = document.getElementById('buyerName')?.value || '';
     const dateVal = document.getElementById('invoiceDate').dataset.date || new Date().toISOString();
     const currency = getSelectedCurrency();
@@ -222,6 +240,11 @@ async function submitPurchaseInvoice() {
 
     if (!sellerName) {
         toastr.error('يرجى إدخال اسم البائع');
+        return;
+    }
+
+    if (!employeeId) {
+        toastr.error('يرجى اختيار الموظف');
         return;
     }
 
@@ -280,6 +303,7 @@ async function submitPurchaseInvoice() {
         paymentMethod,
         accountId,
         sellerAccountNumber: sellerAccountNumber || null,
+        employeeId,
         notes: notes || null
     };
 

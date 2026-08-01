@@ -3,6 +3,8 @@
     ViewData["Title"] = "إنشاء فاتورة مبيعات";
 }
 
+@Html.AntiForgeryToken()
+
 <!-- Page Header -->
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-sm mb-sm">
     <div>
@@ -42,8 +44,7 @@
                     <label class="font-label-md text-label-md text-secondary">رقم الهاتف (اختياري)</label>
                     <input class="bg-transparent border border-outline-variant rounded-lg px-sm py-2 font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-shadow" id="customerPhone" placeholder="05XX XXX XXXX" type="tel" />
                 </div>
-            </div>
-        </section>
+       </section>
 
         <!-- Items Table Card -->
         <section class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.02)] border border-outline-variant/50 flex flex-col overflow-auto">
@@ -79,7 +80,18 @@
                 <span class="font-body-md text-secondary">لم يتم إضافة أصناف بعد</span>
             </div>
         </section>
-
+                <section class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.02)] border border-outline-variant/50 p-md">
+            <h3 class="font-title-lg text-title-lg font-bold text-on-surface flex items-center gap-xs mb-sm">
+                <span class="material-symbols-outlined text-primary">badge</span>
+                بيانات الموظف
+            </h3>
+            <div class="flex flex-col gap-xs">
+                <label class="font-label-md text-label-md text-secondary">اسم المشتري <span class="text-error">*</span></label>
+     <select id="employeeSelect" class="bg-transparent border border-outline-variant rounded-lg px-sm py-2 font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-shadow appearance-none">
+                        <option value="">اختر الموظف</option>
+                    </select>
+            </div>
+        </section>
         <!-- Payment Methods & Currency -->
         <section class="grid grid-cols-1 md:grid-cols-2 gap-md">
             <!-- Currency -->
@@ -143,17 +155,6 @@
                     </div>
                 </div>
             </div>
-        </section>
-        <!-- Buyer Name -->
-        <section class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.02)] border border-outline-variant/50 p-md">
-            <div class="flex items-center justify-between mb-sm">
-                <h3 class="font-title-lg text-title-lg font-bold text-on-surface flex items-center gap-xs">
-                    <span class="material-symbols-outlined text-primary">badge</span>
-                    اسم المشتري
-                    <span class="text-error">*</span>
-                </h3>
-            </div>
-            <input id="sellerName" class="w-full bg-transparent border border-outline-variant rounded-lg px-sm py-2 font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-shadow" placeholder="أدخل اسم المشتري" type="text" />
         </section>
         <!-- Invoice Notes -->
         <section class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.02)] border border-outline-variant/50 p-md">

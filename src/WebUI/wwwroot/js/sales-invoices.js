@@ -3,6 +3,7 @@
 let items = [];
 let categories = [];
 let accounts = [];
+let employees = [];
 let currentInvoiceNumber = '';
 let karatTotals = { 24: 0, 21: 0, 18: 0 };
 
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadNextNumber();
     await loadCategories();
     await loadAccounts();
+    await loadEmployees();
     addItemRow();
 });
 
@@ -51,6 +53,21 @@ async function loadAccounts() {
         onPaymentMethodChange();
     } catch (e) {
         accounts = [];
+    }
+}
+
+async function loadEmployees() {
+    try {
+        const res = await fetch('/Employees/List');
+        const data = await res.json();
+        employees = Array.isArray(data) ? data : [];
+        const select = document.getElementById('employeeSelect');
+        if (!select) return;
+        const active = employees.filter(e => e.isActive);
+        select.innerHTML = '<option value="">اختر الموظف</option>' +
+            active.map(e => `<option value="${e.id}">${escapeHtml(e.fullName || (e.firstName + ' ' + e.lastName))}</option>`).join('');
+    } catch (e) {
+        employees = [];
     }
 }
 
@@ -231,6 +248,7 @@ function populateAccounts(currency, type) {
 async function submitInvoice() {
     const customerName = document.getElementById('customerName').value.trim();
     const customerPhone = document.getElementById('customerPhone').value.trim();
+    const employeeId = document.getElementById('employeeSelect').value;
     const notes = document.getElementById('invoiceNotes').value.trim();
     const dateVal = document.getElementById('invoiceDate').dataset.date || new Date().toISOString();
     const currency = document.querySelector('input[name="currency"]:checked')?.value;
@@ -244,6 +262,11 @@ async function submitInvoice() {
     // Validate
     if (!customerName) {
         toastr.error('يرجى إدخال اسم العميل');
+        return;
+    }
+
+    if (!employeeId) {
+        toastr.error('يرجى اختيار الموظف');
         return;
     }
 
@@ -306,6 +329,7 @@ async function submitInvoice() {
         accountId: accountId || null,
         buyerAccountNumber: buyerAccountNumber || null,
         sellerName: sellerName || null,
+        emplyeeId: employeeId,
         notes: notes || null
     };
 
