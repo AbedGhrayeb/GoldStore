@@ -3,22 +3,22 @@ using Application.Abstractions.Messaging;
 using Domain.Debts;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Finance.Debts.Payments;
 
 internal sealed class CreatePaymentCommandHandler(
     IApplicationDbContext context)
-    : ICommandHandler<CreatePaymentCommand, Guid>
+    : ICommandHandler<CreatePaymentCommand, Updated>
 {
-    public async Task<Result<Guid>> Handle(CreatePaymentCommand command, CancellationToken cancellationToken)
+    public async Task<Result<Updated>> Handle(CreatePaymentCommand command, CancellationToken cancellationToken)
     {
         Debt? debt = await context.Debts
             .FirstOrDefaultAsync(d => d.Id == command.DebtId, cancellationToken);
 
         if (debt is null)
         {
-            return Result.Failure<Guid>(DebtErrors.NotFound(command.DebtId));
+            return DebtErrors.NotFound(command.DebtId);
         }
 
         FinancialAccount? account = await context.FinancialAccounts
@@ -27,17 +27,17 @@ internal sealed class CreatePaymentCommandHandler(
 
         if (account is null)
         {
-            return Result.Failure<Guid>(DebtErrors.AccountNotFound(command.AccountId));
+            return DebtErrors.AccountNotFound(command.AccountId);
         }
 
         if (account.Currency != debt.Currency)
         {
-            return Result.Failure<Guid>(DebtErrors.AccountCurrencyMismatch);
+            return DebtErrors.AccountCurrencyMismatch;
         }
 
         if (command.Amount <= 0)
         {
-            return Result.Failure<Guid>(DebtErrors.PaymentAmountMustBePositive);
+            return DebtErrors.PaymentAmountMustBePositive;
         }
 
         decimal paidSoFar = await context.DebtLedgerEntries
@@ -49,50 +49,49 @@ internal sealed class CreatePaymentCommandHandler(
 
         if (command.Amount > paidSoFar)
         {
-            return Result.Failure<Guid>(DebtErrors.PaymentExceedsBalance(command.Amount, paidSoFar));
+            return DebtErrors.PaymentExceedsBalance(command.Amount, paidSoFar);
         }
 
         var paymentId = Guid.CreateVersion7();
-
-        context.DebtLedgerEntries.Add(new DebtLedgerEntry
+        Result<DebtLedgerEntry> debtLedgerEntryResult = DebtLedgerEntry.Create(command.DebtId, command.Amount,
+            DebtBalanceMovementType.Decrease, command.Notes ?? $"دفعة على {debt.Name}");
+        if (debtLedgerEntryResult.IsError)
         {
-            Id = paymentId,
-            DebtId = command.DebtId,
-            Amount = command.Amount,
-            MovementType = DebtBalanceMovementType.Decrease,
-            Date = command.Date,
-            Notes = command.Notes ?? $"دفعة على {debt.Name}"
-        });
+            return debtLedgerEntryResult.Errors;
+        }
+        context.DebtLedgerEntries.Add(debtLedgerEntryResult.Value);
 
-        var financialTransactionType = debt.Direction switch
-        {
-            DebtDirection.Receivable => FinancialTransactionType.Inflow,
-            DebtDirection.Payable => FinancialTransactionType.Outflow,
-            _ => FinancialTransactionType.Inflow
-        };
+        Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(
+            command.AccountId, account.Currency,
+            command.Amount,
+            debt.Direction switch
+            {
+                DebtDirection.Receivable => FinancialTransactionType.Inflow,
+                DebtDirection.Payable => FinancialTransactionType.Outflow,
+                _ => FinancialTransactionType.Inflow
+            }, FinancialReferenceType.DebtPayment,
+            command.DebtId,
+            command.Notes ?? $"دفعة على {GetDirectionLabel(debt.Direction)}: {debt.Name}");
 
-        context.FinancialTransactions.Add(new FinancialTransaction
+        if (financialTransactionResult.IsError)
         {
-            Id = Guid.CreateVersion7(),
-            AccountId = command.AccountId,
-            Currency = account.Currency,
-            Amount = command.Amount,
-            TransactionType = financialTransactionType,
-            ReferenceType = FinancialReferenceType.DebtPayment,
-            ReferenceId = command.DebtId,
-            Date = command.Date,
-            Notes = command.Notes ?? $"دفعة على {GetDirectionLabel(debt.Direction)}: {debt.Name}"
-        });
+            return financialTransactionResult.Errors;
+        }
+
+        context.FinancialTransactions.Add(financialTransactionResult.Value);
+
+
+
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(paymentId);
+        return Result.Updated;
     }
 
     private static string GetDirectionLabel(DebtDirection direction) => direction switch
     {
-        DebtDirection.Receivable => "ذمة مدينة",
-        DebtDirection.Payable => "ذمة دائنة",
+        DebtDirection.Receivable => "لنا - ذمة مدينة",
+        DebtDirection.Payable => "علينا - ذمة دائنة",
         _ => "دين"
     };
 }

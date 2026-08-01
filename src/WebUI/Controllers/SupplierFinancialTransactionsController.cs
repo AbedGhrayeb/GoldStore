@@ -8,7 +8,7 @@ using Application.Finance.Accounts;
 using Application.Finance.Accounts.GetAll;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
+using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.SupplierFinancialTransaction;
 
@@ -45,7 +45,7 @@ public class SupplierFinancialTransactionsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);
@@ -60,7 +60,7 @@ public class SupplierFinancialTransactionsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);
@@ -74,7 +74,7 @@ public class SupplierFinancialTransactionsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(new { success = true, accounts = result.Value });
@@ -88,7 +88,7 @@ public class SupplierFinancialTransactionsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(new { success = true, payments = result.Value });
@@ -121,7 +121,7 @@ public class SupplierFinancialTransactionsController(
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "المعاملات المالية"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "المعاملات المالية"));
         }
 
         return Json(ToastResult.SuccessResult("تم إنشاء المعاملة المالية بنجاح", "المعاملات المالية", "", "refreshSupplierFinancialTransactions"));
@@ -152,7 +152,7 @@ public class SupplierFinancialTransactionsController(
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "المعاملات المالية"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "المعاملات المالية"));
         }
 
         return Json(ToastResult.SuccessResult("تم تسجيل الدفعة بنجاح", "المعاملات المالية", "", "refreshSupplierFinancialTransactions"));

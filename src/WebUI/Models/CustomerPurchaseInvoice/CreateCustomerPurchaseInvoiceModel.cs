@@ -15,13 +15,12 @@ public class CreateCustomerPurchaseInvoiceModel
     public string SellerIdNumber { get; set; }
     [Required]
     [Range(1940, 2100)]
-    public int? SellerYearOfBirth{ get; set; }
+    public int? SellerYearOfBirth { get; set; }
     [StringLength(200)]
     public string? SellerAddress { get; set; }
 
     [Required]
-    [StringLength(200)]
-    public string BuyerName { get; set; } = string.Empty;
+    public Guid EmployeeId { get; set; }
 
     [Required]
     public DateTime Date { get; set; }

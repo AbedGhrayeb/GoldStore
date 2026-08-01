@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Application.Common.Models;
 using Application.Features.Inventory.Adjustments;
 using Application.Features.Inventory.Adjustments.Create;
 using Application.Features.Inventory.Adjustments.GetKpis;
@@ -6,6 +7,7 @@ using Application.Features.Inventory.Adjustments.GetPaged;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel;
+using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.InventoryAdjustment;
 
@@ -13,7 +15,7 @@ namespace WebUI.Controllers;
 
 [Authorize]
 public class InventoryAdjustmentsController(
-    IQueryHandler<GetInventoryAdjustmentsQuery, PagedInventoryAdjustmentResponse> getPagedHandler,
+    IQueryHandler<GetInventoryAdjustmentsQuery, PaginatedList<InventoryAdjustmentResponse>> getPagedHandler,
     IQueryHandler<GetInventoryAdjustmentKpisQuery, InventoryAdjustmentKpiResponse> getKpisHandler,
     ICommandHandler<CreateInventoryAdjustmentCommand, Guid> createHandler) : BaseController
 {
@@ -28,13 +30,13 @@ public class InventoryAdjustmentsController(
         string? adjustmentType = null,
         CancellationToken cancellationToken = default)
     {
-        Result<PagedInventoryAdjustmentResponse> result = await getPagedHandler.Handle(
+        Result<PaginatedList<InventoryAdjustmentResponse>> result = await getPagedHandler.Handle(
             new GetInventoryAdjustmentsQuery(page, pageSize, fromDate, toDate, adjustmentType),
             cancellationToken);
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);
@@ -48,7 +50,7 @@ public class InventoryAdjustmentsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);
@@ -80,7 +82,7 @@ public class InventoryAdjustmentsController(
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "تسويات المخزون"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "تسويات المخزون"));
         }
 
         return Json(ToastResult.SuccessResult("تم تسجيل التسوية بنجاح", "تسويات المخزون", "", "refreshAdjustments"));

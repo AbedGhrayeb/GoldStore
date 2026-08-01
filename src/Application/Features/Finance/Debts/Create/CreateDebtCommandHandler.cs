@@ -4,7 +4,7 @@ using Domain.Common;
 using Domain.Debts;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Finance.Debts.Create;
 
@@ -15,7 +15,7 @@ internal sealed class CreateDebtCommandHandler(
     public async Task<Result<Guid>> Handle(CreateDebtCommand command, CancellationToken cancellationToken)
     {
         var direction = (DebtDirection)command.Direction;
-        var currency = Enum.Parse<Currency>(command.Currency);
+        Currency currency = Enum.Parse<Currency>(command.Currency);
 
         FinancialAccount? account = await context.FinancialAccounts
             .AsNoTracking()
@@ -23,69 +23,60 @@ internal sealed class CreateDebtCommandHandler(
 
         if (account is null)
         {
-            return Result.Failure<Guid>(DebtErrors.AccountNotFound(command.AccountId));
+            return DebtErrors.AccountNotFound(command.AccountId);
         }
 
         if (account.Currency != currency)
         {
-            return Result.Failure<Guid>(DebtErrors.AccountCurrencyMismatch);
+            return DebtErrors.AccountCurrencyMismatch;
         }
 
         var debtId = Guid.CreateVersion7();
-
-        var debt = new Debt
+        Result<Debt> debtResult = Debt.Create(command.Name, command.Phone, direction, currency, command.AccountId, command.Notes);
+        if (debtResult.IsError)
         {
-            Id = debtId,
-            Name = command.Name,
-            Phone = command.Phone,
-            Direction = direction,
-            Currency = currency,
-            AccountId = command.AccountId,
-            Notes = command.Notes,
-            CreatedAt = command.Date
-        };
+            return debtResult.Errors;
+        }
+        context.Debts.Add(debtResult.Value);
 
-        context.Debts.Add(debt);
+        Result<DebtLedgerEntry> debtLedgerEntryResult = DebtLedgerEntry.Create(debtResult.Value.Id, command.Amount,
+            DebtBalanceMovementType.Increase, $"إنشاء دين — {command.Name}");
 
-        context.DebtLedgerEntries.Add(new DebtLedgerEntry
+
+
+        if (debtLedgerEntryResult.IsError)
         {
-            Id = Guid.CreateVersion7(),
-            DebtId = debtId,
-            Amount = command.Amount,
-            MovementType = DebtBalanceMovementType.Increase,
-            Date = command.Date,
-            Notes = $"إنشاء دين — {command.Name}"
-        });
+            return debtLedgerEntryResult.Errors;
+        }
+        context.DebtLedgerEntries.Add(debtLedgerEntryResult.Value);
 
-        var financialTransactionType = direction switch
+
+        FinancialTransactionType financialTransactionType = direction switch
         {
             DebtDirection.Receivable => FinancialTransactionType.Outflow,
             DebtDirection.Payable => FinancialTransactionType.Inflow,
             _ => FinancialTransactionType.Outflow
         };
+        Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(command.AccountId, currency, command.Amount,
+            financialTransactionType, FinancialReferenceType.DebtCreation, debtId, $"إنشاء {GetDirectionLabel(direction)}: {command.Name}");
 
-        context.FinancialTransactions.Add(new FinancialTransaction
+
+        if (financialTransactionResult.IsError)
         {
-            Id = Guid.CreateVersion7(),
-            AccountId = command.AccountId,
-            Currency = account.Currency,
-            Amount = command.Amount,
-            TransactionType = financialTransactionType,
-            ReferenceType = FinancialReferenceType.DebtCreation,
-            ReferenceId = debtId,
-            Date = command.Date,
-            Notes = $"إنشاء {GetDirectionLabel(direction)}: {command.Name}"
-        });
+            return financialTransactionResult.Errors;
+        }
+        context.FinancialTransactions.Add(financialTransactionResult.Value);
+
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(debtId);
+        return debtId;
     }
 
     private static string GetDirectionLabel(DebtDirection direction) => direction switch
     {
-        DebtDirection.Receivable => "ذمة مدينة",
-        DebtDirection.Payable => "ذمة دائنة",
+        DebtDirection.Receivable => "لنا - ذمة مدينة",
+        DebtDirection.Payable => "له - ذمة دائنة",
         _ => "دين"
     };
 }

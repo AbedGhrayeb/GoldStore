@@ -6,7 +6,7 @@ using Application.Features.StoreOperations.GetPaged;
 using Application.Features.StoreOperations.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace WebUI.Controllers;
 
@@ -14,7 +14,7 @@ namespace WebUI.Controllers;
 public class StoreOperationsController(
     IQueryHandler<GetStoreOperationsQuery, PagedStoreOperationsResponse> getPagedHandler,
     IQueryHandler<GetStoreOperationsKpisQuery, StoreOperationsKpiResponse> getKpisHandler,
-    IQueryHandler<GetStoreEmployeesQuery, List<string>> getEmployeesHandler,
+    IQueryHandler<GetStoreEmployeesQuery, List<EmployeeResponse>> getEmployeesHandler,
     IQueryHandler<GetStoreOperationDetailQuery, StoreOperationDetailResponse> getDetailHandler) : Controller
 {
     public IActionResult Index() => View();
@@ -26,18 +26,18 @@ public class StoreOperationsController(
         DateTime? fromDate = null,
         DateTime? toDate = null,
         string? operationType = null,
-        string? employeeName = null,
+        Guid? employeeId = null,
         Guid? accountId = null,
         string? search = null,
         CancellationToken cancellationToken = default)
     {
         Result<PagedStoreOperationsResponse> result = await getPagedHandler.Handle(
-            new GetStoreOperationsQuery(page, pageSize, fromDate, toDate, operationType, employeeName, accountId, search),
+            new GetStoreOperationsQuery(page, pageSize, fromDate, toDate, operationType, employeeId, accountId, search),
             cancellationToken);
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);
@@ -51,7 +51,7 @@ public class StoreOperationsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);
@@ -60,12 +60,12 @@ public class StoreOperationsController(
     [HttpGet]
     public async Task<JsonResult> GetEmployees(CancellationToken cancellationToken)
     {
-        Result<List<string>> result = await getEmployeesHandler.Handle(
+        Result<List<EmployeeResponse>> result = await getEmployeesHandler.Handle(
             new GetStoreEmployeesQuery(), cancellationToken);
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);
@@ -79,7 +79,7 @@ public class StoreOperationsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);

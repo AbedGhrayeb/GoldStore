@@ -21,5 +21,21 @@ internal sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
         builder.Property(supplier => supplier.Notes).HasMaxLength(1000);
 
         builder.HasIndex(supplier => supplier.Name).IsUnique();
+
+
+        builder.HasMany(supplier => supplier.SupplierFinancialTransactions)
+            .WithOne(transaction => transaction.Supplier)
+            .HasForeignKey(transaction => transaction.SupplierId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(supplier => supplier.SupplierGoldLedgerEntries)
+            .WithOne(entry => entry.Supplier)
+            .HasForeignKey(entry => entry.SupplierId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(supplier => supplier.SupplierManufacturingLedgerEntries)
+            .WithOne(entry => entry.Supplier)
+            .HasForeignKey(entry => entry.SupplierId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

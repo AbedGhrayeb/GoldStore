@@ -45,7 +45,7 @@ function buildCashCard(a) {
         changeText = '- ' + formatNumber(a.lastChangeAmount) + ' ' + a.currencySymbol;
     }
 
-    var isPrimary = a.currency === 'Jod';
+    var isPrimary = a.currency === 'JOD';
 
     return '<div class="account-card bg-surface-container-lowest rounded-xl p-md border border-outline-variant shadow-[0px_4px_20px_rgba(0,0,0,0.04)] relative overflow-hidden group hover:border-primary transition-colors">' +
         (isPrimary ? '<div class="absolute top-0 right-0 w-1 h-full bg-primary-container rounded-r-xl"></div>' : '') +
@@ -73,9 +73,9 @@ function buildCashCard(a) {
 
 function getCurrencyLabel(currency) {
     switch (currency) {
-        case 'Jod': return 'دينار أردني';
-        case 'Usd': return 'دولار أمريكي';
-        case 'Ils': return 'شيكل إسرائيلي';
+        case 'JOD': return 'دينار أردني';
+        case 'USD': return 'دولار أمريكي';
+        case 'ILS': return 'شيكل إسرائيلي';
         default: return currency;
     }
 }
@@ -209,7 +209,7 @@ function loadCurrencies() {
                 var option = document.createElement('option');
                 option.value = c.value;
                 option.textContent = c.label;
-                if (c.value === 'Jod') option.selected = true;
+                if (c.value === 'JOD') option.selected = true;
                 select.appendChild(option);
             });
         }

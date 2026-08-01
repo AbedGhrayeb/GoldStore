@@ -1,68 +1,50 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Models;
 using Domain.Inventory;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Inventory.Adjustments.GetPaged;
 
 internal sealed class GetInventoryAdjustmentsQueryHandler(IApplicationDbContext context)
-    : IQueryHandler<GetInventoryAdjustmentsQuery, PagedInventoryAdjustmentResponse>
+    : IQueryHandler<GetInventoryAdjustmentsQuery, PaginatedList<InventoryAdjustmentResponse>>
 {
-    private static string GetTypeLabel(InventoryAdjustmentType type) => type switch
-    {
-        InventoryAdjustmentType.Increase => "زيادة",
-        InventoryAdjustmentType.Decrease => "نقصان",
-        InventoryAdjustmentType.Damage => "تالف",
-        InventoryAdjustmentType.Loss => "مفقود",
-        InventoryAdjustmentType.Correction => "تصحيح يدوي",
-        _ => type.ToString()
-    };
-
-    private static (string Color, string Bg, string Icon) GetTypeStyling(InventoryAdjustmentType type) => type switch
-    {
-        InventoryAdjustmentType.Increase => ("text-on-primary-container", "bg-primary-container/20", "arrow_upward"),
-        InventoryAdjustmentType.Decrease => ("text-error", "bg-error-container/30", "arrow_downward"),
-        InventoryAdjustmentType.Damage => ("text-error", "bg-error-container/30", "broken_image"),
-        InventoryAdjustmentType.Loss => ("text-error", "bg-error-container/30", "warning"),
-        InventoryAdjustmentType.Correction => ("text-on-surface", "bg-surface-container", "edit"),
-        _ => ("text-secondary", "bg-surface-container", "sync_alt")
-    };
-
     private static bool IsIncreaseType(InventoryAdjustmentType type) =>
         type == InventoryAdjustmentType.Increase;
 
-    public async Task<Result<PagedInventoryAdjustmentResponse>> Handle(GetInventoryAdjustmentsQuery query, CancellationToken cancellationToken)
+    public async Task<Result<PaginatedList<InventoryAdjustmentResponse>>> Handle(GetInventoryAdjustmentsQuery query, CancellationToken cancellationToken)
     {
         IQueryable<InventoryAdjustment> adjustments = context.InventoryAdjustments.AsNoTracking();
 
         if (query.FromDate.HasValue)
         {
-            adjustments = adjustments.Where(a => a.Date >= query.FromDate.Value);
+            DateTime fromDate = query.FromDate.Value.ToUniversalTime();
+            adjustments = adjustments.Where(a => a.CreatedAtUtc >= fromDate);
         }
 
         if (query.ToDate.HasValue)
         {
-            adjustments = adjustments.Where(a => a.Date <= query.ToDate.Value);
+            DateTime toDate = query.ToDate.Value.ToUniversalTime();
+            adjustments = adjustments.Where(a => a.CreatedAtUtc <= toDate);
         }
 
         if (!string.IsNullOrWhiteSpace(query.AdjustmentType) &&
-            Enum.TryParse<InventoryAdjustmentType>(query.AdjustmentType, out var adjType))
+            Enum.TryParse<InventoryAdjustmentType>(query.AdjustmentType, out InventoryAdjustmentType adjType))
         {
             adjustments = adjustments.Where(a => a.Type == adjType);
         }
 
-        int totalCount = await adjustments.CountAsync(cancellationToken);
 
         int page = Math.Max(query.Page, 1);
         int pageSize = Math.Clamp(query.PageSize, 1, 100);
 
         List<Guid> userIds = await adjustments
-            .OrderByDescending(a => a.Date)
+            .OrderByDescending(a => a.CreatedAtUtc)
             .ThenByDescending(a => a.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(a => a.UserId)
+            .Select(a => a.CreatedBy!.Value)
             .Distinct()
             .ToListAsync(cancellationToken);
 
@@ -71,44 +53,24 @@ internal sealed class GetInventoryAdjustmentsQueryHandler(IApplicationDbContext 
             .Where(u => userIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => $"{u.FirstName} {u.LastName}", cancellationToken);
 
-        List<InventoryAdjustment> pagedData = await adjustments
-            .OrderByDescending(a => a.Date)
-            .ThenByDescending(a => a.Id)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        List<InventoryAdjustmentResponse> items = pagedData.Select(a =>
+        IQueryable<InventoryAdjustmentResponse> items = adjustments.Select(a => new InventoryAdjustmentResponse
         {
-            var (color, bg, icon) = GetTypeStyling(a.Type);
-            bool isIncrease = IsIncreaseType(a.Type);
-            decimal signedWeight = isIncrease ? a.WeightInGrams : -a.WeightInGrams;
+            Id = a.Id,
+            Date = a.CreatedAtUtc!.Value.LocalDateTime,
+            Type = a.Type.ToString(),
+            TypeLabel = a.Type.GetTypeLabel(),
+            TypeColor = a.Type.GetTypeStyling().Color,
+            TypeBg = a.Type.GetTypeStyling().Bg,
+            TypeIcon = a.Type.GetTypeStyling().Icon,
+            Karat = (int)a.Karat,
+            WeightInGrams = a.WeightInGrams,
+            SignedWeight = IsIncreaseType(a.Type) ? a.WeightInGrams : -a.WeightInGrams,
+            Equivalent21KWeightInGrams = a.Equivalent21KWeightInGrams,
+            Reason = a.Reason,
+            Notes = a.Notes,
+            UserName = userNames.GetValueOrDefault(a.CreatedBy!.Value, "Unknown")
+        });
 
-            return new InventoryAdjustmentResponse
-            {
-                Id = a.Id,
-                Date = a.Date,
-                Type = a.Type.ToString(),
-                TypeLabel = GetTypeLabel(a.Type),
-                TypeColor = color,
-                TypeBg = bg,
-                TypeIcon = icon,
-                Karat = (int)a.Karat,
-                WeightInGrams = a.WeightInGrams,
-                SignedWeight = signedWeight,
-                Equivalent21KWeightInGrams = a.Equivalent21KWeightInGrams,
-                Reason = a.Reason,
-                Notes = a.Notes,
-                UserName = userNames.GetValueOrDefault(a.UserId, "—")
-            };
-        }).ToList();
-
-        return new PagedInventoryAdjustmentResponse
-        {
-            Items = items,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
-        };
+        return await PaginatedList<InventoryAdjustmentResponse>.CreateAsync(items, query.Page, query.PageSize);
     }
 }

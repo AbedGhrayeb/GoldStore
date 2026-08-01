@@ -1,11 +1,12 @@
 using Application.Abstractions.Messaging;
+using Application.Common.Models;
 using Application.Features.GoldPrices.GetCurrent;
 using Application.Features.Inventory.GoldLedger;
 using Application.Features.Inventory.GoldLedger.GetKpis;
 using Application.Features.Inventory.GoldLedger.GetPaged;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace WebUI.Controllers;
 
@@ -13,7 +14,7 @@ namespace WebUI.Controllers;
 public class InventoryController(
     IQueryHandler<GetGoldPricesQuery, GoldPricesResponse> getGoldPricesHandler,
     IQueryHandler<GetInventoryKpisQuery, InventoryKpiResponse> getKpisHandler,
-    IQueryHandler<GetGoldLedgerQuery, PagedGoldLedgerResponse> getLedgerHandler) : BaseController
+    IQueryHandler<GetGoldLedgerQuery, PaginatedList<GoldLedgerEntryResponse>> getLedgerHandler) : BaseController
 {
     public IActionResult Index() => View();
 
@@ -25,7 +26,7 @@ public class InventoryController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);
@@ -39,7 +40,7 @@ public class InventoryController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);
@@ -55,13 +56,13 @@ public class InventoryController(
         string? referenceType = null,
         CancellationToken cancellationToken = default)
     {
-        Result<PagedGoldLedgerResponse> result = await getLedgerHandler.Handle(
+        Result<PaginatedList<GoldLedgerEntryResponse>> result = await getLedgerHandler.Handle(
             new GetGoldLedgerQuery(page, pageSize, karat, fromDate, toDate, referenceType),
             cancellationToken);
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);

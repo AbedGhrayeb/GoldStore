@@ -1,4 +1,3 @@
-using Domain.Catalog;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -21,12 +20,12 @@ internal sealed class SalesInvoiceItemConfiguration : IEntityTypeConfiguration<S
 
         builder.Property(i => i.GoldAmount).HasPrecision(18, 3);
 
-        builder.HasOne<SalesInvoice>()
-            .WithMany()
+        builder.HasOne(ii => ii.SalesInvoice)
+            .WithMany(i => i.SaleInvoiceItems)
             .HasForeignKey(i => i.SalesInvoiceId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne<Category>()
+        builder.HasOne(ii => ii.Category)
             .WithMany()
             .HasForeignKey(i => i.CategoryId)
             .OnDelete(DeleteBehavior.Restrict)

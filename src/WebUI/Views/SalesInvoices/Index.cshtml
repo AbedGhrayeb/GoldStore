@@ -25,7 +25,7 @@
 <div class="grid grid-cols-1 xl:grid-cols-12 gap-md">
     <!-- Left/Main Content Area -->
     <div class="xl:col-span-8 flex flex-col gap-md">
-        <!-- Customer Details Card -->
+        <!-- Customer DetaILS Card -->
         <section class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.02)] border border-outline-variant/50 p-md">
             <div class="flex items-center justify-between mb-sm">
                 <h3 class="font-title-lg text-title-lg font-bold text-on-surface flex items-center gap-xs">
@@ -91,15 +91,15 @@
                 </h3>
                 <div class="flex gap-sm">
                     <label class="flex-1 cursor-pointer">
-                        <input checked class="peer sr-only" name="currency" type="radio" value="Jod" onchange="onCurrencyChange()">
+                        <input checked class="peer sr-only" name="currency" type="radio" value="JOD" onchange="onCurrencyChange()">
                         <div class="border border-outline-variant rounded-lg py-2 text-center peer-checked:bg-primary-container peer-checked:text-on-primary-container peer-checked:border-primary-container hover:bg-surface-container-high transition-all font-data-mono">JOD</div>
                     </label>
                     <label class="flex-1 cursor-pointer">
-                        <input class="peer sr-only" name="currency" type="radio" value="Usd" onchange="onCurrencyChange()">
+                        <input class="peer sr-only" name="currency" type="radio" value="USD" onchange="onCurrencyChange()">
                         <div class="border border-outline-variant rounded-lg py-2 text-center peer-checked:bg-primary-container peer-checked:text-on-primary-container peer-checked:border-primary-container hover:bg-surface-container-high transition-all font-data-mono">USD</div>
                     </label>
                     <label class="flex-1 cursor-pointer">
-                        <input class="peer sr-only" name="currency" type="radio" value="Ils" onchange="onCurrencyChange()">
+                        <input class="peer sr-only" name="currency" type="radio" value="ILS" onchange="onCurrencyChange()">
                         <div class="border border-outline-variant rounded-lg py-2 text-center peer-checked:bg-primary-container peer-checked:text-on-primary-container peer-checked:border-primary-container hover:bg-surface-container-high transition-all font-data-mono">ILS</div>
                     </label>
                 </div>
@@ -127,8 +127,8 @@
                         </span>
                     </label>
                 </div>
-                <!-- Bank Details (shown when bank selected) -->
-                <div id="bankDetails" class="hidden flex flex-col gap-sm mt-sm p-sm bg-surface-container-low rounded-lg border border-outline-variant/50">
+                <!-- Bank DetaILS (shown when bank selected) -->
+                <div id="bankDetaILS" class="hidden flex flex-col gap-sm mt-sm p-sm bg-surface-container-low rounded-lg border border-outline-variant/50">
                     <div class="flex flex-col gap-xs">
                         <label class="font-label-md text-label-md text-secondary">حساب الاستلام 
                             <span class="text-error">*</span>
@@ -194,7 +194,7 @@
                         <span class="font-data-mono text-secondary" id="summaryCurrency">JOD</span>
                     </div>
                 </div>
-                <!-- Payment Details -->
+                <!-- Payment DetaILS -->
                 <div class="flex flex-col gap-sm bg-surface-container-low p-sm rounded-lg border border-outline-variant/50">
                     <div class="flex justify-between items-center">
                         <span class="text-secondary">المبلغ المدفوع</span>

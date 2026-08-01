@@ -15,11 +15,11 @@ internal sealed class UpdateDebtCommandValidator : AbstractValidator<UpdateDebtC
             .When(x => x.Name is not null);
 
         RuleFor(x => x.Phone)
-            .MaximumLength(20)
+            .MaximumLength(10)
             .When(x => x.Phone is not null);
 
         RuleFor(x => x.Notes)
-            .MaximumLength(1000)
+            .MaximumLength(500)
             .When(x => x.Notes is not null);
 
         RuleFor(x => x.NewAmount)

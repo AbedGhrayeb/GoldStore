@@ -1,26 +1,19 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Common;
-using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Expenses.Expenses.GetKpis;
 
 internal sealed class GetExpenseKpisQueryHandler(IApplicationDbContext context, IDateTimeProvider dateTimeProvider)
     : IQueryHandler<GetExpenseKpisQuery, ExpenseKpiResponse>
 {
-    private static readonly Dictionary<Currency, (string Code, string Symbol)> CurrencyLabels = new()
-    {
-        [Currency.Jod] = ("Jod", "د.إ"),
-        [Currency.Usd] = ("Usd", "$"),
-        [Currency.Ils] = ("Ils", "₪")
-    };
-
     public async Task<Result<ExpenseKpiResponse>> Handle(GetExpenseKpisQuery query, CancellationToken cancellationToken)
     {
-        DateOnly today = DateOnly.FromDateTime(dateTimeProvider.Now);
-        DateOnly monthStart = new DateOnly(today.Year, today.Month, 1);
+        var today = DateOnly.FromDateTime(dateTimeProvider.Now);
+        var monthStart = new DateOnly(today.Year, today.Month, 1);
 
         Dictionary<Guid, Currency> accountCurrencies = await context.FinancialAccounts
             .AsNoTracking()
@@ -28,7 +21,7 @@ internal sealed class GetExpenseKpisQueryHandler(IApplicationDbContext context, 
 
         var expenses = await context.Expenses
             .AsNoTracking()
-            .Where(e => e.ExpenseDate >= monthStart)
+            .Where(e => e.ExpenseDate >= monthStart && e.AccountId.HasValue && e.ExpenseCategoryId.HasValue)
             .Select(e => new { e.Id, e.ExpenseDate, e.Amount, e.AccountId, e.ExpenseCategoryId })
             .ToListAsync(cancellationToken);
 
@@ -36,28 +29,28 @@ internal sealed class GetExpenseKpisQueryHandler(IApplicationDbContext context, 
         var monthExpenses = expenses.ToList();
 
         var todayByCurrency = todayExpenses
-            .GroupBy(e => accountCurrencies.GetValueOrDefault(e.AccountId))
+            .GroupBy(e => accountCurrencies.GetValueOrDefault(e.AccountId!.Value))
             .Where(g => g.Key != default)
             .Select(g => new CurrencyTotal(
-                CurrencyLabels.GetValueOrDefault(g.Key).Code ?? g.Key.ToString(),
-                CurrencyLabels.GetValueOrDefault(g.Key).Symbol ?? g.Key.ToString(),
+                CurrencyExtensions.CurrencyLabels.GetValueOrDefault(g.Key).Code ?? g.Key.ToString(),
+                CurrencyExtensions.CurrencyLabels.GetValueOrDefault(g.Key).Symbol ?? g.Key.ToString(),
                 g.Sum(e => e.Amount)))
             .OrderByDescending(x => x.Amount)
             .ToList();
 
         var monthByCurrency = monthExpenses
-            .GroupBy(e => accountCurrencies.GetValueOrDefault(e.AccountId))
+            .GroupBy(e => accountCurrencies.GetValueOrDefault(e.AccountId!.Value))
             .Where(g => g.Key != default)
             .Select(g => new CurrencyTotal(
-                CurrencyLabels.GetValueOrDefault(g.Key).Code ?? g.Key.ToString(),
-                CurrencyLabels.GetValueOrDefault(g.Key).Symbol ?? g.Key.ToString(),
+                CurrencyExtensions.CurrencyLabels.GetValueOrDefault(g.Key).Code ?? g.Key.ToString(),
+                CurrencyExtensions.CurrencyLabels.GetValueOrDefault(g.Key).Symbol ?? g.Key.ToString(),
                 g.Sum(e => e.Amount)))
             .OrderByDescending(x => x.Amount)
             .ToList();
 
         var topCategoryGroup = monthExpenses
             .Where(e => e.ExpenseCategoryId.HasValue)
-            .GroupBy(e => new { e.ExpenseCategoryId, Currency = accountCurrencies.GetValueOrDefault(e.AccountId) })
+            .GroupBy(e => new { e.ExpenseCategoryId, Currency = accountCurrencies.GetValueOrDefault(e.AccountId!.Value) })
             .Select(g => new { g.Key.ExpenseCategoryId, g.Key.Currency, Total = g.Sum(e => e.Amount) })
             .ToList();
 
@@ -82,8 +75,8 @@ internal sealed class GetExpenseKpisQueryHandler(IApplicationDbContext context, 
             topCategoryAmounts = topCategoryGroup
                 .Where(x => x.ExpenseCategoryId == topCategoryId && x.Currency != default)
                 .Select(x => new CurrencyTotal(
-                    CurrencyLabels.GetValueOrDefault(x.Currency).Code ?? x.Currency.ToString(),
-                    CurrencyLabels.GetValueOrDefault(x.Currency).Symbol ?? x.Currency.ToString(),
+                    CurrencyExtensions.CurrencyLabels.GetValueOrDefault(x.Currency).Code ?? x.Currency.ToString(),
+                    CurrencyExtensions.CurrencyLabels.GetValueOrDefault(x.Currency).Symbol ?? x.Currency.ToString(),
                     x.Total))
                 .OrderByDescending(x => x.Amount)
                 .ToList();

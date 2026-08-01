@@ -7,7 +7,7 @@ using Application.Suppliers.ToggleActive;
 using Application.Suppliers.Update;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
+using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.Supplier;
 
@@ -18,8 +18,8 @@ public class SuppliersController(
     IQueryHandler<GetSuppliersQuery, List<SupplierResponse>> getSuppliersHandler,
     IQueryHandler<GetSupplierByIdQuery, SupplierDetailResponse> getSupplierByIdHandler,
     ICommandHandler<CreateSupplierCommand, Guid> createSupplierHandler,
-    ICommandHandler<UpdateSupplierCommand, bool> updateSupplierHandler,
-    ICommandHandler<ToggleActiveSupplierCommand, bool> toggleActiveHandler) : Controller
+    ICommandHandler<UpdateSupplierCommand, Updated> updateSupplierHandler,
+    ICommandHandler<ToggleActiveSupplierCommand, Updated> toggleActiveHandler) : Controller
 {
     public IActionResult Index()
     {
@@ -49,7 +49,7 @@ public class SuppliersController(
         Result<SupplierDetailResponse> result = await getSupplierByIdHandler.Handle(new GetSupplierByIdQuery(id.Value), cancellationToken);
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "إدارة الموردين"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "إدارة الموردين"));
         }
 
         SupplierDetailResponse detail = result.Value;
@@ -73,7 +73,7 @@ public class SuppliersController(
         Result<SupplierDetailResponse> result = await getSupplierByIdHandler.Handle(new GetSupplierByIdQuery(id), cancellationToken);
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         SupplierDetailResponse detail = result.Value;
@@ -128,7 +128,7 @@ public class SuppliersController(
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "إدارة الموردين"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "إدارة الموردين"));
         }
 
         return Json(ToastResult.SuccessResult("تم إضافة المورد بنجاح", "إدارة الموردين", "", "refreshSupplierTable"));
@@ -148,13 +148,13 @@ public class SuppliersController(
                 "إدارة الموردين"));
         }
 
-        Result<bool> result = await updateSupplierHandler.Handle(
+        Result<Updated> result = await updateSupplierHandler.Handle(
             new UpdateSupplierCommand(model.Id, model.Name, model.PrimaryPhone, model.SecondaryPhone, model.BankAccountNumber, model.Notes, model.IsActive),
             cancellationToken);
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "إدارة الموردين"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "إدارة الموردين"));
         }
 
         return Json(ToastResult.SuccessResult("تم تحديث المورد بنجاح", "إدارة الموردين", "", "refreshSupplierTable"));
@@ -164,11 +164,11 @@ public class SuppliersController(
     [ValidateAntiForgeryToken]
     public async Task<JsonResult> ToggleActive(Guid id, CancellationToken cancellationToken)
     {
-        Result<bool> result = await toggleActiveHandler.Handle(new ToggleActiveSupplierCommand(id), cancellationToken);
+        Result<Updated> result = await toggleActiveHandler.Handle(new ToggleActiveSupplierCommand(id), cancellationToken);
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "إدارة الموردين"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "إدارة الموردين"));
         }
 
         return Json(ToastResult.SuccessResult("تم تحديث حالة المورد بنجاح", "إدارة الموردين", "", "refreshSupplierTable"));

@@ -1,18 +1,43 @@
 using SharedKernel;
+using SharedKernel.Result;
 
 namespace Domain.Debts;
 
-public sealed class DebtLedgerEntry : Entity
+public sealed class DebtLedgerEntry : AuditableEntity
 {
-    public Guid Id { get; set; }
 
-    public Guid DebtId { get; set; }
+    public Guid DebtId { get; private set; }
 
-    public decimal Amount { get; set; }
+    public decimal Amount { get; private set; }
 
-    public DebtBalanceMovementType MovementType { get; set; }
+    public DebtBalanceMovementType MovementType { get; private set; }
 
-    public DateTime Date { get; set; }
+    public string? Notes { get; private set; }
+    // Navigation property
+    public Debt Debt { get; set; } = null!;
 
-    public string? Notes { get; set; }
+    private DebtLedgerEntry()
+    {
+
+    }
+    private DebtLedgerEntry(Guid id, Guid debtId, decimal amount, DebtBalanceMovementType movementType, string? notes) : base(id)
+    {
+        DebtId = debtId;
+        Amount = amount;
+        MovementType = movementType;
+        Notes = notes;
+    }
+    public static Result<DebtLedgerEntry> Create(Guid debtId, decimal amount, DebtBalanceMovementType movementType, string? notes)
+    {
+        if (debtId == Guid.Empty)
+        {
+            return DebtErrors.NotFound(debtId);
+        }
+        if (amount <= 0)
+        {
+            return DebtErrors.PaymentAmountMustBePositive;
+        }
+
+        return new DebtLedgerEntry(Guid.CreateVersion7(), debtId, amount, movementType, notes);
+    }
 }

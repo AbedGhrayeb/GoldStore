@@ -2,18 +2,18 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Finance.Accounts.SetBalance;
 
 internal sealed class SetAccountBalanceCommandHandler(IApplicationDbContext context)
-    : ICommandHandler<SetAccountBalanceCommand>
+    : ICommandHandler<SetAccountBalanceCommand, Updated>
 {
-    public async Task<Result> Handle(SetAccountBalanceCommand command, CancellationToken cancellationToken)
+    public async Task<Result<Updated>> Handle(SetAccountBalanceCommand command, CancellationToken cancellationToken)
     {
         if (command.TargetBalance < 0m)
         {
-            return Result.Failure(FinancialAccountErrors.InvalidTargetBalance);
+            return FinancialAccountErrors.InvalidTargetBalance;
         }
 
         FinancialAccount? account = await context.FinancialAccounts
@@ -21,40 +21,39 @@ internal sealed class SetAccountBalanceCommandHandler(IApplicationDbContext cont
 
         if (account is null)
         {
-            return Result.Failure(FinancialAccountErrors.NotFound(command.AccountId));
+            return FinancialAccountErrors.NotFound(command.AccountId);
         }
 
         if (!account.IsActive)
         {
-            return Result.Failure(FinancialAccountErrors.Inactive);
+            return FinancialAccountErrors.Inactive;
         }
 
         decimal currentBalance = await context.FinancialTransactions
-            .Where(t => t.AccountId == account.Id)
+            .Where(t => t.AccountId == account.Id && t.ReferenceId == account.Id)
             .SumAsync(t => t.TransactionType == FinancialTransactionType.Inflow ? t.Amount : -t.Amount, cancellationToken);
 
         decimal diff = command.TargetBalance - currentBalance;
 
         if (diff == 0m)
         {
-            return Result.Success();
+            return Result.Updated;
         }
 
-        context.FinancialTransactions.Add(new FinancialTransaction
+
+        Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(account.Id, account.Currency, Math.Abs(diff),
+                 diff > 0m ? FinancialTransactionType.Inflow : FinancialTransactionType.Outflow,
+                 FinancialReferenceType.ManualAdjustment, account.Id, command.Notes);
+
+        if (financialTransactionResult.IsError)
         {
-            Id = Guid.CreateVersion7(),
-            AccountId = account.Id,
-            Currency = account.Currency,
-            Amount = Math.Abs(diff),
-            TransactionType = diff > 0m ? FinancialTransactionType.Inflow : FinancialTransactionType.Outflow,
-            ReferenceType = FinancialReferenceType.ManualAdjustment,
-            ReferenceId = null,
-            Date = DateTime.UtcNow,
-            Notes = command.Notes
-        });
+            return financialTransactionResult.Errors;
+        }
+        context.FinancialTransactions.Add(financialTransactionResult.Value);
+
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return Result.Success();
+        return Result.Updated;
     }
 }

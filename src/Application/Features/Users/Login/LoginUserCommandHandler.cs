@@ -4,15 +4,15 @@ using Application.Abstractions.Messaging;
 using Application.Common.Errors;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Users.Login;
 
 internal sealed class LoginUserCommandHandler(
     IApplicationDbContext context,
-    IPasswordHasher passwordHasher) : ICommandHandler<LoginUserCommand>
+    IPasswordHasher passwordHasher) : ICommandHandler<LoginUserCommand, Guid>
 {
-    public async Task<Result> Handle(LoginUserCommand command, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Handle(LoginUserCommand command, CancellationToken cancellationToken)
     {
         User? user = await context.Users
             .AsNoTracking()
@@ -20,16 +20,17 @@ internal sealed class LoginUserCommandHandler(
 
         if (user is null)
         {
-            return Result.Failure<User>(ApplicationErrors.LoginFailed);
+            return ApplicationErrors.LoginFailed;
         }
 
         bool verified = passwordHasher.Verify(command.Password, user.PasswordHash);
 
         if (!verified)
         {
-            return Result.Failure<User>(ApplicationErrors.LoginFailed);
+            return ApplicationErrors.LoginFailed;
         }
 
-        return Result.Success();
+        return user.Id;
     }
+
 }

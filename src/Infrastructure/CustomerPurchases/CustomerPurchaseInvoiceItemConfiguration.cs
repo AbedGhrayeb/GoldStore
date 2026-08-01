@@ -1,5 +1,4 @@
-﻿using Domain.Catalog;
-using Domain.CustomerPurchases;
+﻿using Domain.CustomerPurchases;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,14 +18,12 @@ internal sealed class CustomerPurchaseInvoiceItemConfiguration : IEntityTypeConf
 
         builder.Property(i => i.PricePerGram).HasPrecision(18, 3);
 
-        builder.Property(i => i.GoldAmount).HasPrecision(18, 3);
-
-        builder.HasOne<CustomerPurchaseInvoice>()
-            .WithMany()
+        builder.HasOne(ii => ii.CustomerPurchaseInvoice)
+            .WithMany(i => i.Items)
             .HasForeignKey(i => i.CustomerPurchaseInvoiceId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne<Category>()
+        builder.HasOne(ii => ii.Category)
             .WithMany()
             .HasForeignKey(i => i.CategoryId)
             .OnDelete(DeleteBehavior.Restrict)

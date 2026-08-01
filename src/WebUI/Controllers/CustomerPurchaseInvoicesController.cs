@@ -3,7 +3,7 @@ using Application.Features.CustomerPurchaseInvoices.Create;
 using Application.Features.CustomerPurchaseInvoices.GetNextNumber;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
+using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.CustomerPurchaseInvoice;
 
@@ -24,7 +24,7 @@ public class CustomerPurchaseInvoicesController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(new { invoiceNumber = result.Value });
@@ -50,10 +50,9 @@ public class CustomerPurchaseInvoicesController(
             model.SellerIdNumber,
             model.SellerYearOfBirth,
             model.SellerAddress,
-            model.BuyerName,
-            model.Date,
+            model.EmployeeId,
             model.Currency,
-
+            model.Date,
             model.TotalAmount,
             model.AmountPaid,
             model.PaymentMethod,
@@ -70,7 +69,7 @@ public class CustomerPurchaseInvoicesController(
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "مشتريات الذهب"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "مشتريات الذهب"));
         }
 
         return Json(ToastResult.SuccessResult("تم إصدار فاتورة شراء الذهب بنجاح", "مشتريات الذهب", "", "refreshCustomerPurchases"));

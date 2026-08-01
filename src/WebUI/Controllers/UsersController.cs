@@ -3,13 +3,13 @@ using Application.Abstractions.Messaging;
 using Application.Users;
 using Application.Users.Create;
 using Application.Users.Delete;
-using Application.Users.GetById;
 using Application.Users.GetAllUsers;
+using Application.Users.GetById;
 using Application.Users.Update;
-using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
-using WebUI.Models.User;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SharedKernel.Result;
+using WebUI.Models.User;
 
 namespace WebUI.Controllers;
 
@@ -77,7 +77,7 @@ public class UsersController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(new { success = true, redirectUrl = Url.Action(nameof(Profile)) });
@@ -109,7 +109,7 @@ public class UsersController(
 
         if (!result.IsSuccess)
         {
-            ModelState.AddModelError(result.Error.Code, result.Error.Description);
+            ModelState.AddModelError(result.TopError.Code, result.TopError.Description);
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
                 return Json(new
@@ -157,7 +157,7 @@ public class UsersController(
 
         if (!result.IsSuccess)
         {
-            ModelState.AddModelError(result.Error.Code, result.Error.Description);
+            ModelState.AddModelError(result.TopError.Code, result.TopError.Description);
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
                 return Json(new
@@ -187,7 +187,7 @@ public class UsersController(
 
         if (!result.IsSuccess)
         {
-            ModelState.AddModelError(result.Error.Code, result.Error.Description);
+            ModelState.AddModelError(result.TopError.Code, result.TopError.Description);
         }
 
         return RedirectToAction(nameof(Index));

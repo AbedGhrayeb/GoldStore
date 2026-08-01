@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Application.Common.Models;
 
 namespace Application.Features.Expenses.Expenses.GetPaged;
 
@@ -8,4 +9,4 @@ public sealed record GetExpensesQuery(
     string? AccountName = null,
     DateTime? FromDate = null,
     DateTime? ToDate = null,
-    Guid? CategoryId = null) : IQuery<PagedExpenseResponse>;
+    Guid? CategoryId = null) : IQuery<PaginatedList<ExpenseResponse>>;

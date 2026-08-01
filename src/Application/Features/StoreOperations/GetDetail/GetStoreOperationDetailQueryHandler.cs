@@ -1,37 +1,21 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Features.StoreOperations.Shared;
-using Domain.CustomerPurchases;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.StoreOperations.GetDetail;
 
 internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext context)
     : IQueryHandler<GetStoreOperationDetailQuery, StoreOperationDetailResponse>
 {
-    private static string GetStatusLabel(SalesInvoiceStatus status) => status switch
-    {
-        SalesInvoiceStatus.Draft => "مسودة",
-        SalesInvoiceStatus.Completed => "مكتملة",
-        SalesInvoiceStatus.PartiallyPaid => "مدفوعة جزئياً",
-        SalesInvoiceStatus.Cancelled => "ملغاة",
-        _ => status.ToString()
-    };
-
-    private static string GetPaymentMethodLabel(PaymentMethod method) => method switch
-    {
-        PaymentMethod.Cash => "نقدي",
-        PaymentMethod.Bank => "مصرفي",
-        _ => method.ToString()
-    };
 
     private static string GetCurrencySymbol(string currency) => currency switch
     {
-        "Jod" => "د.أ",
-        "Usd" => "$",
-        "Ils" => "₪",
+        "JOD" => "د.أ",
+        "USD" => "$",
+        "ILS" => "₪",
         _ => currency
     };
 
@@ -49,44 +33,41 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
             return await GetPurchaseDetail(query.Id, cancellationToken);
         }
 
-        return Result.Failure<StoreOperationDetailResponse>(
-            Error.Failure("StoreOperations.InvalidType", "نوع العملية غير صالح"));
+        return
+            Error.Failure("StoreOperations.InvalidType", "نوع العملية غير صالح");
     }
 
     private async Task<Result<StoreOperationDetailResponse>> GetSaleDetail(
         Guid id,
         CancellationToken cancellationToken)
     {
-        Domain.Sales.SalesInvoice? invoice = await context.SalesInvoices
+        Domain.Sales.SalesInvoice? invoice = await context.SalesInvoices.Include(i => i.SaleInvoiceItems)
+            .ThenInclude(ii => ii.Category).Include(i => i.FinancialAccount)
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
         if (invoice is null)
         {
-            return Result.Failure<StoreOperationDetailResponse>(
-                Error.NotFound("StoreOperations.NotFound", "الفاتورة غير موجودة"));
+            return SalesInvoiceErrors.NotFound(id);
         }
 
-        List<SalesInvoiceItem> items = await context.SalesInvoiceItems
-            .AsNoTracking()
-            .Where(i => i.SalesInvoiceId == invoice.Id)
-            .ToListAsync(cancellationToken);
+        var items = invoice.SaleInvoiceItems.ToList();
 
         string? accountName = null;
         if (invoice.AccountId.HasValue)
         {
-            accountName = await context.FinancialAccounts
-                .AsNoTracking()
-                .Where(a => a.Id == invoice.AccountId.Value)
-                .Select(a => a.Name)
-                .FirstOrDefaultAsync(cancellationToken);
+            accountName = invoice.FinancialAccount?.Name ?? "Unknown Account";
         }
 
-        var categoryIds = items.Select(i => i.CategoryId).Where(c => c.HasValue).Select(c => c!.Value).ToList();
-        Dictionary<Guid, string> categoryNames = await context.Categories
+        var categoryNames = invoice.SaleInvoiceItems.Where(ii => ii.CategoryId.HasValue)
+            .Select(ii => ii.Category)
+            .ToDictionary(c => c.Id, c => c.Name);
+
+        string? employeeName = await context.Employees
             .AsNoTracking()
-            .Where(c => categoryIds.Contains(c.Id))
-            .ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
+            .Where(e => e.Id == invoice.EmployeeId)
+            .Select(e => e.FullName)
+            .FirstOrDefaultAsync(cancellationToken);
 
         var itemResponses = items.Select(i => new StoreOperationItemResponse
         {
@@ -98,7 +79,7 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
             GoldAmount = i.GoldAmount,
             CategoryName = i.CategoryId.HasValue
                 ? categoryNames.GetValueOrDefault(i.CategoryId.Value)
-                : null
+                : "Unknown Category"
         }).ToList();
 
         return new StoreOperationDetailResponse
@@ -110,7 +91,7 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
             Date = invoice.Date,
             CounterpartyName = invoice.CustomerName,
             CounterpartyPhone = invoice.CustomerPhone,
-            EmployeeName = invoice.SellerName,
+            EmployeeName = employeeName ?? "Unknown Employee",
             Currency = invoice.Currency.ToString(),
             CurrencySymbol = GetCurrencySymbol(invoice.Currency.ToString()),
             TotalAmount = invoice.TotalAmount,
@@ -118,14 +99,14 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
             RemainingBalance = invoice.RemainingBalance,
             PaymentMethod = invoice.PaymentMethod?.ToString(),
             PaymentMethodLabel = invoice.PaymentMethod.HasValue
-                ? GetPaymentMethodLabel(invoice.PaymentMethod.Value)
-                : null,
+                ? invoice.PaymentMethod!.Value.ToLabel()
+                : "Unknown Payment Method",
             AccountId = invoice.AccountId,
             AccountName = accountName,
             Status = invoice.Status.ToString(),
-            StatusLabel = GetStatusLabel(invoice.Status),
+            StatusLabel = invoice.Status.ToStatusLabel(),
             Notes = invoice.Notes,
-            AccountNumber = invoice.BuyerAccountNumber,
+            AccountNumber = invoice.CustomerAccountNumber,
             Items = itemResponses
         };
     }
@@ -135,32 +116,26 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
         CancellationToken cancellationToken)
     {
         Domain.CustomerPurchases.CustomerPurchaseInvoice? invoice = await context.CustomerPurchaseInvoices
+            .Include(p => p.Items).ThenInclude(i => i.Category)
+            .Include(p => p.FinancialAccount)
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
         if (invoice is null)
         {
-            return Result.Failure<StoreOperationDetailResponse>(
-                Error.NotFound("StoreOperations.NotFound", "الفاتورة غير موجودة"));
+            return
+                Error.NotFound("StoreOperations.NotFound", "الفاتورة غير موجودة");
         }
 
-        List<CustomerPurchaseInvoiceItem> items = await context.CustomerPurchaseInvoiceItems
-            .AsNoTracking()
-            .Where(i => i.CustomerPurchaseInvoiceId == invoice.Id)
-            .ToListAsync(cancellationToken);
+        var items = invoice.Items.ToList();
 
-        string? accountName = await context.FinancialAccounts
+        string? accountName = invoice.FinancialAccount?.Name ?? "Unknown Account";
+
+        string? employeeName = await context.Employees
             .AsNoTracking()
-            .Where(a => a.Id == invoice.AccountId)
-            .Select(a => a.Name)
+            .Where(e => e.Id == invoice.EmployeeId)
+            .Select(e => e.FullName)
             .FirstOrDefaultAsync(cancellationToken);
-
-        var categoryIds = items.Select(i => i.CategoryId).Where(c => c.HasValue).Select(c => c!.Value).ToList();
-        Dictionary<Guid, string> categoryNames = await context.Categories
-            .AsNoTracking()
-            .Where(c => categoryIds.Contains(c.Id))
-            .ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
-
         var itemResponses = items.Select(i => new StoreOperationItemResponse
         {
             Id = i.Id,
@@ -169,9 +144,8 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
             Equivalent21KWeightInGrams = i.Equivalent21KWeightInGrams,
             PricePerGram = i.PricePerGram,
             GoldAmount = i.GoldAmount,
-            CategoryName = i.CategoryId.HasValue
-                ? categoryNames.GetValueOrDefault(i.CategoryId.Value)
-                : null
+            CategoryName = i.CategoryId.HasValue ? i.Category?.Name : "Unknown Category"
+
         }).ToList();
 
         return new StoreOperationDetailResponse
@@ -180,24 +154,24 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
             InvoiceNumber = invoice.InvoiceNumber,
             OperationType = "Buy",
             OperationTypeLabel = "شراء",
-            Date = invoice.Date,
+            Date = invoice.Date!.Value,
             CounterpartyName = invoice.SellerName,
             CounterpartyPhone = invoice.SellerPhone,
-            EmployeeName = invoice.BuyerName,
+            EmployeeName = employeeName ?? "Unknown Employee",
             Currency = invoice.Currency.ToString(),
             CurrencySymbol = GetCurrencySymbol(invoice.Currency.ToString()),
             TotalAmount = invoice.TotalAmount,
             AmountPaid = invoice.AmountPaid,
             RemainingBalance = invoice.TotalAmount - invoice.AmountPaid,
             PaymentMethod = invoice.PaymentMethod.ToString(),
-            PaymentMethodLabel = GetPaymentMethodLabel(invoice.PaymentMethod),
+            PaymentMethodLabel = invoice.PaymentMethod.ToLabel(),
             AccountId = invoice.AccountId,
             AccountName = accountName,
             Status = null,
             StatusLabel = null,
             Notes = invoice.Notes,
             CounterpartyIdNumber = invoice.SellerIdNumber,
-            CounterpartyYearOfBirth = invoice.SeelerYearOfBirth,
+            CounterpartyYearOfBirth = invoice.SellerYearOfBirth,
             CounterpartyAddress = invoice.SellerAddress,
             AccountNumber = invoice.SellerAccountNumber,
             Items = itemResponses

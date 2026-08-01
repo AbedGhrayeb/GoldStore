@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Application.Common.Models;
 using Application.Features.Finance.Debts;
 using Application.Features.Finance.Debts.Create;
 using Application.Features.Finance.Debts.GetKpis;
@@ -7,7 +8,7 @@ using Application.Features.Finance.Debts.Payments;
 using Application.Features.Finance.Debts.Update;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
+using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.Debt;
 
@@ -15,11 +16,11 @@ namespace WebUI.Controllers;
 
 [Authorize]
 public class DebtsController(
-    IQueryHandler<GetDebtsQuery, PagedDebtResponse> getPagedHandler,
+    IQueryHandler<GetDebtsQuery, PaginatedList<DebtResponse>> getPagedHandler,
     IQueryHandler<GetDebtKpisQuery, DebtKpiResponse> getKpisHandler,
     ICommandHandler<CreateDebtCommand, Guid> createHandler,
-    ICommandHandler<UpdateDebtCommand, Guid> updateHandler,
-    ICommandHandler<CreatePaymentCommand, Guid> paymentHandler) : BaseController
+    ICommandHandler<UpdateDebtCommand, Updated> updateHandler,
+    ICommandHandler<CreatePaymentCommand, Updated> paymentHandler) : BaseController
 {
     public IActionResult Index() => View();
 
@@ -31,13 +32,13 @@ public class DebtsController(
         string? search = null,
         CancellationToken cancellationToken = default)
     {
-        Result<PagedDebtResponse> result = await getPagedHandler.Handle(
+        Result<PaginatedList<DebtResponse>> result = await getPagedHandler.Handle(
             new GetDebtsQuery(page, pageSize, direction, search),
             cancellationToken);
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);
@@ -51,7 +52,7 @@ public class DebtsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);
@@ -85,7 +86,7 @@ public class DebtsController(
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "الذمم"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "الذمم"));
         }
 
         return Json(ToastResult.SuccessResult("تم إنشاء الدين بنجاح", "الذمم", "", "refreshDebtsAndAccounts"));
@@ -113,11 +114,11 @@ public class DebtsController(
             model.NewAccountId,
             model.Notes);
 
-        Result<Guid> result = await updateHandler.Handle(command, cancellationToken);
+        Result<Updated> result = await updateHandler.Handle(command, cancellationToken);
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "الذمم"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "الذمم"));
         }
 
         return Json(ToastResult.SuccessResult("تم تحديث الدين بنجاح", "الذمم", "", "refreshDebtsAndAccounts"));
@@ -144,11 +145,11 @@ public class DebtsController(
             model.Date,
             model.Notes);
 
-        Result<Guid> result = await paymentHandler.Handle(command, cancellationToken);
+        Result<Updated> result = await paymentHandler.Handle(command, cancellationToken);
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "الذمم"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "الذمم"));
         }
 
         return Json(ToastResult.SuccessResult("تم تسجيل الدفعة بنجاح", "الذمم", "", "refreshDebtsAndAccounts"));

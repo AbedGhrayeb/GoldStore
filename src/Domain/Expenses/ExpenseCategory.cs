@@ -1,14 +1,38 @@
 using SharedKernel;
+using SharedKernel.Result;
 
 namespace Domain.Expenses;
 
-public sealed class ExpenseCategory : Entity
+public sealed class ExpenseCategory : AuditableEntity
 {
-    public Guid Id { get; set; }
+    public string Name { get; private set; }
+    private readonly List<Expense> _expenses = new();
+    public IReadOnlyCollection<Expense> Expenses => _expenses.AsReadOnly();
 
-    public required string Name { get; set; }
+    private ExpenseCategory()
+    {
 
-    public bool IsActive { get; set; }
+    }
+    private ExpenseCategory(string name)
+    {
+        Name = name;
+    }
 
-    public DateTime CreatedAt { get; set; }
+    public static Result<ExpenseCategory> Create(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return ExpenseCategoryErrors.NameRequired;
+        }
+        return new ExpenseCategory(name);
+    }
+    public Result<Updated> Update(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return ExpenseCategoryErrors.NameRequired;
+        }
+        Name = name;
+        return Result.Updated;
+    }
 }

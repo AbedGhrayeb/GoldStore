@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using Domain.Catalog;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace Infrastructure.Catalog;
 
@@ -13,8 +13,8 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
 
         builder.Property(category => category.Description).HasMaxLength(500);
 
-        builder.HasOne<Category>()
-            .WithMany()
+        builder.HasOne(c => c.ParentCategory)
+            .WithMany(c => c.Childrens)
             .HasForeignKey(category => category.ParentCategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 

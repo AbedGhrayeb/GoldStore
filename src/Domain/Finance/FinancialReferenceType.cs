@@ -13,3 +13,23 @@ public enum FinancialReferenceType
     DebtAdjustment = 9,
     SupplierLoan = 10
 }
+public static class FinancialReferenceTypeExtensions
+{
+    public static string GetDescription(this FinancialReferenceType type)
+    {
+        return type switch
+        {
+            FinancialReferenceType.SalesPayment => "دفعة مبيعات",
+            FinancialReferenceType.CustomerGoldPurchase => "شراء ذهب من العميل",
+            FinancialReferenceType.SupplierManufacturingPayment => "دفعة تصنيع المورد",
+            FinancialReferenceType.Expense => "مصروف",
+            FinancialReferenceType.SalaryPayment => "دفعة راتب",
+            FinancialReferenceType.ManualAdjustment => "تعديل يدوي",
+            FinancialReferenceType.DebtCreation => "إنشاء دين",
+            FinancialReferenceType.DebtPayment => "دفعة دين",
+            FinancialReferenceType.DebtAdjustment => "تعديل دين",
+            FinancialReferenceType.SupplierLoan => "قرض المورد",
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+        };
+    }
+}

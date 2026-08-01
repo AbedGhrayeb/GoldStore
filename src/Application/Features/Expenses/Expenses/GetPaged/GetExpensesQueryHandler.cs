@@ -1,14 +1,14 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Models;
 using Domain.Expenses;
-using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Expenses.Expenses.GetPaged;
 
 internal sealed class GetExpensesQueryHandler(IApplicationDbContext context)
-    : IQueryHandler<GetExpensesQuery, PagedExpenseResponse>
+    : IQueryHandler<GetExpensesQuery, PaginatedList<ExpenseResponse>>
 {
     private static string GetCurrencySymbol(string currency) => currency switch
     {
@@ -18,7 +18,7 @@ internal sealed class GetExpensesQueryHandler(IApplicationDbContext context)
         _ => currency
     };
 
-    public async Task<Result<PagedExpenseResponse>> Handle(GetExpensesQuery query, CancellationToken cancellationToken)
+    public async Task<Result<PaginatedList<ExpenseResponse>>> Handle(GetExpensesQuery query, CancellationToken cancellationToken)
     {
         IQueryable<Expense> expenses = context.Expenses.AsNoTracking();
 
@@ -47,7 +47,7 @@ internal sealed class GetExpensesQueryHandler(IApplicationDbContext context)
                 .Select(a => a.Id)
                 .ToListAsync(cancellationToken);
 
-            expenses = expenses.Where(e => matchingAccountIds.Contains(e.AccountId));
+            expenses = expenses.Where(e => e.AccountId.HasValue && matchingAccountIds.Contains(e.AccountId!.Value));
         }
 
         int totalCount = await expenses.CountAsync(cancellationToken);
@@ -59,20 +59,18 @@ internal sealed class GetExpensesQueryHandler(IApplicationDbContext context)
             .OrderByDescending(e => e.ExpenseDate)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(e => e.AccountId)
+            .Select(e => e.AccountId!.Value)
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        List<Guid?> categoryIds = await expenses
+        List<Guid> categoryGuids = await expenses
             .OrderByDescending(e => e.ExpenseDate)
-            .ThenByDescending(e => e.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(e => (Guid?)e.ExpenseCategoryId)
+            .Select(e => e.ExpenseCategoryId!.Value)
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        var categoryGuids = categoryIds.Where(id => id.HasValue).Select(id => id!.Value).ToList();
 
         Dictionary<Guid, string> accountNames = await context.FinancialAccounts
             .AsNoTracking()
@@ -89,14 +87,7 @@ internal sealed class GetExpensesQueryHandler(IApplicationDbContext context)
             .Where(c => categoryGuids.Contains(c.Id))
             .ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
 
-        List<Expense> pagedData = await expenses
-            .OrderByDescending(e => e.ExpenseDate)
-            .ThenByDescending(e => e.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        var items = pagedData.Select(e => new ExpenseResponse
+        IQueryable<ExpenseResponse> items = expenses.Select(e => new ExpenseResponse
         {
             Id = e.Id,
             ExpenseDate = e.ExpenseDate,
@@ -106,18 +97,13 @@ internal sealed class GetExpensesQueryHandler(IApplicationDbContext context)
                 : "بدون تصنيف",
             Description = e.Description,
             Amount = e.Amount,
-            Currency = accountCurrencies.GetValueOrDefault(e.AccountId, string.Empty),
-            CurrencySymbol = GetCurrencySymbol(accountCurrencies.GetValueOrDefault(e.AccountId, string.Empty)),
-            AccountId = e.AccountId,
-            AccountName = accountNames.GetValueOrDefault(e.AccountId, string.Empty)
-        }).ToList();
+            Currency = accountCurrencies.GetValueOrDefault(e.AccountId!.Value, string.Empty),
+            CurrencySymbol = GetCurrencySymbol(accountCurrencies.GetValueOrDefault(e.AccountId!.Value, string.Empty)),
+            AccountId = e.AccountId!.Value,
+            AccountName = accountNames.GetValueOrDefault(e.AccountId!.Value, string.Empty)
+        });
 
-        return new PagedExpenseResponse
-        {
-            Items = items,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
-        };
+        return await PaginatedList<ExpenseResponse>.CreateAsync(items, page, pageSize);
+      
     }
 }

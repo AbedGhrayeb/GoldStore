@@ -3,7 +3,7 @@ using Application.Abstractions.Messaging;
 using Domain.Common;
 using Domain.Debts;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Finance.Debts.GetKpis;
 
@@ -13,16 +13,16 @@ internal sealed class GetDebtKpisQueryHandler(
 {
     private static readonly Dictionary<Currency, (string Code, string Symbol)> CurrencyLabels = new()
     {
-        [Currency.Jod] = ("Jod", "د.أ"),
-        [Currency.Usd] = ("Usd", "$"),
-        [Currency.Ils] = ("Ils", "₪")
+        [Currency.JOD] = ("JOD", "د.أ"),
+        [Currency.USD] = ("USD", "$"),
+        [Currency.ILS] = ("ILS", "₪")
     };
 
     public async Task<Result<DebtKpiResponse>> Handle(GetDebtKpisQuery query, CancellationToken cancellationToken)
     {
         List<Debt> allDebts = await context.Debts.AsNoTracking().ToListAsync(cancellationToken);
 
-        List<Guid> debtIds = allDebts.Select(d => d.Id).ToList();
+        var debtIds = allDebts.Select(d => d.Id).ToList();
 
         List<DebtLedgerEntry> allEntries = await context.DebtLedgerEntries
             .AsNoTracking()
@@ -45,9 +45,10 @@ internal sealed class GetDebtKpisQueryHandler(
         foreach (Debt debt in allDebts)
         {
             decimal balance = balances.GetValueOrDefault(debt.Id, 0m);
-            if (balance <= 0) continue;
+            if (balance <= 0)
+            { continue; }
 
-            if (!byCurrency.TryGetValue(debt.Currency, out var cur))
+            if (!byCurrency.TryGetValue(debt.Currency, out (decimal Rec, decimal Pay, int RecCount, int PayCount) cur))
             {
                 cur = (0m, 0m, 0, 0);
             }
@@ -68,11 +69,11 @@ internal sealed class GetDebtKpisQueryHandler(
             byCurrency[debt.Currency] = cur;
         }
 
-        List<DebtTotalByCurrency> byCurrencyList = byCurrency
+        var byCurrencyList = byCurrency
             .OrderByDescending(x => x.Value.Rec + x.Value.Pay)
             .Select(x =>
             {
-                var (code, symbol) = CurrencyLabels.GetValueOrDefault(x.Key, (x.Key.ToString(), x.Key.ToString()));
+                (string? code, string? symbol) = CurrencyLabels.GetValueOrDefault(x.Key, (x.Key.ToString(), x.Key.ToString()));
                 decimal net = x.Value.Rec - x.Value.Pay;
                 return new DebtTotalByCurrency
                 {

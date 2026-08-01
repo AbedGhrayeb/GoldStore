@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Application.Common.Models;
 using Application.Features.SalesInvoices;
 using Application.Features.SalesInvoices.Create;
 using Application.Features.SalesInvoices.GetKpis;
@@ -6,7 +7,7 @@ using Application.Features.SalesInvoices.GetNextNumber;
 using Application.Features.SalesInvoices.GetPaged;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
+using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.SalesInvoice;
 
@@ -15,7 +16,7 @@ namespace WebUI.Controllers;
 [Authorize]
 public class SalesInvoicesController(
     IQueryHandler<GetNextInvoiceNumberQuery, string> getNextNumberHandler,
-    IQueryHandler<GetSalesInvoicesQuery, PagedSalesInvoiceResponse> getPagedHandler,
+    IQueryHandler<GetSalesInvoicesQuery, PaginatedList<SalesInvoiceResponse>> getPagedHandler,
     IQueryHandler<GetSalesInvoiceKpisQuery, SalesInvoiceKpiResponse> getKpisHandler,
     ICommandHandler<CreateSalesInvoiceCommand, Guid> createHandler) : BaseController
 {
@@ -29,7 +30,7 @@ public class SalesInvoicesController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(new { invoiceNumber = result.Value });
@@ -43,7 +44,7 @@ public class SalesInvoicesController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);
@@ -59,13 +60,13 @@ public class SalesInvoicesController(
         string? status = null,
         CancellationToken cancellationToken = default)
     {
-        Result<PagedSalesInvoiceResponse> result = await getPagedHandler.Handle(
+        Result<PaginatedList<SalesInvoiceResponse>> result = await getPagedHandler.Handle(
             new GetSalesInvoicesQuery(page, pageSize, fromDate, toDate, search, status),
             cancellationToken);
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value);
@@ -100,14 +101,14 @@ public class SalesInvoicesController(
             model.PaymentMethod,
             model.AccountId,
             model.BuyerAccountNumber,
-            model.SellerName,
+            model.EmplyeeId,
             model.Notes);
 
         Result<Guid> result = await createHandler.Handle(command, cancellationToken);
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "المبيعات"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "المبيعات"));
         }
 
         return Json(ToastResult.SuccessResult("تم إصدار الفاتورة بنجاح", "المبيعات", "", "refreshSales"));

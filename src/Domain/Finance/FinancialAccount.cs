@@ -1,23 +1,57 @@
 using Domain.Common;
 using SharedKernel;
+using SharedKernel.Result;
 
 namespace Domain.Finance;
 
-public sealed class FinancialAccount : Entity
+public sealed class FinancialAccount : AuditableEntity
 {
-    public Guid Id { get; set; }
+    public string Name { get; private set; }
 
-    public required string Name { get; set; }
+    public Currency Currency { get; private set; }
 
-    public Currency Currency { get; set; }
+    public FinancialAccountType AccountType { get; private set; }
 
-    public FinancialAccountType AccountType { get; set; }
+    public string? AccountNumber { get; private set; }
 
-    public string? AccountNumber { get; set; }
+    public string? Notes { get; private set; }
 
-    public string? Notes { get; set; }
+    private FinancialAccount()
+    {
 
-    public bool IsActive { get; set; }
+    }
+    private FinancialAccount(Guid id, string name, Currency currency, FinancialAccountType accountType, string? accountNumber, string? notes) : base(id)
+    {
+        Name = name;
+        Currency = currency;
+        AccountType = accountType;
+        AccountNumber = accountNumber;
+        Notes = notes;
+    }
 
-    public DateTime CreatedAt { get; set; }
+    public static Result<FinancialAccount> Create(string name, Currency currency, FinancialAccountType accountType, string? accountNumber, string? notes)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return FinancialAccountErrors.AccountNameRequired;
+        }
+        return new FinancialAccount(Guid.CreateVersion7(), name, currency, accountType, accountNumber, notes);
+    }
+    public Result<Updated> Update(Guid id, string name, Currency currency, FinancialAccountType accountType, string? accountNumber, string? notes)
+    {
+        if (id == Guid.Empty)
+        {
+            return FinancialAccountErrors.AccountIdRequired;
+        }
+        if (string.IsNullOrEmpty(name))
+        {
+            return FinancialAccountErrors.AccountNameRequired;
+        }
+        Name = name;
+        Currency = currency;
+        AccountType = accountType;
+        AccountNumber = accountNumber;
+        Notes = notes;
+        return Result.Updated;
+    }
 }

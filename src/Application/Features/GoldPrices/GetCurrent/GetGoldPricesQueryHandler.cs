@@ -2,6 +2,7 @@ using Application.Abstractions.Messaging;
 using Application.Abstractions.Services;
 using Domain.Common;
 using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.GoldPrices.GetCurrent;
 
@@ -16,7 +17,7 @@ internal sealed class GetGoldPricesQueryHandler(
         GoldPriceData? priceData = null;
         try
         {
-            priceData = await goldPriceService.GetCurrentPricesAsync(Currency.Jod, cancellationToken);
+            priceData = await goldPriceService.GetCurrentPricesAsync(Currency.JOD, cancellationToken);
         }
         catch
         {

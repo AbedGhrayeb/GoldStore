@@ -2,7 +2,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Catalog;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Categories.Create;
 
@@ -16,22 +16,18 @@ internal sealed class CreateCategoryCommandHandler(IApplicationDbContext context
 
         if (nameExists)
         {
-            return Result.Failure<Guid>(CategoryErrors.DuplicateName);
+            return CategoryErrors.DuplicateName;
         }
 
-        var category = new Category
-        {
-            Id = Guid.CreateVersion7(),
-            Name = command.Name,
-            Description = command.Description,
-            ParentCategoryId = command.ParentCategoryId,
-            IsActive = command.IsActive,
-            CreatedAt = DateTime.UtcNow
-        };
+        Result<Category> category = Category.Create(command.ParentCategoryId, command.Name, command.Description);
 
-        context.Categories.Add(category);
+        if (category.IsError)
+        {
+            return category.Errors;
+        }
+        context.Categories.Add(category.Value);
         await context.SaveChangesAsync(cancellationToken);
 
-        return category.Id;
+        return category.Value.Id;
     }
 }

@@ -3,30 +3,30 @@ using Application.Abstractions.Messaging;
 using Domain.Expenses;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Expenses.Expenses.Update;
 
 internal sealed class UpdateExpenseCommandHandler(IApplicationDbContext context)
-    : ICommandHandler<UpdateExpenseCommand, bool>
+    : ICommandHandler<UpdateExpenseCommand, Updated>
 {
-    public async Task<Result<bool>> Handle(UpdateExpenseCommand command, CancellationToken cancellationToken)
+    public async Task<Result<Updated>> Handle(UpdateExpenseCommand command, CancellationToken cancellationToken)
     {
         Expense? expense = await context.Expenses.FindAsync([command.Id], cancellationToken);
         if (expense is null)
         {
-            return Result.Failure<bool>(ExpenseErrors.NotFound(command.Id));
+            return ExpenseErrors.NotFound(command.Id);
         }
 
         FinancialAccount? account = await context.FinancialAccounts.FindAsync([command.AccountId], cancellationToken);
         if (account is null)
         {
-            return Result.Failure<bool>(Error.NotFound("Finance.AccountNotFound", "حساب الدفع غير موجود"));
+            return Error.NotFound("Finance.AccountNotFound", "حساب الدفع غير موجود");
         }
 
         if (!account.IsActive)
         {
-            return Result.Failure<bool>(Error.Problem("Finance.AccountInactive", "حساب الدفع غير نشط"));
+            return Error.Failure("Finance.AccountInactive", "حساب الدفع غير نشط");
         }
 
         if (command.CategoryId.HasValue)
@@ -36,41 +36,43 @@ internal sealed class UpdateExpenseCommandHandler(IApplicationDbContext context)
                 .AnyAsync(c => c.Id == command.CategoryId.Value && c.IsActive, cancellationToken);
             if (!categoryExists)
             {
-                return Result.Failure<bool>(Error.NotFound("ExpenseCategories.NotFound", "تصنيف المصروف غير موجود أو غير نشط"));
+                return Error.NotFound("ExpenseCategories.NotFound", "تصنيف المصروف غير موجود أو غير نشط");
             }
         }
+        Result<Updated> expenseUpdateResult = expense.Update(command.Id, command.CategoryId, command.AccountId, command.Amount, command.Description, command.ExpenseDate);
 
+        if (expenseUpdateResult.IsError)
+        {
+            return expenseUpdateResult.Errors;
+        }
         FinancialTransaction? existingTransaction = await context.FinancialTransactions
-            .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.ReferenceType == FinancialReferenceType.Expense && t.ReferenceId == expense.Id, cancellationToken);
+       .AsNoTracking()
+       .FirstOrDefaultAsync(t => t.ReferenceType == FinancialReferenceType.Expense && t.ReferenceId == expense.Id, cancellationToken);
 
         if (existingTransaction is not null)
         {
-            context.FinancialTransactions.Remove(await context.FinancialTransactions.FindAsync([existingTransaction.Id], cancellationToken)
-                ?? throw new InvalidOperationException("Transaction not found"));
+            Result<Updated> financialTransactionsUpdateResult = existingTransaction.Update(command.Id, command.AccountId, account.Currency, command.Amount, FinancialTransactionType.Outflow,
+            FinancialReferenceType.Expense, expense.Id, command.Description);
+            if (financialTransactionsUpdateResult.IsError)
+            {
+                return financialTransactionsUpdateResult.Errors;
+            }
+
+        }
+        else
+        {
+            Result<FinancialTransaction> financialTransactionsResult = FinancialTransaction.Create(command.AccountId, account.Currency, command.Amount,
+                     FinancialTransactionType.Outflow, FinancialReferenceType.Expense, expense.Id, command.Description);
+            if (financialTransactionsResult.IsError)
+            { return financialTransactionsResult.Errors; }
+
+            context.FinancialTransactions.Add(financialTransactionsResult.Value);
         }
 
-        expense.ExpenseDate = command.ExpenseDate;
-        expense.ExpenseCategoryId = command.CategoryId;
-        expense.Description = command.Description;
-        expense.Amount = command.Amount;
-        expense.AccountId = command.AccountId;
 
-        context.FinancialTransactions.Add(new FinancialTransaction
-        {
-            Id = Guid.CreateVersion7(),
-            AccountId = command.AccountId,
-            Currency = account.Currency,
-            Amount = command.Amount,
-            TransactionType = FinancialTransactionType.Outflow,
-            ReferenceType = FinancialReferenceType.Expense,
-            ReferenceId = expense.Id,
-            Date = command.ExpenseDate.ToDateTime(TimeOnly.MinValue),
-            Notes = command.Description
-        });
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(true);
+        return Result.Updated;
     }
 }

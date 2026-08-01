@@ -22,13 +22,12 @@ internal sealed class SupplierGoldLedgerEntryConfiguration : IEntityTypeConfigur
 
         builder.Property(entry => entry.Notes).HasMaxLength(1000);
 
-        builder.HasOne<Supplier>()
-            .WithMany()
+        builder.HasOne(sg => sg.Supplier)
+            .WithMany(s => s.SupplierGoldLedgerEntries)
             .HasForeignKey(entry => entry.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(entry => new { entry.SupplierId, entry.Date });
+        builder.HasIndex(entry => new { entry.SupplierId, entry.CreatedAtUtc });
 
-        builder.HasIndex(entry => new { entry.ReferenceType, entry.ReferenceId });
     }
 }

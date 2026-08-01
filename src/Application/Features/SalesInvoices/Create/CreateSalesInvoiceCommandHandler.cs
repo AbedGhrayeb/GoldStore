@@ -1,52 +1,55 @@
-using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Errors;
 using Domain.Common;
 using Domain.Debts;
 using Domain.Finance;
 using Domain.Inventory;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.SalesInvoices.Create;
 
 internal sealed class CreateSalesInvoiceCommandHandler(
-    IApplicationDbContext context,
-    IUserContext userContext)
+    IApplicationDbContext context)
     : ICommandHandler<CreateSalesInvoiceCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateSalesInvoiceCommand command, CancellationToken cancellationToken)
     {
         if (command.Items.Count == 0)
         {
-            return Result.Failure<Guid>(SalesInvoiceErrors.NoItems);
+            return SalesInvoiceErrors.NoItems;
         }
 
         Currency currency = Enum.Parse<Currency>(command.Currency);
-        Guid userId = userContext.UserId;
+        var invoiceId = Guid.CreateVersion7();
 
-        List<(SalesInvoiceItemDto Dto, decimal Equivalent21K, decimal GoldAmount)> parsedItems = [];
+        List<SalesInvoiceItem> Items = [];
 
         foreach (SalesInvoiceItemDto item in command.Items)
         {
             var karat = (Karat)item.Karat;
-            decimal equivalent21K = GoldWeight.CalculateEquivalent21KWeight(item.WeightInGrams, karat);
-            decimal goldAmount = item.WeightInGrams * item.PricePerGram;
 
-            parsedItems.Add((item, equivalent21K, goldAmount));
+            Result<SalesInvoiceItem> saleInvoceItemResult = SalesInvoiceItem.Create(invoiceId, item.CategoryId ?? Guid.Empty, karat, item.WeightInGrams, item.PricePerGram);
+            if (saleInvoceItemResult.IsError)
+            {
+                return saleInvoceItemResult.Errors;
+            }
+            Items.Add(saleInvoceItemResult.Value);
+
+
         }
 
         decimal remainingBalance = command.TotalAmount - command.AmountPaid;
 
         if (command.AmountPaid > command.TotalAmount)
         {
-            return Result.Failure<Guid>(SalesInvoiceErrors.InvalidPaymentAmount);
+            return SalesInvoiceErrors.InvalidPaymentAmount;
         }
 
         string invoiceNumber = await GenerateInvoiceNumberAsync(cancellationToken);
 
-        var invoiceId = Guid.CreateVersion7();
 
         SalesInvoiceStatus status = remainingBalance switch
         {
@@ -55,107 +58,93 @@ internal sealed class CreateSalesInvoiceCommandHandler(
             > 0 when command.AmountPaid == 0 => SalesInvoiceStatus.Draft,
             _ => SalesInvoiceStatus.Draft
         };
-
-        var invoice = new SalesInvoice
+        try
         {
-            Id = invoiceId,
-            InvoiceNumber = invoiceNumber,
-            CustomerName = command.CustomerName,
-            CustomerPhone = command.CustomerPhone,
-            Date = command.Date,
-            Currency = currency,
-            TotalAmount = command.TotalAmount,
-            AmountPaid = command.AmountPaid,
-            RemainingBalance = remainingBalance,
-            PaymentMethod = command.PaymentMethod.HasValue ? (PaymentMethod)command.PaymentMethod.Value : null,
-            AccountId = command.AccountId,
-            BuyerAccountNumber = command.BuyerAccountNumber,
-            SellerName = command.SellerName,
-            Status = status,
-            UserId = userId,
-            Notes = command.Notes,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        context.SalesInvoices.Add(invoice);
-
-        foreach ((SalesInvoiceItemDto? dto, decimal equivalent21K, decimal goldAmount) in parsedItems)
-        {
-            var itemId = Guid.CreateVersion7();
-
-            context.SalesInvoiceItems.Add(new SalesInvoiceItem
+            Result<SalesInvoice> invoiceResult = SalesInvoice.Create(
+                invoiceId,
+                invoiceNumber,
+                command.CustomerName,
+                command.CustomerPhone,
+                command.Date,
+                currency,
+                command.TotalAmount,
+                command.AmountPaid,
+                command.PaymentMethod.HasValue ? (PaymentMethod)command.PaymentMethod.Value : PaymentMethod.Cash,
+                status,
+                command.BuyerAccountNumber,
+                command.Notes,
+                command.AccountId ?? Guid.Empty,
+                command.EmployeeId ?? Guid.Empty,
+                Items
+                );
+            if (invoiceResult.IsError)
             {
-                Id = itemId,
-                SalesInvoiceId = invoiceId,
-                CategoryId = dto.CategoryId,
-                Karat = (Karat)dto.Karat,
-                WeightInGrams = dto.WeightInGrams,
-                Equivalent21KWeightInGrams = equivalent21K,
-                PricePerGram = dto.PricePerGram,
-                GoldAmount = goldAmount
-            });
-
-            context.GoldLedgerEntries.Add(new GoldLedgerEntry
+                return invoiceResult.Errors;
+            }
+            context.SalesInvoices.Add(invoiceResult.Value);
+            await context.SalesInvoiceItems.AddRangeAsync(Items, cancellationToken);
+            foreach (SalesInvoiceItem item in Items)
             {
-                Id = Guid.CreateVersion7(),
-                Karat = (Karat)dto.Karat,
-                WeightInGrams = dto.WeightInGrams,
-                Equivalent21KWeightInGrams = equivalent21K,
-                MovementType = GoldMovementType.Decrease,
-                ReferenceType = GoldReferenceType.Sale,
-                ReferenceId = invoiceId,
-                UserId = userId,
-                Date = command.Date,
-                Notes = $"فاتورة مبيعات {invoiceNumber}"
-            });
+                var itemId = Guid.CreateVersion7();
+                Result<GoldLedgerEntry> goldLedgerEntryResult = GoldLedgerEntry.Create(
+                    item.Karat,
+                    item.WeightInGrams,
+                    GoldMovementType.Decrease,
+                    GoldReferenceType.Sale,
+                    invoiceId,
+                    $"فاتورة مبيعات {invoiceNumber}"
+                );
+                if (goldLedgerEntryResult.IsError)
+                {
+                    return goldLedgerEntryResult.Errors;
+                }
+                context.GoldLedgerEntries.Add(goldLedgerEntryResult.Value);
+            }
+            if (command.AmountPaid > 0 && command.AccountId.HasValue)
+            {
+                Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(command.AccountId ?? Guid.Empty, currency, command.AmountPaid,
+                    FinancialTransactionType.Inflow, FinancialReferenceType.SalesPayment,
+                    invoiceId, $"دفعة فاتورة {invoiceNumber} — {command.CustomerName}");
+
+                if (financialTransactionResult.IsError)
+                {
+                    return financialTransactionResult.Errors;
+                }
+                context.FinancialTransactions.Add(financialTransactionResult.Value);
+
+            }
+
+            if (remainingBalance > 0)
+            {
+                Result<Debt> debtResult = Debt.Create(command.CustomerName, command.CustomerPhone,
+                    DebtDirection.Receivable, currency,
+                    command.AccountId ?? Guid.Empty,
+                    $"باقي فاتورة {invoiceNumber} بتاريخ {command.Date:yyyy-MM-dd}");
+                if (debtResult.IsError)
+                {
+                    return debtResult.Errors;
+                }
+                context.Debts.Add(debtResult.Value);
+
+                Result<DebtLedgerEntry> debtLedgerEntryResult = DebtLedgerEntry.Create(debtResult.Value.Id, remainingBalance,
+                    DebtBalanceMovementType.Increase,
+                    $"رصيد متبقي من فاتورة {invoiceNumber}");
+                if (debtLedgerEntryResult.IsError)
+                {
+                    return debtLedgerEntryResult.Errors;
+                }
+                context.DebtLedgerEntries.Add(debtLedgerEntryResult.Value);
+
+            }
+
+            await context.SaveChangesAsync(cancellationToken);
+            return invoiceId;
+
         }
-
-        if (command.AmountPaid > 0 && command.AccountId.HasValue)
+        catch (Exception ex)
         {
-            context.FinancialTransactions.Add(new FinancialTransaction
-            {
-                Id = Guid.CreateVersion7(),
-                AccountId = command.AccountId.Value,
-                Currency = currency,
-                Amount = command.AmountPaid,
-                TransactionType = FinancialTransactionType.Inflow,
-                ReferenceType = FinancialReferenceType.SalesPayment,
-                ReferenceId = invoiceId,
-                UserId = userId,
-                Date = command.Date,
-                Notes = $"دفعة فاتورة {invoiceNumber} — {command.CustomerName}"
-            });
+            return ApplicationErrors.DatabaseError(ex);
         }
-
-        if (remainingBalance > 0)
-        {
-            var debtId = Guid.CreateVersion7();
-
-            context.Debts.Add(new Debt
-            {
-                Id = debtId,
-                Name = command.CustomerName,
-                Phone = command.CustomerPhone,
-                Direction = DebtDirection.Receivable,
-                Currency = currency,
-                Notes = $"باقي فاتورة {invoiceNumber} بتاريخ {command.Date:yyyy-MM-dd}",
-                CreatedAt = command.Date
-            });
-
-            context.DebtLedgerEntries.Add(new DebtLedgerEntry
-            {
-                Id = Guid.CreateVersion7(),
-                DebtId = debtId,
-                Amount = remainingBalance,
-                MovementType = DebtBalanceMovementType.Increase,
-                Date = command.Date,
-                Notes = $"رصيد متبقي من فاتورة {invoiceNumber}"
-            });
-        }
-
-        await context.SaveChangesAsync(cancellationToken);
-
-        return Result.Success(invoiceId);
     }
 
     private async Task<string> GenerateInvoiceNumberAsync(CancellationToken cancellationToken)

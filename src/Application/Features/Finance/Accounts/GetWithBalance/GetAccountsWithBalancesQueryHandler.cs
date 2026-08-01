@@ -2,7 +2,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Finance.Accounts.GetWithBalance;
 
@@ -50,7 +50,7 @@ internal sealed class GetAccountsWithBalancesQueryHandler(IApplicationDbContext 
         var allTransactions = await context.FinancialTransactions
             .AsNoTracking()
             .Where(t => accountIds.Contains(t.AccountId))
-            .OrderByDescending(t => t.Date)
+            .OrderByDescending(t => t.CreatedAtUtc)
             .Select(t => new { t.AccountId, t.Amount, t.TransactionType })
             .ToListAsync(cancellationToken);
 

@@ -3,7 +3,7 @@ using Application.Abstractions.Messaging;
 using Domain.Common;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Finance.Accounts.Create;
 
@@ -12,9 +12,9 @@ internal sealed class CreateFinancialAccountCommandHandler(IApplicationDbContext
 {
     public async Task<Result<Guid>> Handle(CreateFinancialAccountCommand command, CancellationToken cancellationToken)
     {
-        if (!Enum.TryParse<Currency>(command.Currency, ignoreCase: true, out var currency))
+        if (!Enum.TryParse<Currency>(command.Currency, ignoreCase: true, out Currency currency))
         {
-            return Result.Failure<Guid>(Error.Problem("Finance.InvalidCurrency", "العملة غير صالحة"));
+            return Error.Validation("Finance.InvalidCurrency", "العملة غير صالحة");
         }
 
         bool nameExists = await context.FinancialAccounts
@@ -23,41 +23,33 @@ internal sealed class CreateFinancialAccountCommandHandler(IApplicationDbContext
 
         if (nameExists)
         {
-            return Result.Failure<Guid>(Error.Conflict("Finance.DuplicateAccount", "يوجد حساب بنفس الاسم والعملة"));
+            return Error.Conflict("Finance.DuplicateAccount", "يوجد حساب بنفس الاسم والعملة");
         }
 
-        var account = new FinancialAccount
-        {
-            Id = Guid.CreateVersion7(),
-            Name = command.Name,
-            Currency = currency,
-            AccountType = FinancialAccountType.Bank,
-            AccountNumber = command.AccountNumber ?? $"{currency}-{Random.Shared.Next(1000, 9999)}",
-            Notes = command.Notes,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
+        Result<FinancialAccount> accountResult = FinancialAccount.Create(command.Name, currency, FinancialAccountType.Bank,
+            command.AccountNumber ?? $"{currency}-{Random.Shared.Next(1000, 9999)}", command.Notes);
 
-        context.FinancialAccounts.Add(account);
-
-        if (command.OpeningBalance > 0m)
+        if (accountResult.IsError)
         {
-            context.FinancialTransactions.Add(new FinancialTransaction
+            return accountResult.Errors;
+        }
+        context.FinancialAccounts.Add(accountResult.Value);
+
+        if (command.OpeningBalance >= 0m)
+        {
+            Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(accountResult.Value.Id, currency, command.OpeningBalance,
+                FinancialTransactionType.Inflow, FinancialReferenceType.ManualAdjustment, accountResult.Value.Id,
+                string.IsNullOrWhiteSpace(command.Notes) ? "رصيد افتتاحي" : command.Notes);
+            if (financialTransactionResult.IsError)
             {
-                Id = Guid.CreateVersion7(),
-                AccountId = account.Id,
-                Currency = currency,
-                Amount = command.OpeningBalance,
-                TransactionType = FinancialTransactionType.Inflow,
-                ReferenceType = FinancialReferenceType.ManualAdjustment,
-                ReferenceId = account.Id,
-                Date = DateTime.UtcNow,
-                Notes = string.IsNullOrWhiteSpace(command.Notes) ? "رصيد افتتاحي" : command.Notes
-            });
+                return financialTransactionResult.Errors;
+            }
+
+            context.FinancialTransactions.Add(financialTransactionResult.Value);
         }
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return account.Id;
+        return accountResult.Value.Id;
     }
 }

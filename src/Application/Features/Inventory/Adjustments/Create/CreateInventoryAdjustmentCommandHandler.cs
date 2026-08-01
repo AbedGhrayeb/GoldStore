@@ -1,15 +1,13 @@
-using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Common;
 using Domain.Inventory;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Inventory.Adjustments.Create;
 
 internal sealed class CreateInventoryAdjustmentCommandHandler(
-    IApplicationDbContext context,
-    IUserContext userContext)
+    IApplicationDbContext context)
     : ICommandHandler<CreateInventoryAdjustmentCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateInventoryAdjustmentCommand command, CancellationToken cancellationToken)
@@ -17,30 +15,18 @@ internal sealed class CreateInventoryAdjustmentCommandHandler(
         var adjustmentType = (InventoryAdjustmentType)command.AdjustmentType;
         var karat = (Karat)command.Karat;
 
-        decimal equivalent21K = command.WeightInGrams > 0
-            ? GoldWeight.CalculateEquivalent21KWeight(command.WeightInGrams, karat)
-            : 0m;
 
-        Guid userId = userContext.UserId;
-
-        var adjustment = new InventoryAdjustment
+        Result<InventoryAdjustment> adjustmentResult = InventoryAdjustment.Create(adjustmentType, karat, command.WeightInGrams, command.Reason, command.Notes);
+        if (adjustmentResult.IsError)
         {
-            Id = Guid.CreateVersion7(),
-            Type = adjustmentType,
-            Karat = karat,
-            WeightInGrams = command.WeightInGrams,
-            Equivalent21KWeightInGrams = equivalent21K,
-            Reason = command.Reason,
-            Notes = command.Notes,
-            UserId = userId,
-            Date = command.Date
-        };
+            return adjustmentResult.Errors;
+        }
 
-        context.InventoryAdjustments.Add(adjustment);
+        context.InventoryAdjustments.Add(adjustmentResult.Value);
 
         if (command.WeightInGrams > 0)
         {
-            var movementType = adjustmentType switch
+            GoldMovementType movementType = adjustmentType switch
             {
                 InventoryAdjustmentType.Increase => GoldMovementType.Increase,
                 InventoryAdjustmentType.Decrease => GoldMovementType.Decrease,
@@ -50,23 +36,23 @@ internal sealed class CreateInventoryAdjustmentCommandHandler(
                 _ => GoldMovementType.Increase
             };
 
-            context.GoldLedgerEntries.Add(new GoldLedgerEntry
+            Result<GoldLedgerEntry> goldLedgerEntryResult = GoldLedgerEntry.Create(
+                karat,
+                command.WeightInGrams,
+                movementType,
+                GoldReferenceType.InventoryAdjustment,
+                adjustmentResult.Value.Id,
+                $"{adjustmentType} — {command.Reason}");
+
+            if (goldLedgerEntryResult.IsError)
             {
-                Id = Guid.CreateVersion7(),
-                Karat = karat,
-                WeightInGrams = command.WeightInGrams,
-                Equivalent21KWeightInGrams = equivalent21K,
-                MovementType = movementType,
-                ReferenceType = GoldReferenceType.InventoryAdjustment,
-                ReferenceId = adjustment.Id,
-                UserId = userId,
-                Date = command.Date,
-                Notes = $"{adjustmentType} — {command.Reason}"
-            });
+                return goldLedgerEntryResult.Errors;
+            }
+            context.GoldLedgerEntries.Add(goldLedgerEntryResult.Value);
         }
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(adjustment.Id);
+        return adjustmentResult.Value.Id;
     }
 }

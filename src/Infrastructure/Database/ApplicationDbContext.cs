@@ -8,7 +8,7 @@ using Domain.Inventory;
 using Domain.Sales;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
-using Domain.Todos;
+using Domain.Employees;
 using Domain.Users;
 using Infrastructure.DomainEvents;
 using Microsoft.EntityFrameworkCore;
@@ -23,7 +23,7 @@ public sealed class ApplicationDbContext(
 {
     public DbSet<User> Users { get; set; }
 
-    public DbSet<TodoItem> TodoItems { get; set; }
+    public DbSet<Employee> Employees { get; set; }
 
     public DbSet<FinancialTransaction> FinancialTransactions { get; set; }
 
@@ -94,7 +94,6 @@ public sealed class ApplicationDbContext(
 
         return result;
     }
-
     private async Task PublishDomainEventsAsync(IEnumerable<IDomainEvent> domainEvents)
     {
         await domainEventsDispatcher.DispatchAsync(domainEvents);

@@ -8,7 +8,7 @@ using Application.Suppliers.GetAll;
 using Application.Suppliers.GetById;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
+using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.SupplierDelivery;
 using WebUI.Models.SupplierPayment;
@@ -36,7 +36,7 @@ public class SupplierPaymentsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         var activeSuppliers = result.Value
@@ -54,7 +54,7 @@ public class SupplierPaymentsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         SupplierDetailResponse detail = result.Value;
@@ -96,9 +96,9 @@ public class SupplierPaymentsController(
                 Value = c.ToString(),
                 Label = c switch
                 {
-                    Domain.Common.Currency.Jod => "دينار أردني (د.إ)",
-                    Domain.Common.Currency.Usd => "دولار أمريكي ($)",
-                    Domain.Common.Currency.Ils => "شيكل إسرائيلي (₪)",
+                    Domain.Common.Currency.JOD => "دينار أردني (د.إ)",
+                    Domain.Common.Currency.USD => "دولار أمريكي ($)",
+                    Domain.Common.Currency.ILS => "شيكل إسرائيلي (₪)",
                     _ => c.ToString()
                 }
             })
@@ -113,7 +113,7 @@ public class SupplierPaymentsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         var accounts = result.Value.Select(a => new
@@ -152,7 +152,7 @@ public class SupplierPaymentsController(
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "دفعات المورد"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "دفعات المورد"));
         }
 
         return Json(ToastResult.SuccessResult("تم تسجيل دفعة الذهب بنجاح", "دفعات المورد", "", "refreshPaymentPage"));
@@ -183,7 +183,7 @@ public class SupplierPaymentsController(
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "دفعات المورد"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "دفعات المورد"));
         }
 
         return Json(ToastResult.SuccessResult("تم تسجيل دفعة الأجور بنجاح", "دفعات المورد", "", "refreshPaymentPage"));

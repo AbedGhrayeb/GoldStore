@@ -5,7 +5,7 @@ namespace Application.Finance.Accounts.Create;
 
 internal sealed class CreateFinancialAccountCommandValidator : AbstractValidator<CreateFinancialAccountCommand>
 {
-    private static readonly string[] ValidCurrencies = ["Jod", "Usd", "Ils", "JOD", "USD", "ILS"];
+    private static readonly string[] ValidCurrencies = ["JOD", "USD", "ILS"];
 
     public CreateFinancialAccountCommandValidator()
     {

@@ -1,5 +1,7 @@
-﻿namespace Application.Abstractions.Messaging;
+﻿using SharedKernel.Result;
 
-public interface ICommand;
+namespace Application.Abstractions.Messaging;
+
+public interface ICommand : ICommand<Result>;
 
 public interface ICommand<TResponse>;

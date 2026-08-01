@@ -1,4 +1,3 @@
-using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Common;
@@ -6,13 +5,13 @@ using Domain.Inventory;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
 using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.SupplierPayments.ScrapGold.Create;
 
 internal sealed class CreateSupplierScrapGoldPaymentCommandHandler(
     IApplicationDbContext context,
-    IDateTimeProvider dateTimeProvider,
-    IUserContext userContext)
+    IDateTimeProvider dateTimeProvider)
     : ICommandHandler<CreateSupplierScrapGoldPaymentCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateSupplierScrapGoldPaymentCommand command, CancellationToken cancellationToken)
@@ -21,62 +20,38 @@ internal sealed class CreateSupplierScrapGoldPaymentCommandHandler(
 
         if (supplier is null)
         {
-            return Result.Failure<Guid>(SupplierErrors.NotFound(command.SupplierId));
+            return SupplierErrors.NotFound(command.SupplierId);
         }
 
         if (!supplier.IsActive)
         {
-            return Result.Failure<Guid>(Error.Problem("SupplierPayments.InactiveSupplier", "المورد غير نشط"));
+            return SupplierErrors.SupplierNotActive;
         }
 
         var karat = (Karat)command.Karat;
-        decimal equivalent21K = GoldWeight.CalculateEquivalent21KWeight(command.WeightInGrams, karat);
+        // decimal equivalent21K = GoldWeight.CalculateEquivalent21KWeight(command.WeightInGrams, karat);
         DateTime paymentDate = dateTimeProvider.UtcNow;
-        Guid userId = userContext.UserId;
+        var payment = SupplierScrapGoldPayment.Create(command.SupplierId, karat, command.WeightInGrams, command.Notes);
 
-        var payment = new SupplierScrapGoldPayment
-        {
-            Id = Guid.CreateVersion7(),
-            SupplierId = command.SupplierId,
-            Karat = karat,
-            WeightInGrams = command.WeightInGrams,
-            Equivalent21KWeightInGrams = equivalent21K,
-            Date = paymentDate,
-            Notes = command.Notes
-        };
 
         context.SupplierScrapGoldPayments.Add(payment);
+        var supplierGoldLedgerEntry = SupplierGoldLedgerEntry.Create(command.SupplierId, karat, command.WeightInGrams,
+            SupplierBalanceMovementType.Decrease, SupplierGoldReferenceType.SupplierScrapPayment,
+            payment.Id, command.Notes);
+        context.SupplierGoldLedgerEntries.Add(supplierGoldLedgerEntry);
+        Result<GoldLedgerEntry> goldLedgerEntry = GoldLedgerEntry.Create(karat, command.WeightInGrams,
+            GoldMovementType.Decrease, GoldReferenceType.SupplierScrapPayment,
+            payment.Id, command.Notes);
 
-        context.SupplierGoldLedgerEntries.Add(new SupplierGoldLedgerEntry
+        if (goldLedgerEntry.IsError)
         {
-            Id = Guid.CreateVersion7(),
-            SupplierId = command.SupplierId,
-            Karat = karat,
-            WeightInGrams = command.WeightInGrams,
-            Equivalent21KWeightInGrams = equivalent21K,
-            MovementType = SupplierBalanceMovementType.Decrease,
-            ReferenceType = SupplierGoldReferenceType.SupplierScrapPayment,
-            ReferenceId = payment.Id,
-            Date = paymentDate,
-            Notes = command.Notes
-        });
+            return goldLedgerEntry.Errors;
+        }
+        context.GoldLedgerEntries.Add(goldLedgerEntry.Value);
 
-        context.GoldLedgerEntries.Add(new GoldLedgerEntry
-        {
-            Id = Guid.CreateVersion7(),
-            Karat = karat,
-            WeightInGrams = command.WeightInGrams,
-            Equivalent21KWeightInGrams = equivalent21K,
-            MovementType = GoldMovementType.Decrease,
-            ReferenceType = GoldReferenceType.SupplierScrapPayment,
-            ReferenceId = payment.Id,
-            UserId = userId,
-            Date = paymentDate,
-            Notes = command.Notes
-        });
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(payment.Id);
+        return payment.Id;
     }
 }

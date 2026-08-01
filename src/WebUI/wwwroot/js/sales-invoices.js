@@ -198,18 +198,18 @@ function onCurrencyChange() {
 
 function onPaymentMethodChange() {
     const method = document.querySelector('input[name="paymentMethod"]:checked')?.value;
-    const currency = document.querySelector('input[name="currency"]:checked')?.value || 'Jod';
-    const bankDetails = document.getElementById('bankDetails');
-    const wasHidden = bankDetails.classList.contains('hidden');
+    const currency = document.querySelector('input[name="currency"]:checked')?.value || 'JOD';
+    const bankDetaILS = document.getElementById('bankDetaILS');
+    const wasHidden = bankDetaILS.classList.contains('hidden');
 
     if (method === '2') {
-        bankDetails.classList.remove('hidden');
+        bankDetaILS.classList.remove('hidden');
         populateAccounts(currency, 'Bank');
         if (wasHidden) {
-            // setTimeout(() => bankDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+            // setTimeout(() => bankDetaILS.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
         }
     } else {
-        bankDetails.classList.add('hidden');
+        bankDetaILS.classList.add('hidden');
         populateAccounts(currency, 'Cash');
     }
 }

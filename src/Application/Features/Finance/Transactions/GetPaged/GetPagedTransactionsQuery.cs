@@ -1,5 +1,5 @@
 using Application.Abstractions.Messaging;
-using Application.Finance.Transactions;
+using Application.Common.Models;
 
 namespace Application.Finance.Transactions.GetPaged;
 
@@ -10,4 +10,4 @@ public sealed record GetPagedTransactionsQuery(
     DateTime? FromDate = null,
     DateTime? ToDate = null,
     string? Currency = null,
-    string? AccountType = null) : IQuery<PagedTransactionResponse>;
+    string? AccountType = null) : IQuery<PaginatedList<RecentTransactionResponse>>;

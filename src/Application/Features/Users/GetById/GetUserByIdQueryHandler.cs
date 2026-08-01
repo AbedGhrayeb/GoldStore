@@ -3,7 +3,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Users.GetById;
 
@@ -14,7 +14,7 @@ internal sealed class GetUserByIdQueryHandler(IApplicationDbContext context, IUs
     {
         if (userContext.UserId == Guid.Empty)
         {
-            return Result.Failure<UserResponse>(UserErrors.Unauthorized());
+            return UserErrors.Unauthorized();
         }
 
         UserResponse? user = await context.Users
@@ -30,7 +30,7 @@ internal sealed class GetUserByIdQueryHandler(IApplicationDbContext context, IUs
 
         if (user is null)
         {
-            return Result.Failure<UserResponse>(UserErrors.NotFound(Guid.Empty));
+            return UserErrors.NotFound(Guid.Empty);
         }
 
         return user;

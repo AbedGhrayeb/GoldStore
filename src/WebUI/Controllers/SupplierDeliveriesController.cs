@@ -6,6 +6,7 @@ using Application.Suppliers.GetById;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel;
+using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.SupplierDelivery;
 
@@ -29,7 +30,7 @@ public class SupplierDeliveriesController(
         Result<List<SupplierResponse>> result = await getSuppliersHandler.Handle(new GetSuppliersQuery(), cancellationToken);
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         var activeSuppliers = result.Value
@@ -46,7 +47,7 @@ public class SupplierDeliveriesController(
         Result<SupplierDetailResponse> result = await getSupplierByIdHandler.Handle(new GetSupplierByIdQuery(id), cancellationToken);
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         SupplierDetailResponse detail = result.Value;
@@ -78,9 +79,9 @@ public class SupplierDeliveriesController(
                 Value = c.ToString(),
                 Label = c switch
                 {
-                    Domain.Common.Currency.Jod => "دينار أردني (د.إ)",
-                    Domain.Common.Currency.Usd => "دولار أمريكي ($)",
-                    Domain.Common.Currency.Ils => "شيكل إسرائيلي (₪)",
+                    Domain.Common.Currency.JOD => "دينار أردني (د.إ)",
+                    Domain.Common.Currency.USD => "دولار أمريكي ($)",
+                    Domain.Common.Currency.ILS => "شيكل إسرائيلي (₪)",
                     _ => c.ToString()
                 }
             })
@@ -113,7 +114,7 @@ public class SupplierDeliveriesController(
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "توريد المورد"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "توريد المورد"));
         }
 
         return Json(ToastResult.SuccessResult("تم تسجيل التوريد بنجاح", "توريد المورد", "", "refreshDeliveryPage"));

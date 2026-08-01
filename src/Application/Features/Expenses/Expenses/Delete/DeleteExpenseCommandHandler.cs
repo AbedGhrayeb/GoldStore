@@ -3,19 +3,19 @@ using Application.Abstractions.Messaging;
 using Domain.Expenses;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Expenses.Expenses.Delete;
 
 internal sealed class DeleteExpenseCommandHandler(IApplicationDbContext context)
-    : ICommandHandler<DeleteExpenseCommand, bool>
+    : ICommandHandler<DeleteExpenseCommand, Deleted>
 {
-    public async Task<Result<bool>> Handle(DeleteExpenseCommand command, CancellationToken cancellationToken)
+    public async Task<Result<Deleted>> Handle(DeleteExpenseCommand command, CancellationToken cancellationToken)
     {
         Expense? expense = await context.Expenses.FindAsync([command.Id], cancellationToken);
         if (expense is null)
         {
-            return Result.Failure<bool>(ExpenseErrors.NotFound(command.Id));
+            return ExpenseErrors.NotFound(command.Id);
         }
 
         FinancialTransaction? transaction = await context.FinancialTransactions
@@ -29,6 +29,6 @@ internal sealed class DeleteExpenseCommandHandler(IApplicationDbContext context)
         context.Expenses.Remove(expense);
         await context.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(true);
+        return Result.Deleted;
     }
 }

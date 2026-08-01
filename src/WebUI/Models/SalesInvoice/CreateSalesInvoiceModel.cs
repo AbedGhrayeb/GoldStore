@@ -15,7 +15,7 @@ public class CreateSalesInvoiceModel
     public DateTime Date { get; set; }
 
     [Required]
-    public string Currency { get; set; } = "Jod";
+    public string Currency { get; set; } = "JOD";
 
     [Required]
     public List<SalesInvoiceItemModel> Items { get; set; } = [];
@@ -35,8 +35,7 @@ public class CreateSalesInvoiceModel
     public string? BuyerAccountNumber { get; set; }
 
     [Required]
-    [StringLength(200)]
-    public string SellerName { get; set; } = string.Empty;
+    public Guid EmplyeeId { get; set; }
 
     [StringLength(1000)]
     public string? Notes { get; set; }

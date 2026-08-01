@@ -2,7 +2,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Suppliers.GetById;
 
@@ -11,29 +11,28 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
 {
     public async Task<Result<SupplierDetailResponse>> Handle(GetSupplierByIdQuery query, CancellationToken cancellationToken)
     {
-        var supplier = await context.Suppliers
+        Supplier supplier = await context.Suppliers
+            .Include(s => s.SupplierGoldLedgerEntries)
+            .Include(s => s.SupplierManufacturingLedgerEntries)
+            .Include(s => s.SupplierFinancialTransactions)
             .Where(s => s.Id == query.Id)
-            .Select(s => new { s.Id, s.Name, s.PrimaryPhone, s.SecondaryPhone, s.BankAccountNumber, s.Notes, s.IsActive, s.CreatedAt })
+            .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken);
 
         if (supplier is null)
         {
-            return Result.Failure<SupplierDetailResponse>(SupplierErrors.NotFound(query.Id));
+            return SupplierErrors.NotFound(query.Id);
         }
+        var supplierGoldLedgerEntries = supplier.SupplierGoldLedgerEntries.ToList();
+        decimal goldBalance = supplierGoldLedgerEntries
+            .Sum(e => e.MovementType == SupplierBalanceMovementType.Increase ? e.Equivalent21KWeightInGrams : -e.Equivalent21KWeightInGrams);
+        var supplierManufacturingLedgerEntries = supplier.SupplierManufacturingLedgerEntries.ToList();
+        decimal manufacturingBalance = supplierManufacturingLedgerEntries
+            .Sum(e => e.MovementType == SupplierBalanceMovementType.Increase ? e.Amount : -e.Amount);
 
-        decimal goldBalance = await context.SupplierGoldLedgerEntries
-            .Where(e => e.SupplierId == query.Id)
-            .SumAsync(e => e.MovementType == SupplierBalanceMovementType.Increase ? e.Equivalent21KWeightInGrams : -e.Equivalent21KWeightInGrams, cancellationToken);
+        var financialTransactions = supplier.SupplierFinancialTransactions.ToList();
 
-        decimal manufacturingBalance = await context.SupplierManufacturingLedgerEntries
-            .Where(e => e.SupplierId == query.Id)
-            .SumAsync(e => e.MovementType == SupplierBalanceMovementType.Increase ? e.Amount : -e.Amount, cancellationToken);
-
-        List<SupplierFinancialTransaction> financialTransactions = await context.SupplierFinancialTransactions
-            .Where(t => t.SupplierId == query.Id)
-            .ToListAsync(cancellationToken);
-
-        List<Guid> financialTxIds = financialTransactions.Select(t => t.Id).ToList();
+        var financialTxIds = financialTransactions.Select(t => t.Id).ToList();
 
         List<FinancialBalanceByCurrency> financialBalancesByCurrency = [];
 
@@ -55,7 +54,10 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
                 .ToList();
         }
 
-        List<SupplierTransactionResponse> recentTransactions = await GetRecentTransactions(query.Id, financialTxIds, cancellationToken);
+        List<SupplierTransactionResponse> recentTransactions = await GetRecentTransactions(query.Id,
+            supplierGoldLedgerEntries,
+            supplierManufacturingLedgerEntries,
+            financialTxIds, cancellationToken);
 
         return new SupplierDetailResponse
         {
@@ -66,7 +68,7 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
             BankAccountNumber = supplier.BankAccountNumber,
             Notes = supplier.Notes,
             IsActive = supplier.IsActive,
-            CreatedAt = supplier.CreatedAt,
+            CreatedAt = supplier.CreatedAtUtc!.Value.LocalDateTime,
             GoldBalance = goldBalance,
             ManufacturingBalance = manufacturingBalance,
             FinancialBalancesByCurrency = financialBalancesByCurrency,
@@ -74,11 +76,14 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
         };
     }
 
-    private async Task<List<SupplierTransactionResponse>> GetRecentTransactions(Guid supplierId, List<Guid> financialTxIds, CancellationToken cancellationToken)
+    private async Task<List<SupplierTransactionResponse>> GetRecentTransactions(Guid supplierId,
+            List<SupplierGoldLedgerEntry> supplierGoldLedgerEntries,
+            List<SupplierManufacturingLedgerEntry> supplierManufacturingLedgerEntries,
+            List<Guid> financialTxIds,
+            CancellationToken cancellationToken)
     {
-        List<SupplierTransactionResponse> goldEntries = await context.SupplierGoldLedgerEntries
-            .Where(e => e.SupplierId == supplierId)
-            .OrderByDescending(e => e.Date)
+        var goldEntries = supplierGoldLedgerEntries
+            .OrderByDescending(e => e.CreatedAtUtc)
             .Take(5)
             .Select(e => new SupplierTransactionResponse
             {
@@ -86,17 +91,16 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
                 Description = e.ReferenceType == SupplierGoldReferenceType.SupplierDelivery ? "توريد ذهب" :
                               e.ReferenceType == SupplierGoldReferenceType.SupplierScrapPayment ? "استلام كسر ذهب" :
                               "تسوية يدوية",
-                Date = e.Date,
+                Date = e.CreatedAtUtc!.Value.LocalDateTime,
                 Type = "ذهب",
                 Amount = e.Equivalent21KWeightInGrams,
                 Unit = "جم",
                 Direction = e.MovementType == SupplierBalanceMovementType.Increase ? "+" : "-"
             })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
-        List<SupplierTransactionResponse> mfgEntries = await context.SupplierManufacturingLedgerEntries
-            .Where(e => e.SupplierId == supplierId)
-            .OrderByDescending(e => e.Date)
+        var mfgEntries = supplierManufacturingLedgerEntries
+            .OrderByDescending(e => e.CreatedAtUtc!.Value.LocalDateTime)
             .Take(5)
             .Select(e => new SupplierTransactionResponse
             {
@@ -104,23 +108,23 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
                 Description = e.ReferenceType == SupplierManufacturingReferenceType.SupplierDelivery ? "أجور تصنيع" :
                               e.ReferenceType == SupplierManufacturingReferenceType.SupplierManufacturingPayment ? "دفعة نقدية - أجور" :
                               "تسوية يدوية",
-                Date = e.Date,
+                Date = e.CreatedAtUtc!.Value.LocalDateTime,
                 Type = "تصنيع",
                 Amount = e.Amount,
                 Unit = "د.إ",
                 Direction = e.MovementType == SupplierBalanceMovementType.Increase ? "+" : "-"
             })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         List<SupplierTransactionResponse> financialEntries = await context.SupplierFinancialLedgerEntries
             .Where(e => financialTxIds.Contains(e.SupplierFinancialTransactionId))
-            .OrderByDescending(e => e.Date)
+            .OrderByDescending(e => e.CreatedAtUtc)
             .Take(5)
             .Select(e => new SupplierTransactionResponse
             {
                 Id = e.Id,
                 Description = e.MovementType == SupplierBalanceMovementType.Increase ? "سلفة" : "دفعة سلفة",
-                Date = e.Date,
+                Date = e.CreatedAtUtc!.Value.LocalDateTime,
                 Type = "مالي",
                 Amount = e.Amount,
                 Unit = "د.إ",

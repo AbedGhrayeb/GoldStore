@@ -3,7 +3,7 @@ using Application.Abstractions.Messaging;
 using Domain.Common;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.SupplierFinancialTransactions.GetKpis;
 
@@ -11,23 +11,17 @@ internal sealed class GetSupplierFinancialKpisQueryHandler(
     IApplicationDbContext context)
     : IQueryHandler<GetSupplierFinancialKpisQuery, SupplierFinancialKpiResponse>
 {
-    private static readonly Dictionary<Currency, (string Code, string Symbol)> CurrencyLabels = new()
-    {
-        [Currency.Jod] = ("Jod", "د.أ"),
-        [Currency.Usd] = ("Usd", "$"),
-        [Currency.Ils] = ("Ils", "₪")
-    };
 
     public async Task<Result<SupplierFinancialKpiResponse>> Handle(
         GetSupplierFinancialKpisQuery query, CancellationToken cancellationToken)
     {
-        var transactions = await context.SupplierFinancialTransactions
+        List<SupplierFinancialTransaction> transactions = await context.SupplierFinancialTransactions
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
         var transactionIds = transactions.Select(t => t.Id).ToList();
 
-        var allEntries = await context.SupplierFinancialLedgerEntries
+        List<SupplierFinancialLedgerEntry> allEntries = await context.SupplierFinancialLedgerEntries
             .AsNoTracking()
             .Where(e => transactionIds.Contains(e.SupplierFinancialTransactionId))
             .ToListAsync(cancellationToken);
@@ -40,18 +34,22 @@ internal sealed class GetSupplierFinancialKpisQueryHandler(
 
         var byCurrency = new Dictionary<Currency, (decimal From, decimal To, int Count)>();
 
-        foreach (var tx in transactions)
+        foreach (SupplierFinancialTransaction tx in transactions)
         {
             decimal balance = balances.GetValueOrDefault(tx.Id, 0m);
-            if (balance <= 0) continue;
+            if (balance <= 0)
+            { continue; }
 
-            if (!byCurrency.TryGetValue(tx.Currency, out var cur))
+            if (!byCurrency.TryGetValue(tx.Currency, out (decimal From, decimal To, int Count) cur))
+            {
                 cur = (0m, 0m, 0);
+            }
 
             if (tx.Direction == SupplierFinancialTransactionDirection.FromSupplier)
-                cur = (cur.From + balance, cur.To, cur.Count + 1);
+
+            { cur = (cur.From + balance, cur.To, cur.Count + 1); }
             else
-                cur = (cur.From, cur.To + balance, cur.Count + 1);
+            { cur = (cur.From, cur.To + balance, cur.Count + 1); }
 
             byCurrency[tx.Currency] = cur;
         }
@@ -60,7 +58,7 @@ internal sealed class GetSupplierFinancialKpisQueryHandler(
             .OrderByDescending(x => x.Value.From + x.Value.To)
             .Select(x =>
             {
-                var (code, symbol) = CurrencyLabels.GetValueOrDefault(x.Key, (x.Key.ToString(), x.Key.ToString()));
+                (string? code, string? symbol) = CurrencyExtensions.CurrencyLabels.GetValueOrDefault(x.Key, (x.Key.ToString(), x.Key.ToString()));
                 decimal net = x.Value.From - x.Value.To;
                 return new SupplierFinancialKpiByCurrency
                 {

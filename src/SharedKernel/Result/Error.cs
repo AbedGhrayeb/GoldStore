@@ -1,8 +1,8 @@
 ﻿namespace SharedKernel.Result;
 
-public readonly record struct Error
+public record Error
 {
-    private Error(string code, string description, ErrorKind type)
+    private Error(string code, string description, ErrorType type)
     {
         Code = code;
         Description = description;
@@ -13,29 +13,29 @@ public readonly record struct Error
 
     public string Description { get; }
 
-    public ErrorKind Type { get; }
+    public ErrorType Type { get; }
 
     public static Error Failure(string code = nameof(Failure), string description = "General failure.")
-        => new(code, description, ErrorKind.Failure);
+        => new(code, description, ErrorType.Failure);
 
     public static Error Unexpected(string code = nameof(Unexpected), string description = "Unexpected error.")
-        => new(code, description, ErrorKind.Unexpected);
+        => new(code, description, ErrorType.Unexpected);
 
     public static Error Validation(string code = nameof(Validation), string description = "Validation error")
-        => new(code, description, ErrorKind.Validation);
+        => new(code, description, ErrorType.Validation);
 
     public static Error Conflict(string code = nameof(Conflict), string description = "Conflict error")
-        => new(code, description, ErrorKind.Conflict);
+        => new(code, description, ErrorType.Conflict);
 
     public static Error NotFound(string code = nameof(NotFound), string description = "Not found error")
-        => new(code, description, ErrorKind.NotFound);
+        => new(code, description, ErrorType.NotFound);
 
     public static Error Unauthorized(string code = nameof(Unauthorized), string description = "Unauthorized error")
-        => new(code, description, ErrorKind.Unauthorized);
+        => new(code, description, ErrorType.Unauthorized);
 
     public static Error Forbidden(string code = nameof(Forbidden), string description = "Forbidden error")
-        => new(code, description, ErrorKind.Forbidden);
+        => new(code, description, ErrorType.Forbidden);
 
     public static Error Create(int type, string code, string description)
-        => new(code, description, (ErrorKind)type);
+        => new(code, description, (ErrorType)type);
 }

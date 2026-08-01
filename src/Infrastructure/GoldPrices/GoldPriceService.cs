@@ -24,9 +24,9 @@ internal sealed class GoldPriceService(
 
         string currencyCode = currency switch
         {
-            Currency.Jod => "JOD",
-            Currency.Usd => "USD",
-            Currency.Ils => "ILS",
+            Currency.JOD => "JOD",
+            Currency.USD => "USD",
+            Currency.ILS => "ILS",
             _ => "USD"
         };
 
@@ -49,7 +49,7 @@ internal sealed class GoldPriceService(
 
         string jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
 
-        using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+        using var doc = JsonDocument.Parse(jsonResponse);
         JsonElement root = doc.RootElement;
 
         decimal pricePerOunce = root.GetProperty("price").GetDecimal();

@@ -13,7 +13,7 @@ internal sealed class CreateDebtCommandValidator : AbstractValidator<CreateDebtC
             .WithMessage("الاسم مطلوب");
 
         RuleFor(x => x.Phone)
-            .MaximumLength(20)
+            .MaximumLength(10)
             .When(x => x.Phone is not null);
 
         RuleFor(x => x.Direction)
@@ -22,7 +22,7 @@ internal sealed class CreateDebtCommandValidator : AbstractValidator<CreateDebtC
 
         RuleFor(x => x.Currency)
             .NotEmpty()
-            .Must(c => c is "Jod" or "Usd" or "Ils")
+            .Must(c => c is "JOD" or "USD" or "ILS")
             .WithMessage("العملة غير صالحة");
 
         RuleFor(x => x.Amount)

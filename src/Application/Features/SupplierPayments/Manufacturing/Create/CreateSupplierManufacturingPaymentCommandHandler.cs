@@ -6,6 +6,7 @@ using Domain.Finance;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
 using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.SupplierPayments.Manufacturing.Create;
 
@@ -21,72 +22,46 @@ internal sealed class CreateSupplierManufacturingPaymentCommandHandler(
 
         if (supplier is null)
         {
-            return Result.Failure<Guid>(SupplierErrors.NotFound(command.SupplierId));
+            return SupplierErrors.NotFound(command.SupplierId);
         }
 
         if (!supplier.IsActive)
         {
-            return Result.Failure<Guid>(Error.Problem("SupplierPayments.InactiveSupplier", "المورد غير نشط"));
+            return SupplierErrors.SupplierNotActive;
         }
 
         FinancialAccount? account = await context.FinancialAccounts.FindAsync([command.AccountId], cancellationToken);
 
         if (account is null)
         {
-            return Result.Failure<Guid>(Error.NotFound("FinancialAccount.NotFound", "حساب الدفع غير موجود"));
+            return FinancialAccountErrors.NotFound(command.AccountId);
         }
 
         if (!account.IsActive)
         {
-            return Result.Failure<Guid>(Error.Problem("FinancialAccount.Inactive", "حساب الدفع غير نشط"));
+            return FinancialAccountErrors.Inactive;
         }
 
         Currency currency = Enum.Parse<Currency>(command.Currency, ignoreCase: true);
         DateTime paymentDate = dateTimeProvider.UtcNow;
         Guid userId = userContext.UserId;
 
-        var payment = new SupplierManufacturingPayment
-        {
-            Id = Guid.CreateVersion7(),
-            SupplierId = command.SupplierId,
-            AccountId = command.AccountId,
-            Amount = command.Amount,
-            Currency = currency,
-            Date = paymentDate,
-            Notes = command.Notes
-        };
-
+        var payment = SupplierManufacturingPayment.Create(command.SupplierId, command.AccountId, command.Amount, currency, command.Notes);
         context.SupplierManufacturingPayments.Add(payment);
+        var manufacturingLedgerEntry = SupplierManufacturingLedgerEntry.Create(command.SupplierId, command.Amount, currency,
+            SupplierBalanceMovementType.Decrease, SupplierManufacturingReferenceType.SupplierManufacturingPayment, payment.Id, command.Notes);
+        context.SupplierManufacturingLedgerEntries.Add(manufacturingLedgerEntry);
 
-        context.SupplierManufacturingLedgerEntries.Add(new SupplierManufacturingLedgerEntry
+        Result<FinancialTransaction> financialTransaction = FinancialTransaction.Create(command.AccountId, currency, command.Amount, FinancialTransactionType.Outflow,
+            FinancialReferenceType.SupplierManufacturingPayment, payment.Id, command.Notes);
+
+        if (financialTransaction.IsError)
         {
-            Id = Guid.CreateVersion7(),
-            SupplierId = command.SupplierId,
-            Amount = command.Amount,
-            Currency = currency,
-            MovementType = SupplierBalanceMovementType.Decrease,
-            ReferenceType = SupplierManufacturingReferenceType.SupplierManufacturingPayment,
-            ReferenceId = payment.Id,
-            Date = paymentDate,
-            Notes = command.Notes
-        });
-
-        context.FinancialTransactions.Add(new FinancialTransaction
-        {
-            Id = Guid.CreateVersion7(),
-            AccountId = command.AccountId,
-            Currency = currency,
-            Amount = command.Amount,
-            TransactionType = FinancialTransactionType.Outflow,
-            ReferenceType = FinancialReferenceType.SupplierManufacturingPayment,
-            ReferenceId = payment.Id,
-            UserId = userId,
-            Date = paymentDate,
-            Notes = command.Notes
-        });
-
+            return financialTransaction.Errors;
+        }
+        context.FinancialTransactions.Add(financialTransaction.Value);
         await context.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(payment.Id);
+        return payment.Id;
     }
 }

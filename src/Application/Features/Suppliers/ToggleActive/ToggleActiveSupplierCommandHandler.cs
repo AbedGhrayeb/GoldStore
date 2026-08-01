@@ -2,20 +2,20 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Suppliers.ToggleActive;
 
 internal sealed class ToggleActiveSupplierCommandHandler(IApplicationDbContext context)
-    : ICommandHandler<ToggleActiveSupplierCommand, bool>
+    : ICommandHandler<ToggleActiveSupplierCommand, Updated>
 {
-    public async Task<Result<bool>> Handle(ToggleActiveSupplierCommand command, CancellationToken cancellationToken)
+    public async Task<Result<Updated>> Handle(ToggleActiveSupplierCommand command, CancellationToken cancellationToken)
     {
         Supplier? supplier = await context.Suppliers.FirstOrDefaultAsync(s => s.Id == command.Id, cancellationToken);
 
         if (supplier is null)
         {
-            return Result.Failure<bool>(SupplierErrors.NotFound(command.Id));
+            return SupplierErrors.NotFound(command.Id);
         }
 
         if (supplier.IsActive)
@@ -30,7 +30,7 @@ internal sealed class ToggleActiveSupplierCommandHandler(IApplicationDbContext c
 
             if (goldBalance != 0 || mfgBalance != 0)
             {
-                return Result.Failure<bool>(SupplierErrors.HasActiveBalance);
+                return SupplierErrors.HasActiveBalance;
             }
         }
 
@@ -38,6 +38,6 @@ internal sealed class ToggleActiveSupplierCommandHandler(IApplicationDbContext c
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return true;
+        return Result.Updated;
     }
 }

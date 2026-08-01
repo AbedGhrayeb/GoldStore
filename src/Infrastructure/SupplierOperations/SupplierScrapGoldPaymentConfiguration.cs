@@ -1,6 +1,4 @@
 using Domain.SupplierOperations;
-using Domain.Suppliers;
-using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -20,11 +18,11 @@ internal sealed class SupplierScrapGoldPaymentConfiguration : IEntityTypeConfigu
 
         builder.Property(payment => payment.Notes).HasMaxLength(1000);
 
-        builder.HasOne<Supplier>()
+        builder.HasOne(s => s.Supplier)
             .WithMany()
             .HasForeignKey(payment => payment.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(payment => new { payment.SupplierId, payment.Date });
+        builder.HasIndex(payment => new { payment.SupplierId, payment.CreatedAtUtc });
     }
 }

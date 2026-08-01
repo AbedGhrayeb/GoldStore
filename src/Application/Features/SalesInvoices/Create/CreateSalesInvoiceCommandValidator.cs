@@ -20,7 +20,7 @@ internal sealed class CreateSalesInvoiceCommandValidator : AbstractValidator<Cre
 
         RuleFor(x => x.Currency)
             .NotEmpty()
-            .Must(c => c is "Jod" or "Usd" or "Ils")
+            .Must(c => c is "JOD" or "USD" or "ILS")
             .WithMessage("العملة غير صالحة");
 
         RuleFor(x => x.Items)
@@ -65,9 +65,7 @@ internal sealed class CreateSalesInvoiceCommandValidator : AbstractValidator<Cre
             .When(x => x.PaymentMethod == 2 && x.AmountPaid > 0)
             .WithMessage("رقم حساب المشتري مطلوب للتحويل البنكي");
 
-        RuleFor(x => x.SellerName)
-            .NotEmpty()
-            .MaximumLength(200)
+        RuleFor(x => x.EmployeeId).NotNull()
             .WithMessage("اسم المشتري مطلوب");
 
         RuleFor(x => x.Notes)

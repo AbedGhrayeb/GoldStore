@@ -10,7 +10,7 @@ function formatDate(dateStr) {
 
 function updateAmountSuffix() {
     const currency = document.getElementById('debtCurrency').value;
-    const symbols = { Jod: 'د.أ', Usd: '$', Ils: '₪' };
+    const symbols = { JOD: 'د.أ', USD: '$', ILS: '₪' };
     document.getElementById('debtAmountSuffix').textContent = symbols[currency] ?? currency;
 }
 
@@ -150,7 +150,7 @@ async function loadDebts(page = 1) {
                     </span>
                 </td>
                 <td class="py-3 px-4 font-data-mono text-left" dir="ltr">${parseFloat(d.outstandingBalance).toFixed(3)}</td>
-                <td class="py-3 px-4 text-secondary">${d.currency === 'Jod' ? 'د.أ' : d.currency}</td>
+                <td class="py-3 px-4 text-secondary">${d.currency === 'JOD' ? 'د.أ' : d.currency}</td>
                 <td class="py-3 px-4 text-on-surface">${formatDate(d.createdAt)}</td>
                 <td class="py-3 px-4">
                     <div class="flex items-center gap-1">
@@ -260,7 +260,7 @@ async function submitDebt() {
 // ─── Payment ─────────────────────────────────
 
 function openPaymentModal(id, name, balance, currency) {
-    const symbols = { Jod: 'د.أ', Usd: '$', Ils: '₪' };
+    const symbols = { JOD: 'د.أ', USD: '$', ILS: '₪' };
     const symbol = symbols[currency] ?? currency;
 
     document.getElementById('paymentDebtId').value = id;
@@ -335,7 +335,7 @@ function openEditModal(id, name, phone, amount, currency, accountId, notes) {
     document.getElementById('editDebtAmount').value = amount;
     document.getElementById('editDebtNotes').value = notes;
 
-    const symbols = { Jod: 'د.أ', Usd: '$', Ils: '₪' };
+    const symbols = { JOD: 'د.أ', USD: '$', ILS: '₪' };
     document.getElementById('editDebtAmountSuffix').textContent = symbols[currency] ?? currency;
 
     populateEditAccountSelect(currency, accountId);

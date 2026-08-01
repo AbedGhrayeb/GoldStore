@@ -1,34 +1,19 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Models;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.SalesInvoices.GetPaged;
 
 internal sealed class GetSalesInvoicesQueryHandler(IApplicationDbContext context)
-    : IQueryHandler<GetSalesInvoicesQuery, PagedSalesInvoiceResponse>
+    : IQueryHandler<GetSalesInvoicesQuery, PaginatedList<SalesInvoiceResponse>>
 {
-    private static string GetStatusLabel(SalesInvoiceStatus status) => status switch
+    public async Task<Result<PaginatedList<SalesInvoiceResponse>>> Handle(GetSalesInvoicesQuery query, CancellationToken cancellationToken)
     {
-        SalesInvoiceStatus.Draft => "مسودة",
-        SalesInvoiceStatus.Completed => "مكتملة",
-        SalesInvoiceStatus.PartiallyPaid => "مدفوعة جزئياً",
-        SalesInvoiceStatus.Cancelled => "ملغاة",
-        _ => status.ToString()
-    };
-
-    private static string GetCurrencySymbol(string currency) => currency switch
-    {
-        "Jod" => "د.أ",
-        "Usd" => "$",
-        "Ils" => "₪",
-        _ => currency
-    };
-
-    public async Task<Result<PagedSalesInvoiceResponse>> Handle(GetSalesInvoicesQuery query, CancellationToken cancellationToken)
-    {
-        IQueryable<SalesInvoice> invoicesQuery = context.SalesInvoices.AsNoTracking();
+        IQueryable<SalesInvoice> invoicesQuery = context.SalesInvoices.
+            Include(x => x.SaleInvoiceItems).AsNoTracking();
 
         if (query.FromDate.HasValue)
         {
@@ -41,7 +26,7 @@ internal sealed class GetSalesInvoicesQueryHandler(IApplicationDbContext context
         }
 
         if (!string.IsNullOrWhiteSpace(query.Status) &&
-            Enum.TryParse<SalesInvoiceStatus>(query.Status, out var status))
+            Enum.TryParse<SalesInvoiceStatus>(query.Status, out SalesInvoiceStatus status))
         {
             invoicesQuery = invoicesQuery.Where(i => i.Status == status);
         }
@@ -54,81 +39,46 @@ internal sealed class GetSalesInvoicesQueryHandler(IApplicationDbContext context
                 i.CustomerName.Contains(search));
         }
 
-        int totalCount = await invoicesQuery.CountAsync(cancellationToken);
-
-        int page = Math.Max(query.Page, 1);
-        int pageSize = Math.Clamp(query.PageSize, 1, 100);
-
-        List<Guid> userIds = await invoicesQuery
+        List<Guid> employeeIds = await invoicesQuery
             .OrderByDescending(i => i.Date)
             .ThenByDescending(i => i.Id)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(i => i.UserId)
+            .Where(i => i.EmployeeId.HasValue)
+            .Select(i => i.EmployeeId!.Value)
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        Dictionary<Guid, string> userNames = await context.Users
+        Dictionary<Guid, string> employeeNames = await context.Employees
             .AsNoTracking()
-            .Where(u => userIds.Contains(u.Id))
+            .Where(u => employeeIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => $"{u.FirstName} {u.LastName}", cancellationToken);
 
-        List<SalesInvoice> pagedData = await invoicesQuery
-            .OrderByDescending(i => i.Date)
-            .ThenByDescending(i => i.Id)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        List<Guid> invoiceIds = pagedData.Select(i => i.Id).ToList();
-
-        List<SalesInvoiceItem> allItems = await context.SalesInvoiceItems
-            .AsNoTracking()
-            .Where(i => invoiceIds.Contains(i.SalesInvoiceId))
-            .ToListAsync(cancellationToken);
-
-        var itemsByInvoice = allItems.GroupBy(i => i.SalesInvoiceId)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        List<SalesInvoiceResponse> items = pagedData.Select(invoice =>
+        IQueryable<SalesInvoiceResponse> invoiceResponse = invoicesQuery.Select(invoice => new SalesInvoiceResponse
         {
-            List<SalesInvoiceItem> invoiceItems = itemsByInvoice.GetValueOrDefault(invoice.Id, []);
-
-            return new SalesInvoiceResponse
+            Id = invoice.Id,
+            InvoiceNumber = invoice.InvoiceNumber,
+            CustomerName = invoice.CustomerName,
+            CustomerPhone = invoice.CustomerPhone,
+            Date = invoice.Date,
+            Currency = invoice.Currency.ToString(),
+            TotalAmount = invoice.TotalAmount,
+            AmountPaid = invoice.AmountPaid,
+            RemainingBalance = invoice.RemainingBalance,
+            PaymentMethod = invoice.PaymentMethod.ToString(),
+            Status = invoice.Status.ToString(),
+            StatusLabel = invoice.Status.ToStatusLabel(),
+            UserName = employeeNames.GetValueOrDefault(invoice.EmployeeId!.Value, "—"),
+            Notes = invoice.Notes,
+            CreatedAt = invoice.CreatedAtUtc!.Value.LocalDateTime,
+            Items = invoice.SaleInvoiceItems.Select(ii => new SalesInvoiceItemResponse
             {
-                Id = invoice.Id,
-                InvoiceNumber = invoice.InvoiceNumber,
-                CustomerName = invoice.CustomerName,
-                CustomerPhone = invoice.CustomerPhone,
-                Date = invoice.Date,
-                Currency = invoice.Currency.ToString(),
-                TotalAmount = invoice.TotalAmount,
-                AmountPaid = invoice.AmountPaid,
-                RemainingBalance = invoice.RemainingBalance,
-                PaymentMethod = invoice.PaymentMethod?.ToString(),
-                Status = invoice.Status.ToString(),
-                StatusLabel = GetStatusLabel(invoice.Status),
-                UserName = userNames.GetValueOrDefault(invoice.UserId, "—"),
-                Notes = invoice.Notes,
-                CreatedAt = invoice.CreatedAt,
-                Items = invoiceItems.Select(ii => new SalesInvoiceItemResponse
-                {
-                    Id = ii.Id,
-                    Karat = (int)ii.Karat,
-                    WeightInGrams = ii.WeightInGrams,
-                    Equivalent21KWeightInGrams = ii.Equivalent21KWeightInGrams,
-                    PricePerGram = ii.PricePerGram,
-                    GoldAmount = ii.GoldAmount
-                }).ToList()
-            };
-        }).ToList();
-
-        return new PagedSalesInvoiceResponse
-        {
-            Items = items,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
-        };
+                Id = ii.Id,
+                Karat = (int)ii.Karat,
+                WeightInGrams = ii.WeightInGrams,
+                Equivalent21KWeightInGrams = ii.Equivalent21KWeightInGrams,
+                PricePerGram = ii.PricePerGram,
+                GoldAmount = ii.GoldAmount
+            }).ToList()
+        });
+        return await PaginatedList<SalesInvoiceResponse>.CreateAsync(invoiceResponse, query.Page, query.PageSize);
     }
 }

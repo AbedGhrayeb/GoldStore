@@ -3,34 +3,20 @@ using Application.Abstractions.Messaging;
 using Application.Features.StoreOperations.Shared;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.StoreOperations.GetPaged;
 
 internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext context)
     : IQueryHandler<GetStoreOperationsQuery, PagedStoreOperationsResponse>
 {
-    private static string GetStatusLabel(SalesInvoiceStatus? status) => status switch
-    {
-        SalesInvoiceStatus.Draft => "مسودة",
-        SalesInvoiceStatus.Completed => "مكتملة",
-        SalesInvoiceStatus.PartiallyPaid => "مدفوعة جزئياً",
-        SalesInvoiceStatus.Cancelled => "ملغاة",
-        _ => null
-    };
 
-    private static string GetPaymentMethodLabel(PaymentMethod? method) => method switch
-    {
-        PaymentMethod.Cash => "نقدي",
-        PaymentMethod.Bank => "مصرفي",
-        _ => null
-    };
 
     private static string GetCurrencySymbol(string currency) => currency switch
     {
-        "Jod" => "د.أ",
-        "Usd" => "$",
-        "Ils" => "₪",
+        "JOD" => "د.أ",
+        "USD" => "$",
+        "ILS" => "₪",
         _ => currency
     };
 
@@ -38,6 +24,7 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
         GetStoreOperationsQuery query,
         CancellationToken cancellationToken)
     {
+        Dictionary<Guid, string> employees = await context.Employees.Select(e => new { e.Id, e.FullName }).ToDictionaryAsync(e => e.Id, e => e.FullName, cancellationToken);
         IQueryable<StoreOperationRow> salesQuery = context.SalesInvoices
             .AsNoTracking()
             .Select(s => new StoreOperationRow
@@ -48,7 +35,7 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
                 Date = s.Date,
                 CounterpartyName = s.CustomerName,
                 CounterpartyPhone = s.CustomerPhone,
-                EmployeeName = s.SellerName,
+                EmployeeId = s.EmployeeId,
                 Currency = s.Currency.ToString(),
                 TotalAmount = s.TotalAmount,
                 AmountPaid = s.AmountPaid,
@@ -66,10 +53,10 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
                 Id = p.Id,
                 InvoiceNumber = p.InvoiceNumber,
                 OperationType = "Buy",
-                Date = p.Date,
+                Date = p.Date!.Value,
                 CounterpartyName = p.SellerName,
+                EmployeeId = p.EmployeeId,
                 CounterpartyPhone = p.SellerPhone,
-                EmployeeName = p.BuyerName,
                 Currency = p.Currency.ToString(),
                 TotalAmount = p.TotalAmount,
                 AmountPaid = p.AmountPaid,
@@ -101,10 +88,9 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
             combined = combined.Where(r => r.OperationType == type);
         }
 
-        if (!string.IsNullOrWhiteSpace(query.EmployeeName))
+        if (query.EmployeeId.HasValue)
         {
-            string employee = query.EmployeeName.Trim();
-            combined = combined.Where(r => r.EmployeeName == employee);
+            combined = combined.Where(r => r.EmployeeId == query.EmployeeId.Value);
         }
 
         if (query.AccountId.HasValue)
@@ -121,7 +107,6 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
                 r.CounterpartyName.Contains(search));
         }
 
-        int totalCount = await combined.CountAsync(cancellationToken);
 
         int page = Math.Max(query.Page, 1);
         int pageSize = Math.Clamp(query.PageSize, 1, 100);
@@ -132,6 +117,7 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
+        int totalCount = await combined.CountAsync(cancellationToken);
 
         var saleIds = rows.Where(r => r.OperationType == "Sale").Select(r => r.Id).ToList();
         var purchaseIds = rows.Where(r => r.OperationType == "Buy").Select(r => r.Id).ToList();
@@ -179,20 +165,20 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
                 Date = row.Date,
                 CounterpartyName = row.CounterpartyName,
                 CounterpartyPhone = row.CounterpartyPhone,
-                EmployeeName = row.EmployeeName,
+                EmployeeName = row.EmployeeId.HasValue ? employees.GetValueOrDefault(row.EmployeeId!.Value) : "Unkown Employee",
                 Currency = row.Currency,
                 CurrencySymbol = GetCurrencySymbol(row.Currency),
                 TotalAmount = row.TotalAmount,
                 AmountPaid = row.AmountPaid,
                 RemainingBalance = row.RemainingBalance,
                 PaymentMethod = paymentMethod,
-                PaymentMethodLabel = GetPaymentMethodLabel(row.PaymentMethodInt),
+                PaymentMethodLabel = row.PaymentMethodInt.HasValue ? row.PaymentMethodInt!.Value.ToLabel() : "",
                 AccountId = row.AccountId,
                 AccountName = row.AccountId.HasValue
                     ? accountNames.GetValueOrDefault(row.AccountId.Value)
                     : null,
                 Status = status,
-                StatusLabel = GetStatusLabel(row.StatusInt),
+                StatusLabel = row.StatusInt.HasValue ? row.StatusInt!.Value.ToStatusLabel() : "",
                 ItemsCount = itemCount,
                 Notes = row.Notes
             };
@@ -215,6 +201,7 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
         public DateTime Date { get; init; }
         public string CounterpartyName { get; init; } = string.Empty;
         public string? CounterpartyPhone { get; init; }
+        public Guid? EmployeeId { get; init; }
         public string? EmployeeName { get; init; }
         public string Currency { get; init; } = string.Empty;
         public decimal TotalAmount { get; init; }

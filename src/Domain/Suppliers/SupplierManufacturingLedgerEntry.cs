@@ -3,23 +3,42 @@ using SharedKernel;
 
 namespace Domain.Suppliers;
 
-public sealed class SupplierManufacturingLedgerEntry : Entity
+public sealed class SupplierManufacturingLedgerEntry : AuditableEntity
 {
-    public Guid Id { get; set; }
+    public Guid SupplierId { get; private set; }
 
-    public Guid SupplierId { get; set; }
+    public decimal Amount { get; private set; }
 
-    public decimal Amount { get; set; }
+    public Currency Currency { get; private set; }
 
-    public Currency Currency { get; set; }
+    public SupplierBalanceMovementType MovementType { get; private set; }
 
-    public SupplierBalanceMovementType MovementType { get; set; }
+    public SupplierManufacturingReferenceType ReferenceType { get; private set; }
 
-    public SupplierManufacturingReferenceType ReferenceType { get; set; }
+    public Guid? ReferenceId { get; private set; }
 
-    public Guid? ReferenceId { get; set; }
+    public string? Notes { get; private set; }
+    public Supplier Supplier { get; set; }
 
-    public DateTime Date { get; set; }
+    private SupplierManufacturingLedgerEntry()
+    {
 
-    public string? Notes { get; set; }
+    }
+    private SupplierManufacturingLedgerEntry(Guid id, Guid supplierId, decimal amount, Currency currency,
+        SupplierBalanceMovementType movementType, SupplierManufacturingReferenceType referenceType, Guid? referenceId, string? notes) : base(id)
+    {
+        SupplierId = supplierId;
+        Amount = amount;
+        Currency = currency;
+        MovementType = movementType;
+        ReferenceType = referenceType;
+        ReferenceId = referenceId;
+        Notes = notes;
+    }
+    public static SupplierManufacturingLedgerEntry Create(Guid supplierId, decimal amount, Currency currency,
+        SupplierBalanceMovementType movementType, SupplierManufacturingReferenceType referenceType, Guid? referenceId, string? notes)
+    {
+        return new SupplierManufacturingLedgerEntry(Guid.CreateVersion7(), supplierId, amount, currency,
+            movementType, referenceType, referenceId, notes);
+    }
 }

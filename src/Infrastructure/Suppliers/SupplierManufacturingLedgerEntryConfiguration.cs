@@ -20,13 +20,12 @@ internal sealed class SupplierManufacturingLedgerEntryConfiguration : IEntityTyp
 
         builder.Property(entry => entry.Notes).HasMaxLength(1000);
 
-        builder.HasOne<Supplier>()
-            .WithMany()
+        builder.HasOne(sm => sm.Supplier)
+            .WithMany(s => s.SupplierManufacturingLedgerEntries)
             .HasForeignKey(entry => entry.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(entry => new { entry.SupplierId, entry.Date });
+        builder.HasIndex(entry => new { entry.SupplierId, entry.CreatedAtUtc });
 
-        builder.HasIndex(entry => new { entry.ReferenceType, entry.ReferenceId });
     }
 }

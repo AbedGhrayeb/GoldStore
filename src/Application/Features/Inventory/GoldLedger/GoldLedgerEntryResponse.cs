@@ -4,7 +4,7 @@ public sealed record GoldLedgerEntryResponse
 {
     public Guid Id { get; init; }
     public DateTime Date { get; init; }
-    public int Karat { get; init; }
+    public string Karat { get; init; }
     public string KaratLabel { get; init; } = string.Empty;
     public decimal WeightInGrams { get; init; }
     public decimal Equivalent21KWeightInGrams { get; init; }

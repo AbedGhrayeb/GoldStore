@@ -19,7 +19,7 @@ public sealed record GoldWeight
     {
         if (weightInGrams <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(weightInGrams), "Gold weight must be greater than zero.");
+            throw new ArgumentOutOfRangeException(nameof(weightInGrams), "وزن الذهب يجب أن يكون أكبر من الصفر.");
         }
 
         return new GoldWeight(weightInGrams, karat);

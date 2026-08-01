@@ -117,9 +117,9 @@ async function loadAccounts() {
 
 function getCurrencySymbol(currency) {
     switch (currency) {
-        case 'Jod': return 'د.إ';
-        case 'Usd': return '$';
-        case 'Ils': return '₪';
+        case 'JOD': return 'د.إ';
+        case 'USD': return '$';
+        case 'ILS': return '₪';
         default: return currency;
     }
 }

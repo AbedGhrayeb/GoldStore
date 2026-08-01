@@ -16,7 +16,7 @@ public class CreateSupplierFinancialTransactionModel
     public decimal Amount { get; set; }
 
     [Required]
-    public string Currency { get; set; } = "Jod";
+    public string Currency { get; set; } = "JOD";
 
     [Required]
     public Guid AccountId { get; set; }

@@ -2,20 +2,20 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Expenses;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Expenses.ExpenseCategories.Update;
 
 internal sealed class UpdateExpenseCategoryCommandHandler(IApplicationDbContext context)
-    : ICommandHandler<UpdateExpenseCategoryCommand, bool>
+    : ICommandHandler<UpdateExpenseCategoryCommand, Updated>
 {
-    public async Task<Result<bool>> Handle(UpdateExpenseCategoryCommand command, CancellationToken cancellationToken)
+    public async Task<Result<Updated>> Handle(UpdateExpenseCategoryCommand command, CancellationToken cancellationToken)
     {
         ExpenseCategory? category = await context.ExpenseCategories.FindAsync([command.Id], cancellationToken);
 
         if (category is null)
         {
-            return Result.Failure<bool>(ExpenseCategoryErrors.NotFound(command.Id));
+            return ExpenseCategoryErrors.NotFound(command.Id);
         }
 
         bool nameExists = await context.ExpenseCategories
@@ -24,12 +24,15 @@ internal sealed class UpdateExpenseCategoryCommandHandler(IApplicationDbContext 
 
         if (nameExists)
         {
-            return Result.Failure<bool>(ExpenseCategoryErrors.DuplicateName);
+            return ExpenseCategoryErrors.DuplicateName;
         }
-
-        category.Name = command.Name;
+        Result<Updated> updateResult = category.Update(command.Name);
+        if (updateResult.IsError)
+        {
+            return updateResult.Errors;
+        }
         await context.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(true);
+        return Result.Updated;
     }
 }

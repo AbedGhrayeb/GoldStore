@@ -1,5 +1,4 @@
-﻿using Domain.Common;
-using Domain.Sales;
+﻿using Domain.Sales;
 using FluentValidation;
 
 namespace Application.Features.CustomerPurchaseInvoices.Create;
@@ -13,23 +12,12 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandValidator : AbstractVa
             .MaximumLength(200)
             .WithMessage("اسم البائع مطلوب");
         RuleFor(x => x.SellerIdNumber)
-            .NotEmpty()
-            .MaximumLength(9)
+            .MaximumLength(9).When(x => x.SellerIdNumber is not null)
             .WithMessage("رقم الهوية مطلوب");
 
         RuleFor(x => x.SellerPhone)
             .MaximumLength(10)
             .When(x => x.SellerPhone is not null);
-
-        RuleFor(x => x.BuyerName)
-            .NotEmpty()
-            .MaximumLength(20)
-            .WithMessage("اسم المشتري مطلوب");
-      
-        RuleFor(x => x.BuyerName)
-            .NotEmpty()
-            .Must(x=>x is "طارق" or "رمزي" or "يزن")
-            .WithMessage("المشتري غبر معروف");
 
         RuleFor(x => x.Currency)
             .NotEmpty()
@@ -76,11 +64,9 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandValidator : AbstractVa
             .When(x => x.SellerAccountNumber is not null);
 
         RuleFor(x => x.Notes)
-            .MaximumLength(1000)
+            .MaximumLength(500)
             .When(x => x.Notes is not null);
 
-        RuleFor(x => x.Date)
-            .NotEmpty()
-            .WithMessage("التاريخ مطلوب");
+
     }
 }

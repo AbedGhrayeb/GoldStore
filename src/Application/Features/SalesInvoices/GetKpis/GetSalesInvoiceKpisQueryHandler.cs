@@ -3,6 +3,7 @@ using Application.Abstractions.Messaging;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.SalesInvoices.GetKpis;
 

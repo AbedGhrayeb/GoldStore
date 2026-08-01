@@ -15,7 +15,7 @@ public class CreateDebtModel
     public int Direction { get; set; }
 
     [Required]
-    public string Currency { get; set; } = "Jod";
+    public string Currency { get; set; } = "JOD";
 
     [Required]
 public Guid AccountId { get; set; }

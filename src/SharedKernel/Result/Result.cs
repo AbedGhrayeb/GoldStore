@@ -9,6 +9,9 @@ public class Result
     public static Created Created => default;
     public static Deleted Deleted => default;
     public static Updated Updated => default;
+    public bool IsSuccess { get; }
+    public bool IsFailure => !IsSuccess;
+    public Error? Error { get; }
 }
 
 public sealed class Result<TValue> : Abstractions.IResult<TValue>

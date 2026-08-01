@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using SharedKernel.Result;
 
 namespace Application.Suppliers.Update;
 
@@ -10,4 +11,4 @@ public sealed record UpdateSupplierCommand(
     string? BankAccountNumber,
     string? Notes,
     bool IsActive)
-    : ICommand<bool>;
+    : ICommand<Updated>;

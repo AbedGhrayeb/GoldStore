@@ -20,18 +20,13 @@ internal sealed class FinancialTransactionConfiguration : IEntityTypeConfigurati
 
         builder.Property(transaction => transaction.Notes).HasMaxLength(500);
 
-        builder.HasOne<FinancialAccount>()
+        builder.HasOne(t => t.FinancialAccount)
             .WithMany()
             .HasForeignKey(transaction => transaction.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<Domain.Users.User>()
-            .WithMany()
-            .HasForeignKey(transaction => transaction.UserId)
-            .OnDelete(DeleteBehavior.Restrict)
-            .IsRequired(false);
 
-        builder.HasIndex(transaction => new { transaction.AccountId, transaction.Date });
+        builder.HasIndex(transaction => new { transaction.AccountId, transaction.CreatedAtUtc });
 
         builder.HasIndex(transaction => new { transaction.ReferenceType, transaction.ReferenceId });
     }

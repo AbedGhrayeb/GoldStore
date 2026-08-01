@@ -1,5 +1,4 @@
 using Domain.Inventory;
-using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -23,13 +22,10 @@ internal sealed class InventoryAdjustmentConfiguration : IEntityTypeConfiguratio
 
         builder.Property(a => a.Notes).HasMaxLength(1000);
 
-        builder.HasOne<User>()
-            .WithMany()
-            .HasForeignKey(a => a.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(a => new { a.Type, a.Date });
 
-        builder.HasIndex(a => a.Date);
+        builder.HasIndex(a => new { a.Type, a.CreatedAtUtc });
+
+        builder.HasIndex(a => a.CreatedAtUtc);
     }
 }

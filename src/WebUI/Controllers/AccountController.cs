@@ -4,13 +4,13 @@ using Application.Users.Login;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
+using SharedKernel.Result;
 using WebUI.Models.Account;
 
 
 namespace WebUI.Controllers;
 
-public class AccountController(ICommandHandler<LoginUserCommand> loginCommandHandler, IAuthSessionManager authSessionManager) : Controller
+public class AccountController(ICommandHandler<LoginUserCommand, Guid> loginCommandHandler, IAuthSessionManager authSessionManager) : Controller
 {
     [HttpGet]
     [AllowAnonymous]
@@ -30,10 +30,12 @@ public class AccountController(ICommandHandler<LoginUserCommand> loginCommandHan
     public async Task<IActionResult> Login(LoginModel model, CancellationToken cancellationToken)
     {
         ViewData["ReturnUrl"] = model.ReturnUrl;
-        Result result = await loginCommandHandler.Handle(new LoginUserCommand(model.Username, model.Password, model.RememberMe), cancellationToken);
+        Result<Guid> result = await loginCommandHandler.Handle(new LoginUserCommand(model.Username, model.Password, model.RememberMe), cancellationToken);
+
+
         if (!result.IsSuccess)
         {
-            ModelState.AddModelError(result.Error.Code, result.Error.Description);
+            ModelState.AddModelError(result.TopError.Code, result.TopError.Description);
             return View(model);
         }
         await authSessionManager.SignInAsync(model.Username, model.RememberMe.GetValueOrDefault(false), cancellationToken);
@@ -57,7 +59,7 @@ public class AccountController(ICommandHandler<LoginUserCommand> loginCommandHan
             return LocalRedirect(returnUrl);
         }
 
-        // 3. Fallback safely to a default local route if the validation fails
+        // 3. Fallback safely to a default local route if the validation faILS
         return RedirectToAction(nameof(HomeController.Index), "Home");
     }
 

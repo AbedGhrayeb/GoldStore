@@ -1,34 +1,38 @@
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Domain.Debts;
 
 public static class DebtErrors
 {
+    public static Error NameRequired => Error.Validation(
+        "Debts.NameRequired",
+        $"اسم العميل مطلوب");
+
     public static Error NotFound(Guid debtId) => Error.NotFound(
         "Debts.NotFound",
-        $"The debt with Id = '{debtId}' was not found");
+        $"معرف الديون غير موجود");
 
-    public static Error PaymentExceedsBalance(decimal amount, decimal balance) => Error.Problem(
+    public static Error PaymentExceedsBalance(decimal amount, decimal balance) => Error.Validation(
         "Debts.PaymentExceedsBalance",
-        $"Payment amount ({amount}) exceeds remaining balance ({balance})");
+        $"مبلغ الدفع ({amount}) يتجاوز الرصيد المتبقي ({balance})");
 
-    public static readonly Error PaymentAmountMustBePositive = Error.Problem(
+    public static readonly Error PaymentAmountMustBePositive = Error.Validation(
         "Debts.PaymentAmountMustBePositive",
         "Payment amount must be greater than zero");
 
     public static Error AccountNotFound(Guid accountId) => Error.NotFound(
         "Debts.AccountNotFound",
-        $"The financial account with Id = '{accountId}' was not found");
+        $"معرف الحساب المالي غير موجود");
 
-    public static readonly Error AccountCurrencyMismatch = Error.Problem(
+    public static readonly Error AccountCurrencyMismatch = Error.Validation(
         "Debts.AccountCurrencyMismatch",
-        "Currency must match the linked account's currency");
+        "عملة الحساب المالي لا تتطابق");
 
-    public static readonly Error NoAccountLinked = Error.Problem(
+    public static readonly Error NoAccountLinked = Error.Validation(
         "Debts.NoAccountLinked",
-        "This debt has no linked account — cannot adjust financial balance");
+        "الحساب المالي غير متصل");
 
-    public static Error AmountBelowPayments(decimal amount, decimal payments) => Error.Problem(
+    public static Error AmountBelowPayments(decimal amount, decimal payments) => Error.Validation(
         "Debts.AmountBelowPayments",
-        $"New amount ({amount}) is below total payments made ({payments})");
+        $"مبلغ جديد ({amount}) أقل من المبالغ المدفوعة إجماليًا ({payments})");
 }

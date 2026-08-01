@@ -1,4 +1,3 @@
-using Domain.Finance;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -15,16 +14,16 @@ internal sealed class SupplierFinancialPaymentConfiguration : IEntityTypeConfigu
 
         builder.Property(p => p.Notes).HasMaxLength(1000);
 
-        builder.HasOne<SupplierFinancialTransaction>()
+        builder.HasOne(s => s.SupplierFinancialTransaction)
             .WithMany()
             .HasForeignKey(p => p.SupplierFinancialTransactionId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<FinancialAccount>()
+        builder.HasOne(p => p.FinancialAccount)
             .WithMany()
             .HasForeignKey(p => p.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(p => new { p.SupplierFinancialTransactionId, p.Date });
+        builder.HasIndex(p => new { p.SupplierFinancialTransactionId, p.CreatedAtUtc });
     }
 }

@@ -8,6 +8,6 @@ public sealed record GetStoreOperationsQuery(
     DateTime? FromDate = null,
     DateTime? ToDate = null,
     string? OperationType = null,
-    string? EmployeeName = null,
+    Guid? EmployeeId = null,
     Guid? AccountId = null,
     string? Search = null) : IQuery<PagedStoreOperationsResponse>;

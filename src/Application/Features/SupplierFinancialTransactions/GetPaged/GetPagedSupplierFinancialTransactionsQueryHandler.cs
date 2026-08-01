@@ -2,7 +2,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.SupplierFinancialTransactions.GetPaged;
 
@@ -17,10 +17,10 @@ internal sealed class GetPagedSupplierFinancialTransactionsQueryHandler(
             .AsNoTracking();
 
         if (query.SupplierId.HasValue)
-            transactionsQuery = transactionsQuery.Where(t => t.SupplierId == query.SupplierId.Value);
+        { transactionsQuery = transactionsQuery.Where(t => t.SupplierId == query.SupplierId.Value); }
 
         if (query.Direction.HasValue)
-            transactionsQuery = transactionsQuery.Where(t => (int)t.Direction == query.Direction.Value);
+        { transactionsQuery = transactionsQuery.Where(t => (int)t.Direction == query.Direction.Value); }
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
@@ -35,14 +35,14 @@ internal sealed class GetPagedSupplierFinancialTransactionsQueryHandler(
         int pageSize = Math.Clamp(query.PageSize, 1, 100);
 
         List<SupplierFinancialTransaction> pagedData = await transactionsQuery
-            .OrderByDescending(t => t.CreatedAt)
+            .OrderByDescending(t => t.CreatedAtUtc)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        List<Guid> transactionIds = pagedData.Select(t => t.Id).ToList();
+        var transactionIds = pagedData.Select(t => t.Id).ToList();
 
-        var supplierNames = await context.Suppliers
+        Dictionary<Guid, string> supplierNames = await context.Suppliers
             .Where(s => pagedData.Select(t => t.SupplierId).Contains(s.Id))
             .ToDictionaryAsync(s => s.Id, s => s.Name, cancellationToken);
 
@@ -57,7 +57,7 @@ internal sealed class GetPagedSupplierFinancialTransactionsQueryHandler(
                 g => g.Key,
                 g => g.Sum(e => e.MovementType == SupplierBalanceMovementType.Increase ? e.Amount : -e.Amount));
 
-        List<SupplierFinancialTransactionResponse> items = pagedData.Select(t =>
+        var items = pagedData.Select(t =>
         {
             decimal balance = balances.GetValueOrDefault(t.Id, 0m);
             return new SupplierFinancialTransactionResponse
@@ -71,7 +71,7 @@ internal sealed class GetPagedSupplierFinancialTransactionsQueryHandler(
                 Currency = t.Currency.ToString(),
                 AccountId = t.AccountId,
                 Notes = t.Notes,
-                CreatedAt = t.CreatedAt,
+                CreatedAt = t.CreatedAtUtc!.Value.LocalDateTime,
                 OutstandingBalance = balance,
                 OutstandingBalanceDisplay = balance.ToString("N3")
             };

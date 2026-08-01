@@ -5,10 +5,9 @@ using Domain.Common;
 using Domain.CustomerPurchases;
 using Domain.Debts;
 using Domain.Finance;
-using Domain.Inventory;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.CustomerPurchaseInvoices.Create;
 
@@ -21,12 +20,12 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
     {
         if (command.Items.Count == 0)
         {
-            return Result.Failure<Guid>(CustomerPurchaseInvoiceErrors.NoItems);
+            return CustomerPurchaseInvoiceErrors.NoItems;
         }
 
         if (command.AmountPaid > command.TotalAmount)
         {
-            return Result.Failure<Guid>(CustomerPurchaseInvoiceErrors.InvalidPaymentAmount);
+            return CustomerPurchaseInvoiceErrors.InvalidPaymentAmount;
         }
 
         var invoiceId = Guid.CreateVersion7();
@@ -45,110 +44,106 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
 
             if (account is null)
             {
-                return Result.Failure<Guid>(CustomerPurchaseInvoiceErrors.AccountNotFound);
+                return CustomerPurchaseInvoiceErrors.AccountNotFound;
             }
 
             if (account.Currency != currency || account.AccountType != expectedAccountType)
             {
-                return Result.Failure<Guid>(CustomerPurchaseInvoiceErrors.AccountDoesNotMatchPayment);
+                return CustomerPurchaseInvoiceErrors.AccountDoesNotMatchPayment;
             }
             Guid userId = userContext.UserId;
             string invoiceNumber = await GenerateInvoiceNumberAsync(cancellationToken);
             decimal remainingBalance = command.TotalAmount - command.AmountPaid;
-
-            var invoice = new CustomerPurchaseInvoice
-            {
-                Id = invoiceId,
-                InvoiceNumber = invoiceNumber,
-                SellerName = command.SellerName,
-                SellerIdNumber = command.SellerIdNumber,
-                SellerPhone = command.SellerPhone,
-                SeelerYearOfBirth = command.SellerYearOfBirth,
-                SellerAddress = command.SellerAddress,
-                BuyerName = command.BuyerName,
-                Date = command.Date,
-                Currency = currency,
-                TotalAmount = command.TotalAmount,
-                AmountPaid = command.AmountPaid,
-                PaymentMethod = paymentMethod,
-                AccountId = command.AccountId,
-                SellerAccountNumber = command.SellerAccountNumber,
-                UserId = userId,
-                Notes = command.Notes,
-            };
-
-            context.CustomerPurchaseInvoices.Add(invoice);
-
+            List<CustomerPurchaseInvoiceItem> items = [];
             foreach (CustomerPurchaseInvoiceItemDto item in command.Items)
             {
                 var karat = (Karat)item.Karat;
-                decimal equivalent21K = GoldWeight.CalculateEquivalent21KWeight(item.WeightInGrams, karat);
-                decimal goldAmount = item.WeightInGrams * item.PricePerGram;
 
-                context.CustomerPurchaseInvoiceItems.Add(new CustomerPurchaseInvoiceItem
+                Result<CustomerPurchaseInvoiceItem> itemResult =
+                    CustomerPurchaseInvoiceItem.Create(item.CategoryId, karat, item.WeightInGrams, item.PricePerGram);
+                if (itemResult.IsError)
                 {
-                    Id = Guid.CreateVersion7(),
-                    CustomerPurchaseInvoiceId = invoiceId,
-                    CategoryId = item.CategoryId,
-                    Karat = karat,
-                    WeightInGrams = item.WeightInGrams,
-                    Equivalent21KWeightInGrams = equivalent21K,
-                    PricePerGram = item.PricePerGram,
-                    GoldAmount = goldAmount
-                });
+                    return itemResult.Errors;
+                }
+                items.Add(itemResult.Value);
             }
+            Result<CustomerPurchaseInvoice> invoiceResult = CustomerPurchaseInvoice.Create(
+                invoiceNumber,
+                command.SellerName,
+                command.SellerIdNumber,
+                command.SellerPhone,
+                command.SellerYearOfBirth,
+                command.SellerAddress,
+                command.EmployeeId,
+                command.Date,
+                currency,
+                command.TotalAmount,
+                command.AmountPaid,
+                paymentMethod,
+                command.AccountId,
+                command.SellerAccountNumber,
+                command.Notes,
+                items
 
+            );
+            if (invoiceResult.IsError)
+            {
+                return invoiceResult.Errors;
+            }
+            context.CustomerPurchaseInvoices.Add(invoiceResult.Value);
+
+            // Add financial transaction for the amount paid
             if (command.AmountPaid > 0)
             {
-                context.FinancialTransactions.Add(new FinancialTransaction
+                Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(command.AccountId, currency, command.AmountPaid,
+                    FinancialTransactionType.Outflow, FinancialReferenceType.CustomerGoldPurchase,
+                    invoiceId, $"دفعة فاتورة شراء ذهب {invoiceNumber} — {command.SellerName}");
+                if (financialTransactionResult.IsError)
                 {
-                    Id = Guid.CreateVersion7(),
-                    AccountId = command.AccountId,
-                    Currency = currency,
-                    Amount = command.AmountPaid,
-                    TransactionType = FinancialTransactionType.Outflow,
-                    ReferenceType = FinancialReferenceType.CustomerGoldPurchase,
-                    ReferenceId = invoiceId,
-                    UserId = userId,
-                    Date = command.Date,
-                    Notes = $"دفعة فاتورة شراء ذهب {invoiceNumber} — {command.SellerName}"
-                });
+                    return financialTransactionResult.Errors;
+                }
+                context.FinancialTransactions.Add(financialTransactionResult.Value);
             }
-
+            // Add debt record for the remaining balance if any
             if (remainingBalance > 0)
             {
                 var debtId = Guid.CreateVersion7();
-
-                context.Debts.Add(new Debt
+                Debt existingDebt = await context.Debts
+                    .FirstOrDefaultAsync(d => d.Name == command.SellerName.Trim() && d.Direction == DebtDirection.Payable && d.Currency == currency, cancellationToken);
+                if (existingDebt != null)
                 {
-                    Id = debtId,
-                    Name = command.SellerName,
-                    Phone = command.SellerPhone,
-                    Direction = DebtDirection.Payable,
-                    Currency = currency,
-                    Notes = $"باقي فاتورة شراء ذهب {invoiceNumber} بتاريخ {command.Date:yyyy-MM-dd}",
-                    CreatedAt = command.Date
-                });
+                    debtId = existingDebt.Id;
 
-                context.DebtLedgerEntries.Add(new DebtLedgerEntry
+                }
+                else
                 {
-                    Id = Guid.CreateVersion7(),
-                    DebtId = debtId,
-                    Amount = remainingBalance,
-                    MovementType = DebtBalanceMovementType.Increase,
-                    Date = command.Date,
-                    Notes = $"رصيد متبقي من فاتورة شراء ذهب {invoiceNumber}"
-                });
+                    Result<Debt> debtResult = Debt.Create(command.SellerName, command.SellerPhone, DebtDirection.Payable, currency, command.AccountId,
+                                          $"باقي فاتورة شراء ذهب {invoiceNumber} بتاريخ {command.Date:yyyy-MM-dd}");
+                    if (debtResult.IsError)
+                    { return debtResult.Errors; }
+                    context.Debts.Add(debtResult.Value);
+                }
+
+
+                // Add debt ledger entry for the remaining balance
+
+                Result<DebtLedgerEntry> debtLedgerEntryResult = DebtLedgerEntry.Create(debtId, remainingBalance, DebtBalanceMovementType.Increase,
+                    $"رصيد متبقي من فاتورة شراء ذهب {invoiceNumber}");
+                if (debtLedgerEntryResult.IsError)
+                {
+                    return debtLedgerEntryResult.Errors;
+                }
+                context.DebtLedgerEntries.Add(debtLedgerEntryResult.Value);
             }
 
             await context.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            return Result.Failure<Guid>(CustomerPurchaseInvoiceErrors.DatabaseError(ex));
+            return CustomerPurchaseInvoiceErrors.DatabaseError(ex);
         }
 
-        return Result.Success(invoiceId);
+        return invoiceId;
     }
 
     private async Task<string> GenerateInvoiceNumberAsync(CancellationToken cancellationToken)

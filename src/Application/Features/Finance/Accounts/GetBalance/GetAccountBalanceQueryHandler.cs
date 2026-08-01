@@ -2,7 +2,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Finance.Accounts.GetBalance;
 
@@ -19,7 +19,7 @@ internal sealed class GetAccountBalanceQueryHandler(IApplicationDbContext contex
 
         if (account is null)
         {
-            return Result.Failure<AccountBalanceResponse>(FinancialAccountErrors.NotFound(query.AccountId));
+            return FinancialAccountErrors.NotFound(query.AccountId);
         }
 
         decimal currentBalance = await context.FinancialTransactions

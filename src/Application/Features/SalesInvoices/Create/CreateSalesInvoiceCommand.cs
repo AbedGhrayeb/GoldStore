@@ -13,7 +13,7 @@ public sealed record CreateSalesInvoiceCommand(
     int? PaymentMethod,
     Guid? AccountId,
     string? BuyerAccountNumber,
-    string? SellerName,
+    Guid? EmployeeId,
     string? Notes) : ICommand<Guid>;
 
 public sealed record SalesInvoiceItemDto(

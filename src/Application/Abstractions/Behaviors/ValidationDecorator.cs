@@ -1,7 +1,7 @@
 ﻿using Application.Abstractions.Messaging;
 using FluentValidation;
 using FluentValidation.Results;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Abstractions.Behaviors;
 
@@ -22,26 +22,7 @@ internal static class ValidationDecorator
                 return await innerHandler.Handle(command, cancellationToken);
             }
 
-            return Result.Failure<TResponse>(CreateValidationError(validationFailures));
-        }
-    }
-
-    internal sealed class CommandBaseHandler<TCommand>(
-        ICommandHandler<TCommand> innerHandler,
-        IEnumerable<IValidator<TCommand>> validators)
-        : ICommandHandler<TCommand>
-        where TCommand : ICommand
-    {
-        public async Task<Result> Handle(TCommand command, CancellationToken cancellationToken)
-        {
-            ValidationFailure[] validationFailures = await ValidateAsync(command, validators);
-
-            if (validationFailures.Length == 0)
-            {
-                return await innerHandler.Handle(command, cancellationToken);
-            }
-
-            return Result.Failure(CreateValidationError(validationFailures));
+            return Error.Validation();
         }
     }
 
@@ -67,6 +48,4 @@ internal static class ValidationDecorator
         return validationFailures;
     }
 
-    private static ValidationError CreateValidationError(ValidationFailure[] validationFailures) =>
-        new(validationFailures.Select(f => Error.Problem(f.ErrorCode, f.ErrorMessage)).ToArray());
 }

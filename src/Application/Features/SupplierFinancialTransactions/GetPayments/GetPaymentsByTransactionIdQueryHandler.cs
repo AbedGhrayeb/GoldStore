@@ -4,6 +4,7 @@ using Domain.Finance;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.SupplierFinancialTransactions.GetPayments;
 
@@ -18,12 +19,12 @@ internal sealed class GetPaymentsByTransactionIdQueryHandler(IApplicationDbConte
 
         if (!exists)
         {
-            return Result.Failure<List<SupplierFinancialPaymentResponse>>(SupplierFinancialErrors.NotFound(query.TransactionId));
+            return SupplierFinancialErrors.NotFound(query.TransactionId);
         }
 
         List<SupplierFinancialPaymentResponse> payments = await context.SupplierFinancialPayments
             .Where(p => p.SupplierFinancialTransactionId == query.TransactionId)
-            .OrderByDescending(p => p.Date)
+            .OrderByDescending(p => p.CreatedAtUtc)
             .Select(p => new SupplierFinancialPaymentResponse
             {
                 Id = p.Id,
@@ -32,11 +33,11 @@ internal sealed class GetPaymentsByTransactionIdQueryHandler(IApplicationDbConte
                     .Where(a => a.Id == p.AccountId)
                     .Select(a => a.Name)
                     .FirstOrDefault() ?? string.Empty,
-                Date = p.Date,
+                Date = p.CreatedAtUtc!.Value.LocalDateTime,
                 Notes = p.Notes
             })
             .ToListAsync(cancellationToken);
 
-        return Result.Success(payments);
+        return payments;
     }
 }

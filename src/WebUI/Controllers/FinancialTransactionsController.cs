@@ -1,17 +1,18 @@
 using Application.Abstractions.Messaging;
+using Application.Common.Models;
 using Application.Finance.Transactions;
 using Application.Finance.Transactions.GetPaged;
 using Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
+using SharedKernel.Result;
 using WebUI.Models.Finance;
 
 namespace WebUI.Controllers;
 
 [Authorize]
 public class FinancialTransactionsController(
-    IQueryHandler<GetPagedTransactionsQuery, PagedTransactionResponse> getPagedTransactionsHandler) : Controller
+    IQueryHandler<GetPagedTransactionsQuery, PaginatedList<RecentTransactionResponse>> getPagedTransactionsHandler) : Controller
 {
     public IActionResult Index()
     {
@@ -21,7 +22,7 @@ public class FinancialTransactionsController(
     [HttpGet]
     public async Task<JsonResult> GetPagedTransactions([FromQuery] TransactionFilterModel filter, CancellationToken cancellationToken)
     {
-        Result<PagedTransactionResponse> result = await getPagedTransactionsHandler.Handle(
+        Result<PaginatedList<RecentTransactionResponse>> result = await getPagedTransactionsHandler.Handle(
             new GetPagedTransactionsQuery(
                 Page: filter.Page,
                 PageSize: filter.PageSize,
@@ -34,17 +35,17 @@ public class FinancialTransactionsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(new
         {
             success = true,
             result.Value.TotalCount,
-            result.Value.Page,
+            result.Value.PageNumber,
             result.Value.PageSize,
             result.Value.TotalPages,
-            Items = result.Value.Items.Select(t => new
+            Items = result.Value.Items!.Select(t => new
             {
                 t.Id,
                 Date = t.Date.ToString("yyyy-MM-dd"),
@@ -63,22 +64,26 @@ public class FinancialTransactionsController(
     public JsonResult GetCurrencies()
     {
         var currencies = SupportedValues.Currencies
-            .Select(c => new { Value = c.ToString(), Label = c switch
+            .Select(c => new
             {
-                Currency.Jod => "دينار أردني (د.إ)",
-                Currency.Usd => "دولار أمريكي ($)",
-                Currency.Ils => "شيكل إسرائيلي (₪)",
-                _ => c.ToString()
-            }})
+                Value = c.ToString(),
+                Label = c switch
+                {
+                    Currency.JOD => "دينار أردني (د.إ)",
+                    Currency.USD => "دولار أمريكي ($)",
+                    Currency.ILS => "شيكل إسرائيلي (₪)",
+                    _ => c.ToString()
+                }
+            })
             .ToList();
         return Json(currencies);
     }
 
     private static string GetCurrencySymbol(string currency) => currency switch
     {
-        "Jod" => "د.إ",
-        "Usd" => "$",
-        "Ils" => "₪",
+        "JOD" => "د.إ",
+        "USD" => "$",
+        "ILS" => "₪",
         _ => currency
     };
 }

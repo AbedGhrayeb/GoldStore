@@ -1,7 +1,5 @@
-using Domain.Catalog;
-using Domain.Finance;
+using Domain.Employees;
 using Domain.Sales;
-using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -29,29 +27,31 @@ internal sealed class SalesInvoiceConfiguration : IEntityTypeConfiguration<Sales
 
         builder.Property(i => i.PaymentMethod).HasConversion<string>().HasMaxLength(10).IsRequired(false);
 
-        builder.Property(i => i.BuyerAccountNumber).HasMaxLength(50);
-
-        builder.Property(i => i.SellerName).HasMaxLength(200);
+        builder.Property(i => i.CustomerAccountNumber).HasMaxLength(50);
 
         builder.Property(i => i.Status).HasConversion<string>().HasMaxLength(20);
 
         builder.Property(i => i.Notes).HasMaxLength(1000);
 
-        builder.HasOne<FinancialAccount>()
+        builder.HasOne(i => i.FinancialAccount)
             .WithMany()
             .HasForeignKey(i => i.AccountId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
 
-        builder.HasOne<User>()
+        builder.HasOne<Employee>()
             .WithMany()
-            .HasForeignKey(i => i.UserId)
+            .HasForeignKey(i => i.EmployeeId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(i => i.SaleInvoiceItems)
+            .WithOne()
+            .HasForeignKey(i => i.SalesInvoiceId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(i => i.InvoiceNumber).IsUnique();
 
         builder.HasIndex(i => i.Date);
 
-        builder.HasIndex(i => i.Status);
     }
 }

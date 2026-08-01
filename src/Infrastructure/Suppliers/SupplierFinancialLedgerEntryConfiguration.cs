@@ -21,8 +21,7 @@ internal sealed class SupplierFinancialLedgerEntryConfiguration : IEntityTypeCon
             .HasForeignKey(e => e.SupplierFinancialTransactionId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(e => new { e.SupplierFinancialTransactionId, e.Date });
+        builder.HasIndex(e => new { e.SupplierFinancialTransactionId, e.CreatedAtUtc });
 
-        builder.HasIndex(e => new { e.MovementType });
     }
 }

@@ -1,6 +1,4 @@
 using Domain.SupplierOperations;
-using Domain.Suppliers;
-using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -26,11 +24,11 @@ internal sealed class SupplierDeliveryConfiguration : IEntityTypeConfiguration<S
 
         builder.Property(delivery => delivery.Notes).HasMaxLength(1000);
 
-        builder.HasOne<Supplier>()
+        builder.HasOne(ii => ii.Supplier)
             .WithMany()
             .HasForeignKey(delivery => delivery.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(delivery => new { delivery.SupplierId, delivery.Date });
+        builder.HasIndex(delivery => new { delivery.SupplierId, delivery.CreatedAtUtc });
     }
 }

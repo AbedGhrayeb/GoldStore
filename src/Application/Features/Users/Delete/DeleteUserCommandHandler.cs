@@ -2,7 +2,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Users.Delete;
 
@@ -15,7 +15,7 @@ internal sealed class DeleteUserCommandHandler(IApplicationDbContext context)
 
         if (user is null)
         {
-            return Result.Failure<bool>(UserErrors.NotFound(command.Id));
+            return UserErrors.NotFound(command.Id);
         }
 
         context.Users.Remove(user);

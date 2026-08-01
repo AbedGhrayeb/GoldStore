@@ -1,5 +1,4 @@
 using Domain.Inventory;
-using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -23,12 +22,8 @@ internal sealed class GoldLedgerEntryConfiguration : IEntityTypeConfiguration<Go
 
         builder.Property(entry => entry.Notes).HasMaxLength(1000);
 
-        builder.HasOne<User>()
-            .WithMany()
-            .HasForeignKey(entry => entry.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(entry => new { entry.Karat, entry.Date });
+        builder.HasIndex(entry => new { entry.Karat, entry.CreatedAtUtc });
 
         builder.HasIndex(entry => new { entry.ReferenceType, entry.ReferenceId });
     }

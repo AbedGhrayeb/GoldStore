@@ -1,35 +1,36 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.StoreOperations.GetEmployees;
 
 internal sealed class GetStoreEmployeesQueryHandler(IApplicationDbContext context)
-    : IQueryHandler<GetStoreEmployeesQuery, List<string>>
+    : IQueryHandler<GetStoreEmployeesQuery, List<EmployeeResponse>>
 {
-    public async Task<Result<List<string>>> Handle(
+    public async Task<Result<List<EmployeeResponse>>> Handle(
         GetStoreEmployeesQuery query,
         CancellationToken cancellationToken)
     {
-        List<string> salesEmployees = await context.SalesInvoices
+        List<Guid> salesEmployeeIds = await context.SalesInvoices
             .AsNoTracking()
-            .Where(s => s.SellerName != null && s.SellerName != string.Empty)
-            .Select(s => s.SellerName!)
+            .Where(s => s.EmployeeId.HasValue)
+            .Select(s => s.EmployeeId!.Value)
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        List<string> purchaseEmployees = await context.CustomerPurchaseInvoices
+        List<Guid> purchaseEmployeeIds = await context.CustomerPurchaseInvoices
             .AsNoTracking()
-            .Select(p => p.BuyerName)
+            .Where(p => p.EmployeeId.HasValue)
+            .Select(p => p.EmployeeId!.Value)
             .Distinct()
             .ToListAsync(cancellationToken);
-
-        var employees = salesEmployees
-            .Concat(purchaseEmployees)
-            .Where(n => !string.IsNullOrWhiteSpace(n))
-            .Order(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var employeeIds = salesEmployeeIds.Concat(purchaseEmployeeIds).Distinct().ToList();
+        List<EmployeeResponse> employees = await context.Employees
+            .AsNoTracking()
+            .Where(e => employeeIds.Contains(e.Id))
+            .Select(e => new EmployeeResponse(e.Id, e.FullName))
+            .ToListAsync(cancellationToken);
 
         return employees;
     }

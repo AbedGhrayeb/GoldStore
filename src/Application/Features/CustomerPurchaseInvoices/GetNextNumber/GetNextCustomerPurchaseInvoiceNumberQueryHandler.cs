@@ -1,7 +1,7 @@
 ﻿using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.CustomerPurchaseInvoices.GetNextNumber;
 
@@ -15,6 +15,6 @@ internal sealed class GetNextCustomerPurchaseInvoiceNumberQueryHandler(IApplicat
         int count = await context.CustomerPurchaseInvoices
             .CountAsync(i => i.InvoiceNumber.StartsWith($"PUR-{yearMonth}"), cancellationToken);
 
-        return $"PUR-{yearMonth}-{(count + 1):D4}";
+        return $"PUR-{yearMonth}-{count + 1:D4}";
     }
 }

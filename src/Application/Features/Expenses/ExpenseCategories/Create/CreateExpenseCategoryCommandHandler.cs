@@ -2,11 +2,11 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Expenses;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Expenses.ExpenseCategories.Create;
 
-internal sealed class CreateExpenseCategoryCommandHandler(IApplicationDbContext context, IDateTimeProvider dateTimeProvider)
+internal sealed class CreateExpenseCategoryCommandHandler(IApplicationDbContext context)
     : ICommandHandler<CreateExpenseCategoryCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateExpenseCategoryCommand command, CancellationToken cancellationToken)
@@ -17,20 +17,18 @@ internal sealed class CreateExpenseCategoryCommandHandler(IApplicationDbContext 
 
         if (nameExists)
         {
-            return Result.Failure<Guid>(ExpenseCategoryErrors.DuplicateName);
+            return ExpenseCategoryErrors.DuplicateName;
         }
 
-        var category = new ExpenseCategory
+        Result<ExpenseCategory> category = ExpenseCategory.Create(command.Name);
+        if (category.IsError)
         {
-            Id = Guid.CreateVersion7(),
-            Name = command.Name,
-            IsActive = true,
-            CreatedAt = dateTimeProvider.UtcNow
-        };
+            return category.Errors;
+        }
 
-        context.ExpenseCategories.Add(category);
+        context.ExpenseCategories.Add(category.Value);
         await context.SaveChangesAsync(cancellationToken);
 
-        return category.Id;
+        return category.Value.Id;
     }
 }

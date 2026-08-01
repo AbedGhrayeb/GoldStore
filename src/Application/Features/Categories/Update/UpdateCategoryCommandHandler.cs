@@ -2,20 +2,20 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Catalog;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Categories.Update;
 
 internal sealed class UpdateCategoryCommandHandler(IApplicationDbContext context)
-    : ICommandHandler<UpdateCategoryCommand, bool>
+    : ICommandHandler<UpdateCategoryCommand, Updated>
 {
-    public async Task<Result<bool>> Handle(UpdateCategoryCommand command, CancellationToken cancellationToken)
+    public async Task<Result<Updated>> Handle(UpdateCategoryCommand command, CancellationToken cancellationToken)
     {
         Category? category = await context.Categories.FirstOrDefaultAsync(c => c.Id == command.Id, cancellationToken);
 
         if (category is null)
         {
-            return Result.Failure<bool>(CategoryErrors.NotFound(command.Id));
+            return CategoryErrors.NotFound(command.Id);
         }
 
         bool nameExists = await context.Categories
@@ -23,21 +23,22 @@ internal sealed class UpdateCategoryCommandHandler(IApplicationDbContext context
 
         if (nameExists)
         {
-            return Result.Failure<bool>(CategoryErrors.DuplicateName);
+            return CategoryErrors.DuplicateName;
         }
 
         if (command.ParentCategoryId == command.Id)
         {
-            return Result.Failure<bool>(Error.Failure("Categories.CircularReference", "A category cannot be its own parent."));
+            return CategoryErrors.CircularReference;
         }
+        Result<Updated> updatedCategory = category.Update(command.ParentCategoryId, command.Name, command.Description, command.IsActive);
 
-        category.Name = command.Name;
-        category.Description = command.Description;
-        category.ParentCategoryId = command.ParentCategoryId;
-        category.IsActive = command.IsActive;
+        if (updatedCategory.IsError)
+        {
+            return updatedCategory.Errors;
+        }
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return true;
+        return Result.Updated;
     }
 }

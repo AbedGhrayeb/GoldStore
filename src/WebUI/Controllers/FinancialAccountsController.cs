@@ -9,7 +9,7 @@ using Application.Finance.Transactions.GetRecent;
 using Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
+using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.Finance;
 
@@ -21,7 +21,7 @@ public class FinancialAccountsController(
     IQueryHandler<GetRecentTransactionsQuery, List<RecentTransactionResponse>> getRecentTransactionsHandler,
     ICommandHandler<CreateFinancialAccountCommand, Guid> createFinancialAccountHandler,
     IQueryHandler<GetAccountBalanceQuery, AccountBalanceResponse> getAccountBalanceHandler,
-    ICommandHandler<SetAccountBalanceCommand> setAccountBalanceHandler) : Controller
+    ICommandHandler<SetAccountBalanceCommand, Updated> setAccountBalanceHandler) : Controller
 {
     public IActionResult Index()
     {
@@ -36,7 +36,7 @@ public class FinancialAccountsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value.Select(a => new
@@ -61,7 +61,7 @@ public class FinancialAccountsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value.Select(a => new
@@ -86,16 +86,19 @@ public class FinancialAccountsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
-        return Json(new { items = result.Value.Select(a => new
+        return Json(new
         {
-            a.Id,
-            a.Name,
-            a.AccountType,
-            a.Currency
-        }) });
+            items = result.Value.Select(a => new
+            {
+                a.Id,
+                a.Name,
+                a.AccountType,
+                a.Currency
+            })
+        });
     }
 
     [HttpGet]
@@ -106,7 +109,7 @@ public class FinancialAccountsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(result.Value.Select(t => new
@@ -127,13 +130,17 @@ public class FinancialAccountsController(
     public JsonResult GetCurrencies()
     {
         var currencies = SupportedValues.Currencies
-            .Select(c => new { Value = c.ToString(), Label = c switch
+            .Select(c => new
             {
-                Currency.Jod => "دينار أردني (د.إ)",
-                Currency.Usd => "دولار أمريكي ($)",
-                Currency.Ils => "شيكل إسرائيلي (₪)",
-                _ => c.ToString()
-            }})
+                Value = c.ToString(),
+                Label = c switch
+                {
+                    Currency.JOD => "دينار أردني (د.إ)",
+                    Currency.USD => "دولار أمريكي ($)",
+                    Currency.ILS => "شيكل إسرائيلي (₪)",
+                    _ => c.ToString()
+                }
+            })
             .ToList();
         return Json(currencies);
     }
@@ -163,7 +170,7 @@ public class FinancialAccountsController(
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "الحسابات المالية"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "الحسابات المالية"));
         }
 
         return Json(ToastResult.SuccessResult("تم إنشاء الحساب البنكي بنجاح", "الحسابات المالية", "", "refreshAccountsPage"));
@@ -177,7 +184,7 @@ public class FinancialAccountsController(
 
         if (!result.IsSuccess)
         {
-            return Json(new { success = false, error = result.Error.Description });
+            return Json(new { success = false, error = result.TopError.Description });
         }
 
         return Json(new
@@ -208,11 +215,11 @@ public class FinancialAccountsController(
 
         var command = new SetAccountBalanceCommand(model.AccountId, model.TargetBalance, model.Notes);
 
-        Result result = await setAccountBalanceHandler.Handle(command, cancellationToken);
+        Result<Updated> result = await setAccountBalanceHandler.Handle(command, cancellationToken);
 
         if (!result.IsSuccess)
         {
-            return Json(ToastResult.ErrorResult(result.Error.Description, "الحسابات المالية"));
+            return Json(ToastResult.ErrorResult(result.TopError.Description, "الحسابات المالية"));
         }
 
         return Json(ToastResult.SuccessResult("تم ضبط الرصيد بنجاح", "الحسابات المالية", "", "refreshAccountsPage"));
@@ -220,9 +227,9 @@ public class FinancialAccountsController(
 
     private static string GetCurrencySymbol(string currency) => currency switch
     {
-        "Jod" => "د.إ",
-        "Usd" => "$",
-        "Ils" => "₪",
+        "JOD" => "د.إ",
+        "USD" => "$",
+        "ILS" => "₪",
         _ => currency
     };
 }

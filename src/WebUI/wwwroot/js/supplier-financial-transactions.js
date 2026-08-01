@@ -11,7 +11,7 @@ function formatDate(dateStr) {
 }
 
 function currencySymbol(currency) {
-    return { Jod: 'د.أ', Usd: '$', Ils: '₪' }[currency] ?? currency;
+    return { JOD: 'د.أ', USD: '$', ILS: '₪' }[currency] ?? currency;
 }
 
 // ─── Init ────────────────────────────────────

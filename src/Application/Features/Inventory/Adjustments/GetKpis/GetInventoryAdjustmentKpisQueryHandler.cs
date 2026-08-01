@@ -3,6 +3,7 @@ using Application.Abstractions.Messaging;
 using Domain.Inventory;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Inventory.Adjustments.GetKpis;
 
@@ -17,7 +18,7 @@ internal sealed class GetInventoryAdjustmentKpisQueryHandler(
 
         List<InventoryAdjustment> todayAdjustments = await context.InventoryAdjustments
             .AsNoTracking()
-            .Where(a => a.Date >= todayStart)
+            .Where(a => a.CreatedAtUtc >= todayStart)
             .ToListAsync(cancellationToken);
 
         int count = todayAdjustments.Count;

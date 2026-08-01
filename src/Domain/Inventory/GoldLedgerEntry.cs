@@ -1,27 +1,46 @@
 using Domain.Common;
 using SharedKernel;
+using SharedKernel.Result;
 
 namespace Domain.Inventory;
 
-public sealed class GoldLedgerEntry : Entity
+public sealed class GoldLedgerEntry : AuditableEntity
 {
-    public Guid Id { get; set; }
 
-    public Karat Karat { get; set; }
+    public Karat Karat { get; private set; }
 
-    public decimal WeightInGrams { get; set; }
+    public decimal WeightInGrams { get; private set; }
 
-    public decimal Equivalent21KWeightInGrams { get; set; }
+    public decimal Equivalent21KWeightInGrams { get; private set; }
 
-    public GoldMovementType MovementType { get; set; }
+    public GoldMovementType MovementType { get; private set; }
 
-    public GoldReferenceType ReferenceType { get; set; }
+    public GoldReferenceType ReferenceType { get; private set; }
 
-    public Guid? ReferenceId { get; set; }
+    public Guid? ReferenceId { get; private set; }
 
-    public Guid UserId { get; set; }
+    public string? Notes { get; private set; }
+    private GoldLedgerEntry()
+    {
 
-    public DateTime Date { get; set; }
+    }
+    private GoldLedgerEntry(Guid id, Karat karat, decimal weightInGrams,
+        GoldMovementType movementType, GoldReferenceType referenceType, Guid? referenceId, string? notes) : base(id)
+    {
+        Karat = karat;
+        WeightInGrams = weightInGrams;
+        Equivalent21KWeightInGrams = GoldWeight.CalculateEquivalent21KWeight(weightInGrams, karat);
+        MovementType = movementType;
+        ReferenceType = referenceType;
+        ReferenceId = referenceId;
+        Notes = notes;
+    }
 
-    public string? Notes { get; set; }
+    public static Result<GoldLedgerEntry> Create(Karat karat, decimal weightInGrams,
+        GoldMovementType movementType, GoldReferenceType referenceType, Guid? referenceId, string? notes)
+    {
+
+        return new GoldLedgerEntry(Guid.CreateVersion7(), karat, weightInGrams,
+            movementType, referenceType, referenceId, notes);
+    }
 }

@@ -1,23 +1,43 @@
 using Domain.Common;
+using Domain.Finance;
 using SharedKernel;
 
 namespace Domain.Suppliers;
 
-public sealed class SupplierFinancialTransaction : Entity
+public sealed class SupplierFinancialTransaction : AuditableEntity
 {
-    public Guid Id { get; set; }
+    public Guid SupplierId { get; private set; }
 
-    public Guid SupplierId { get; set; }
+    public SupplierFinancialTransactionDirection Direction { get; private set; }
 
-    public SupplierFinancialTransactionDirection Direction { get; set; }
+    public decimal Amount { get; private set; }
 
-    public decimal Amount { get; set; }
+    public Currency Currency { get; private set; }
 
-    public Currency Currency { get; set; }
+    public Guid AccountId { get; private set; }
 
-    public Guid AccountId { get; set; }
+    public string? Notes { get; private set; }
 
-    public string? Notes { get; set; }
+    public Supplier Supplier { get; set; }
+    public FinancialAccount FinancialAccount { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    private SupplierFinancialTransaction()
+    {
+
+    }
+    private SupplierFinancialTransaction(Guid id, Guid supplierId, SupplierFinancialTransactionDirection direction,
+        decimal amount, Currency currency, Guid accountId, string? notes) : base(id)
+    {
+        SupplierId = supplierId;
+        Direction = direction;
+        Amount = amount;
+        Currency = currency;
+        AccountId = accountId;
+        Notes = notes;
+    }
+    public static SupplierFinancialTransaction Create(Guid supplierId, SupplierFinancialTransactionDirection direction,
+        decimal amount, Currency currency, Guid accountId, string? notes)
+    {
+        return new SupplierFinancialTransaction(Guid.CreateVersion7(), supplierId, direction, amount, currency, accountId, notes);
+    }
 }

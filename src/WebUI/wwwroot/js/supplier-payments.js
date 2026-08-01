@@ -76,7 +76,7 @@ function loadCurrencies() {
                 var option = document.createElement('option');
                 option.value = c.value;
                 option.textContent = c.label;
-                if (c.value === 'Jod') option.selected = true;
+                if (c.value === 'JOD') option.selected = true;
                 select.appendChild(option);
             });
         }
@@ -102,7 +102,7 @@ function filterAccountsByCurrency() {
     var select = document.getElementById('mfgAccount');
     if (!select) return;
 
-    var currency = document.getElementById('mfgCurrency')?.value || 'Jod';
+    var currency = document.getElementById('mfgCurrency')?.value || 'JOD';
     var filtered = financialAccounts.filter(function (a) { return a.currency === currency; });
 
     if (filtered.length === 0) {
@@ -323,7 +323,7 @@ function submitManufacturingPayment() {
     }
 
     var amount = parseFloat(document.getElementById('mfgAmount')?.value) || 0;
-    var currency = document.getElementById('mfgCurrency')?.value || 'Jod';
+    var currency = document.getElementById('mfgCurrency')?.value || 'JOD';
     var accountId = document.getElementById('mfgAccount')?.value || '';
     var notes = document.getElementById('mfgNotes')?.value || '';
 

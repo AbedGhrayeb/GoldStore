@@ -5,6 +5,8 @@ namespace SharedKernel;
 public abstract class Entity
 {
     public Guid Id { get; }
+    public bool IsActive { get; set; } = true;
+
     private readonly List<IDomainEvent> _domainEvents = [];
     [NotMapped]
     public List<IDomainEvent> DomainEvents => [.. _domainEvents];

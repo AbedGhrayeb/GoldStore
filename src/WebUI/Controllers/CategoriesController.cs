@@ -6,7 +6,7 @@ using Application.Categories.ToggleActive;
 using Application.Categories.Update;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
+using SharedKernel.Result;
 using WebUI.Models.Category;
 
 namespace WebUI.Controllers;
@@ -15,8 +15,8 @@ namespace WebUI.Controllers;
 public class CategoriesController(
     IQueryHandler<GetCategoriesQuery, List<CategoryResponse>> getCategoriesHandler,
     ICommandHandler<CreateCategoryCommand, Guid> createCategoryHandler,
-    ICommandHandler<UpdateCategoryCommand, bool> updateCategoryHandler,
-    ICommandHandler<ToggleActiveCategoryCommand, bool> toggleActiveHandler) : Controller
+    ICommandHandler<UpdateCategoryCommand, Updated> updateCategoryHandler,
+    ICommandHandler<ToggleActiveCategoryCommand, Updated> toggleActiveHandler) : Controller
 {
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
@@ -72,7 +72,7 @@ public class CategoriesController(
 
         if (!result.IsSuccess)
         {
-            ModelState.AddModelError(result.Error.Code, result.Error.Description);
+            ModelState.AddModelError(result.TopError.Code, result.TopError.Description);
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
                 return Json(new
@@ -112,13 +112,13 @@ public class CategoriesController(
             return RedirectToAction(nameof(Index));
         }
 
-        Result<bool> result = await updateCategoryHandler.Handle(
+        Result<Updated> result = await updateCategoryHandler.Handle(
             new UpdateCategoryCommand(model.Id, model.Name, model.Description, model.ParentCategoryId, model.IsActive),
             cancellationToken);
 
         if (!result.IsSuccess)
         {
-            ModelState.AddModelError(result.Error.Code, result.Error.Description);
+            ModelState.AddModelError(result.TopError.Code, result.TopError.Description);
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
                 return Json(new
@@ -143,13 +143,13 @@ public class CategoriesController(
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleActive(Guid id, CancellationToken cancellationToken)
     {
-        Result<bool> result = await toggleActiveHandler.Handle(new ToggleActiveCategoryCommand(id), cancellationToken);
+        Result<Updated> result = await toggleActiveHandler.Handle(new ToggleActiveCategoryCommand(id), cancellationToken);
 
         if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
         {
             if (!result.IsSuccess)
             {
-                return Json(new { success = false, error = result.Error.Description });
+                return Json(new { success = false, error = result.TopError.Description });
             }
             return Json(new { success = true });
         }

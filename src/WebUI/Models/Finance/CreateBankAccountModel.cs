@@ -9,7 +9,7 @@ public class CreateBankAccountModel
     public string Name { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "يجب اختيار العملة")]
-    public string Currency { get; set; } = "Jod";
+    public string Currency { get; set; } = "JOD";
 
     [StringLength(50, ErrorMessage = "رقم الحساب طويل جداً")]
     public string? AccountNumber { get; set; }

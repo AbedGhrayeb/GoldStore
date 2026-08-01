@@ -10,29 +10,29 @@ public static class UserErrors
         $"The user Id is Required");
     public static Error EmailRequired => Error.Validation(
         "User.Email.Required",
-        $"The user Email is Required");
+        $"البريد الإلكتروني مطلوب");
     public static Error PasswordRequired => Error.Validation(
         "User.Password.Required",
-        $"The user Password is Required");
+        $"كلمة المرور مطلوبة");
     public static Error FirstNameRequired => Error.Validation(
         "User.FirstName.Required",
-        $"The user FirstName is Required");
+        $"الاسم الأول مطلوب");
     public static Error LastNameRequired => Error.Validation(
         "User.LastName.Required",
-        $"The user LastName is Required");
+        $"الاسم الأخير مطلوب");
     public static Error NotFound(Guid userId) => Error.NotFound(
         "Users.NotFound",
-        $"The user with the Id = '{userId}' was not found");
+        $"المستخدم بـ Id = '{userId}' غير موجود");
 
     public static Error Unauthorized() => Error.Failure(
         "Users.Unauthorized",
-        "You are not authorized to perform this action.");
+        "المستخدم غير مصرح له بتنفيذ هذه العملية");
 
     public static readonly Error NotFoundByEmail = Error.NotFound(
         "Users.NotFoundByEmail",
-        "The user with the specified email was not found");
+        "المستخدم بريد إلكتروني محدد غير موجود");
 
     public static readonly Error EmailNotUnique = Error.Conflict(
         "Users.EmailNotUnique",
-        "The provided email is not unique");
+        "البريد الإلكتروني المقدم غير فريد");
 }

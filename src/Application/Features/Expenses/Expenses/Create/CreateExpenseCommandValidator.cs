@@ -1,4 +1,3 @@
-using Application.Features.Expenses.Expenses.Create;
 using FluentValidation;
 
 namespace Application.Features.Expenses.Expenses.Create;

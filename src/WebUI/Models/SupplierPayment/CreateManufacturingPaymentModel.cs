@@ -14,7 +14,7 @@ public class CreateManufacturingPaymentModel
     public decimal Amount { get; set; }
 
     [Required(ErrorMessage = "يجب اختيار العملة")]
-    public string Currency { get; set; } = "Jod";
+    public string Currency { get; set; } = "JOD";
 
     [StringLength(1000, ErrorMessage = "ملاحظات طويلة جداً")]
     public string? Notes { get; set; }

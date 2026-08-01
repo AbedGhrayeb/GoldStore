@@ -1,4 +1,4 @@
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Common.Errors;
 
@@ -7,9 +7,12 @@ public static class ApplicationErrors
     public static Error EmptyUsersList =>
     Error.Failure(
            "ApplicationErrors.Users.NotFoundAnyUsers",
-           $"No users found.");
+           "المستخدم غير موجود.");
     public static Error LoginFailed =>
     Error.Failure(
            "ApplicationErrors.Users.LoginFailed",
-           $"Email or password is incorrect.");
+           $"البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+    public static Error DatabaseError(Exception ex) => Error.Failure(
+     "CustomerPurchaseInvoices.DatabaseError",
+     $"حدث خطأ في قاعدة البيانات: {ex.Message}");
 }

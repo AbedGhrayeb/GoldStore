@@ -1,18 +1,28 @@
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Domain.Catalog;
 
 public static class CategoryErrors
 {
+    public static Error IdRequired => Error.Validation(
+        "Categories.IdRequired",
+        $"The category Id is required");
+    public static Error NameRequired => Error.Validation(
+        "Categories.NameRequired",
+        $"اسم الفئة مطلوب");
     public static Error NotFound(Guid categoryId) => Error.NotFound(
         "Categories.NotFound",
-        $"The category with Id = '{categoryId}' was not found");
+        $"الفئة بـ Id = '{categoryId}' غير موجودة");
 
     public static readonly Error DuplicateName = Error.Conflict(
         "Categories.DuplicateName",
-        "A category with the same name already exists at this level");
+        "اسم الفئة موجود بالفعل على هذا المستوى");
 
     public static readonly Error HasChildren = Error.Conflict(
         "Categories.HasChildren",
-        "Cannot deactivate a category that has active sub-categories");
+        "لا يمكن تعطيل فئة تحتوي على فئات فرعية نشطة");
+
+    public static readonly Error CircularReference = Error.Conflict(
+        "Categories.CircularReference",
+        "لا يمكن أن تكون الفئة والمصدر نفسه.");
 }

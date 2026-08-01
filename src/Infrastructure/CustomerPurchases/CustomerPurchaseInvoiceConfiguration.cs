@@ -1,6 +1,5 @@
 ﻿using Domain.CustomerPurchases;
-using Domain.Finance;
-using Domain.Users;
+using Domain.Employees;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -18,11 +17,10 @@ internal sealed class CustomerPurchaseInvoiceConfiguration : IEntityTypeConfigur
         builder.Property(i => i.SellerIdNumber).HasMaxLength(10);
 
         builder.Property(i => i.SellerPhone).HasMaxLength(13);
-        builder.Property(i => i.SeelerYearOfBirth).HasMaxLength(13);
+        builder.Property(i => i.SellerYearOfBirth).HasMaxLength(13);
         builder.Property(i => i.SellerAccountNumber).HasMaxLength(20);
         builder.Property(i => i.SellerAddress).HasMaxLength(200);
 
-        builder.Property(i => i.BuyerName).HasMaxLength(20);
 
         builder.Property(i => i.Currency).HasConversion<string>().HasMaxLength(3);
 
@@ -34,14 +32,14 @@ internal sealed class CustomerPurchaseInvoiceConfiguration : IEntityTypeConfigur
 
         builder.Property(i => i.Notes).HasMaxLength(1000);
 
-        builder.HasOne<FinancialAccount>()
+        builder.HasOne(i => i.FinancialAccount)
             .WithMany()
             .HasForeignKey(i => i.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<User>()
+        builder.HasOne<Employee>()
             .WithMany()
-            .HasForeignKey(i => i.UserId)
+            .HasForeignKey(i => i.EmployeeId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(i => i.InvoiceNumber).IsUnique();

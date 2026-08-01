@@ -1,5 +1,4 @@
 using Domain.Debts;
-using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -21,13 +20,13 @@ internal sealed class DebtConfiguration : IEntityTypeConfiguration<Debt>
 
         builder.Property(d => d.Notes).HasMaxLength(1000);
 
-        builder.HasOne<FinancialAccount>()
+        builder.HasOne(d => d.FinancialAccount)
             .WithMany()
             .HasForeignKey(d => d.AccountId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
 
-        builder.HasIndex(d => d.Direction);
+        builder.HasIndex(d => d.CreatedAtUtc);
 
         builder.HasIndex(d => d.Name);
     }

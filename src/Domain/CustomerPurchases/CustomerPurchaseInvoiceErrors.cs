@@ -1,27 +1,45 @@
-﻿using SharedKernel;
+﻿using SharedKernel.Result;
 
 namespace Domain.CustomerPurchases;
 
 public static class CustomerPurchaseInvoiceErrors
 {
-    public static readonly Error NoItems = Error.Problem(
+    public static readonly Error InvoiceNumberRequired = Error.Validation(
+        "CustomerPurchaseInvoices.InvoiceNumber",
+        "رقم الفاتورة مطلوب");
+    public static readonly Error SellerNameRequired = Error.Validation(
+        "CustomerPurchaseInvoices.SellerName",
+        "اسم البائع مطلوب");
+    public static readonly Error EmployeeIdRequired = Error.Validation(
+        "CustomerPurchaseInvoices.Employee",
+        "اسم الموظف مطلوب");
+    public static readonly Error CurrencyRequired = Error.Validation(
+        "CustomerPurchaseInvoices.Currency",
+        "العملة مطلوبة");
+    public static readonly Error PaymentMethodRequired = Error.Validation(
+        "CustomerPurchaseInvoices.PaymentMethod",
+        "طريقة الدفع مطلوبة");
+    public static readonly Error AccountIdRequired = Error.Validation(
+        "CustomerPurchaseInvoices.Account",
+        "رقم الحساب مطلوب");
+
+    public static readonly Error NoItems = Error.Validation(
         "CustomerPurchaseInvoices.NoItems",
-        "ÙŠØ¬Ø¨ Ø¥Ø¶Ø§ÙØ© ØµÙ†Ù ÙˆØ§Ø­Ø¯ Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„");
-
-    public static readonly Error InvalidPaymentAmount = Error.Problem(
+        "يجب إضافة عناصر إلى الفاتورة");
+    public static readonly Error InvalidPaymentAmount = Error.Validation(
         "CustomerPurchaseInvoices.InvalidPaymentAmount",
-        "Ø§Ù„Ù…Ø¨Ù„Øº Ø§Ù„Ù…Ø¯ÙÙˆØ¹ Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø£Ù† ÙŠØªØ¬Ø§ÙˆØ² Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙØ§ØªÙˆØ±Ø©");
+        "المبلغ المدفوع غير صحيح");
 
-    public static readonly Error AccountNotFound = Error.Problem(
+    public static readonly Error AccountNotFound = Error.NotFound(
         "CustomerPurchaseInvoices.AccountNotFound",
-        "Ø§Ù„Ø­Ø³Ø§Ø¨ Ø§Ù„Ù…Ø­Ø¯Ø¯ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯ Ø£Ùˆ ØºÙŠØ± ÙØ¹Ø§Ù„");
+        "الحساب المطلوب غير موجود");
 
-    public static readonly Error AccountDoesNotMatchPayment = Error.Problem(
+    public static readonly Error AccountDoesNotMatchPayment = Error.Failure(
         "CustomerPurchaseInvoices.AccountDoesNotMatchPayment",
-        "Ø§Ù„Ø­Ø³Ø§Ø¨ Ø§Ù„Ù…Ø­Ø¯Ø¯ Ù„Ø§ ÙŠØ·Ø§Ø¨Ù‚ Ø§Ù„Ø¹Ù…Ù„Ø© ÙˆØ·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø¯ÙØ¹");
+        "الحساب المطلوب غير مطابق للدفع");
 
     public static Error DatabaseError(Exception ex) => Error.Failure(
         "CustomerPurchaseInvoices.DatabaseError",
-        $"Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª: {ex.Message}");
+        $"حدث خطأ في قاعدة البيانات: {ex.Message}");
 }
 

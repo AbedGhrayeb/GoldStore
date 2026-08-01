@@ -4,6 +4,7 @@ using Domain.Common;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.StoreOperations.GetKpis;
 
@@ -12,12 +13,7 @@ internal sealed class GetStoreOperationsKpisQueryHandler(
     IDateTimeProvider dateTimeProvider)
     : IQueryHandler<GetStoreOperationsKpisQuery, StoreOperationsKpiResponse>
 {
-    private static readonly Dictionary<Currency, (string Code, string Symbol)> CurrencyLabels = new()
-    {
-        [Currency.Jod] = ("Jod", "د.أ"),
-        [Currency.Usd] = ("Usd", "$"),
-        [Currency.Ils] = ("Ils", "₪")
-    };
+
 
     public async Task<Result<StoreOperationsKpiResponse>> Handle(
         GetStoreOperationsKpisQuery query,
@@ -37,20 +33,20 @@ internal sealed class GetStoreOperationsKpisQueryHandler(
             .Select(p => new { p.Currency, p.TotalAmount })
             .ToListAsync(cancellationToken);
 
-        List<CurrencyTotal> salesTotals = sales
+        var salesTotals = sales
             .GroupBy(s => s.Currency)
             .Select(g => new CurrencyTotal(
-                CurrencyLabels.GetValueOrDefault(g.Key).Code ?? g.Key.ToString(),
-                CurrencyLabels.GetValueOrDefault(g.Key).Symbol ?? g.Key.ToString(),
+                CurrencyExtensions.CurrencyLabels.GetValueOrDefault(g.Key).Code ?? g.Key.ToString(),
+                CurrencyExtensions.CurrencyLabels.GetValueOrDefault(g.Key).Symbol ?? g.Key.ToString(),
                 g.Sum(s => s.TotalAmount)))
             .OrderByDescending(x => x.Amount)
             .ToList();
 
-        List<CurrencyTotal> purchaseTotals = purchases
+        var purchaseTotals = purchases
             .GroupBy(p => p.Currency)
             .Select(g => new CurrencyTotal(
-                CurrencyLabels.GetValueOrDefault(g.Key).Code ?? g.Key.ToString(),
-                CurrencyLabels.GetValueOrDefault(g.Key).Symbol ?? g.Key.ToString(),
+                CurrencyExtensions.CurrencyLabels.GetValueOrDefault(g.Key).Code ?? g.Key.ToString(),
+                CurrencyExtensions.CurrencyLabels.GetValueOrDefault(g.Key).Symbol ?? g.Key.ToString(),
                 g.Sum(p => p.TotalAmount)))
             .OrderByDescending(x => x.Amount)
             .ToList();

@@ -1,137 +1,90 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Models;
 using Domain.Common;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Finance.Transactions.GetPaged;
 
 internal sealed class GetPagedTransactionsQueryHandler(IApplicationDbContext context)
-    : IQueryHandler<GetPagedTransactionsQuery, PagedTransactionResponse>
+    : IQueryHandler<GetPagedTransactionsQuery, PaginatedList<RecentTransactionResponse>>
 {
-    public async Task<Result<PagedTransactionResponse>> Handle(
+    public async Task<Result<PaginatedList<RecentTransactionResponse>>> Handle(
         GetPagedTransactionsQuery query,
         CancellationToken cancellationToken)
     {
-        int page = Math.Max(query.Page, 1);
-        int pageSize = Math.Clamp(query.PageSize, 1, 100);
+        //int page = Math.Max(query.Page, 1);
+        //int pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-        IQueryable<FinancialTransaction> transactions = context.FinancialTransactions.AsNoTracking();
+        IQueryable<FinancialTransaction> transactionsQuery = context.FinancialTransactions.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(query.Currency)
-            && Enum.TryParse<Currency>(query.Currency, ignoreCase: true, out var currency))
+            && Enum.TryParse<Currency>(query.Currency, ignoreCase: true, out Currency currency))
         {
-            transactions = transactions.Where(t => t.Currency == currency);
+            transactionsQuery = transactionsQuery.Where(t => t.Currency == currency);
         }
-
+        IQueryable<FinancialAccount> financialAccountsQuery = context.FinancialAccounts.AsNoTracking();
         if (!string.IsNullOrWhiteSpace(query.AccountType)
-            && Enum.TryParse<FinancialAccountType>(query.AccountType, ignoreCase: true, out var accountType))
+            && Enum.TryParse<FinancialAccountType>(query.AccountType, ignoreCase: true, out FinancialAccountType accountType))
         {
-            List<Guid> matchingAccountIds = await context.FinancialAccounts
-                .AsNoTracking()
+            List<Guid> matchingAccountIds = await financialAccountsQuery
                 .Where(a => a.AccountType == accountType)
                 .Select(a => a.Id)
+                .Distinct()
                 .ToListAsync(cancellationToken);
 
-            transactions = transactions.Where(t => matchingAccountIds.Contains(t.AccountId));
+            transactionsQuery = transactionsQuery.Where(t => matchingAccountIds.Contains(t.AccountId));
         }
 
         if (!string.IsNullOrWhiteSpace(query.AccountName))
         {
-            List<Guid> matchingAccountIds = await context.FinancialAccounts
-                .AsNoTracking()
+            List<Guid> matchingAccountIds = await financialAccountsQuery
                 .Where(a => a.Name.Contains(query.AccountName))
                 .Select(a => a.Id)
                 .ToListAsync(cancellationToken);
 
-            transactions = transactions.Where(t => matchingAccountIds.Contains(t.AccountId));
+            transactionsQuery = transactionsQuery.Where(t => matchingAccountIds.Contains(t.AccountId));
         }
 
         if (query.FromDate.HasValue)
         {
-            DateTime fromDate = DateTime.SpecifyKind(query.FromDate.Value, DateTimeKind.Utc);
-            transactions = transactions.Where(t => t.Date >= fromDate);
+            var fromDate = DateTime.SpecifyKind(query.FromDate.Value, DateTimeKind.Utc);
+            transactionsQuery = transactionsQuery.Where(t => t.CreatedAtUtc >= fromDate);
         }
 
         if (query.ToDate.HasValue)
         {
-            DateTime toDate = DateTime.SpecifyKind(query.ToDate.Value, DateTimeKind.Utc);
-            transactions = transactions.Where(t => t.Date <= toDate);
+            var toDate = DateTime.SpecifyKind(query.ToDate.Value, DateTimeKind.Utc);
+            transactionsQuery = transactionsQuery.Where(t => t.CreatedAtUtc <= toDate);
         }
 
-        int totalCount = await transactions.CountAsync(cancellationToken);
+        // int totalCount = await transactionsQuery.CountAsync(cancellationToken);
 
-        List<Guid> allAccountIds = await transactions
-            .OrderByDescending(t => t.Date)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        List<Guid> allAccountIds = await transactionsQuery
             .Select(t => t.AccountId)
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        Dictionary<Guid, string> accountNames = await context.FinancialAccounts
+        Dictionary<Guid, string> accountNames = await financialAccountsQuery
             .AsNoTracking()
             .Where(a => allAccountIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id, a => a.Name, cancellationToken);
 
-        var pagedData = await transactions
-            .OrderByDescending(t => t.Date)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(t => new
-            {
-                t.Id,
-                t.Date,
-                t.Notes,
-                t.AccountId,
-                t.Amount,
-                t.Currency,
-                t.TransactionType,
-                t.ReferenceType
-            })
-            .ToListAsync(cancellationToken);
-
-        List<RecentTransactionResponse> items = pagedData.Select(t => new RecentTransactionResponse
+        IQueryable<RecentTransactionResponse> items = transactionsQuery.Select(t => new RecentTransactionResponse
         {
             Id = t.Id,
-            Date = t.Date,
-            Description = GetDescription(t.ReferenceType, t.Notes),
+            Date = t.CreatedAtUtc!.Value.LocalDateTime,
+            Description = t.ReferenceType.GetDescription(),
             AccountName = accountNames.GetValueOrDefault(t.AccountId, string.Empty),
             Amount = t.Amount,
             Currency = t.Currency.ToString(),
             TransactionType = t.TransactionType.ToString(),
             ReferenceType = t.ReferenceType.ToString()
-        }).ToList();
+        });
 
-        return new PagedTransactionResponse
-        {
-            Items = items,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
-        };
+        return await PaginatedList<RecentTransactionResponse>.CreateAsync(items, query.Page, query.PageSize);
     }
 
-    private static string GetDescription(FinancialReferenceType referenceType, string? notes)
-    {
-        if (!string.IsNullOrWhiteSpace(notes))
-        {
-            return notes;
-        }
-
-        return referenceType switch
-        {
-            FinancialReferenceType.SupplierManufacturingPayment => "دفعة أجور تصنيع",
-            FinancialReferenceType.Expense => "مصروف",
-            FinancialReferenceType.SalaryPayment => "دفعة راتب",
-            FinancialReferenceType.SalesPayment => "دفعة مبيعات",
-            FinancialReferenceType.CustomerGoldPurchase => "شراء ذهب",
-            FinancialReferenceType.ManualAdjustment => "تسوية يدوية",
-            FinancialReferenceType.DebtCreation => "إنشاء دين",
-            FinancialReferenceType.DebtPayment => "دفعة دين",
-            FinancialReferenceType.DebtAdjustment => "تعديل دين",
-            _ => referenceType.ToString()
-        };
-    }
 }

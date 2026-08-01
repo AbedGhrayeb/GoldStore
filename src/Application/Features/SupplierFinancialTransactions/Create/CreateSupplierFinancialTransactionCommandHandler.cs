@@ -1,10 +1,12 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Users.Login;
 using Domain.Common;
 using Domain.Finance;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.SupplierFinancialTransactions.Create;
 
@@ -18,81 +20,66 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
             .FirstOrDefaultAsync(s => s.Id == command.SupplierId, cancellationToken);
 
         if (supplier is null)
-            return Result.Failure<Guid>(SupplierFinancialErrors.SupplierNotFound(command.SupplierId));
+
+        {
+            return SupplierFinancialErrors.SupplierNotFound(command.SupplierId);
+        }
 
         if (!supplier.IsActive)
-            return Result.Failure<Guid>(SupplierFinancialErrors.SupplierNotActive);
+
+        {
+            return SupplierFinancialErrors.SupplierNotActive;
+        }
 
         FinancialAccount? account = await context.FinancialAccounts
             .FirstOrDefaultAsync(a => a.Id == command.AccountId, cancellationToken);
 
         if (account is null)
-            return Result.Failure<Guid>(SupplierFinancialErrors.AccountNotFound(command.AccountId));
+        {
+            return SupplierFinancialErrors.AccountNotFound(command.AccountId);
+        };
 
         if (!account.IsActive)
-            return Result.Failure<Guid>(SupplierFinancialErrors.AccountNotActive);
 
-        var currency = Enum.Parse<Currency>(command.Currency);
+        {
+            return SupplierFinancialErrors.AccountNotActive;
+        };
+
+        Currency currency = Enum.Parse<Currency>(command.Currency);
         var direction = (SupplierFinancialTransactionDirection)command.Direction;
 
         if (account.Currency != currency)
-            return Result.Failure<Guid>(SupplierFinancialErrors.AccountCurrencyMismatch);
+        { 
+            return SupplierFinancialErrors.AccountCurrencyMismatch;
+    }
 
         var transactionId = Guid.CreateVersion7();
+        var supplierFinancialTransaction = SupplierFinancialTransaction.Create(command.SupplierId, direction, command.Amount, currency, command.AccountId, command.Notes);
 
-        var transaction = new SupplierFinancialTransaction
-        {
-            Id = transactionId,
-            SupplierId = command.SupplierId,
-            Direction = direction,
-            Amount = command.Amount,
-            Currency = currency,
-            AccountId = command.AccountId,
-            Notes = command.Notes,
-            CreatedAt = command.Date
-        };
+        context.SupplierFinancialTransactions.Add(supplierFinancialTransaction);
+        var supplierFinancialLedgerEntry = SupplierFinancialLedgerEntry.Create(supplierFinancialTransaction.Id, command.Amount, SupplierBalanceMovementType.Increase, command.Notes);
+        context.SupplierFinancialLedgerEntries.Add(supplierFinancialLedgerEntry);
 
-        context.SupplierFinancialTransactions.Add(transaction);
-
-        context.SupplierFinancialLedgerEntries.Add(new SupplierFinancialLedgerEntry
-        {
-            Id = Guid.CreateVersion7(),
-            SupplierFinancialTransactionId = transactionId,
-            Amount = command.Amount,
-            MovementType = SupplierBalanceMovementType.Increase,
-            Date = command.Date,
-            Notes = command.Notes ?? GetDirectionLabel(direction)
-        });
-
-        var financialTransactionType = direction switch
+        FinancialTransactionType financialTransactionType = direction switch
         {
             SupplierFinancialTransactionDirection.FromSupplier => FinancialTransactionType.Inflow,
             SupplierFinancialTransactionDirection.ToSupplier => FinancialTransactionType.Outflow,
             _ => FinancialTransactionType.Inflow
         };
+        Result<FinancialTransaction> financialTransaction = FinancialTransaction.Create(command.AccountId,currency, command.Amount,
+            financialTransactionType, FinancialReferenceType.SupplierLoan, 
+            supplierFinancialTransaction.Id, command.Notes);
 
-        context.FinancialTransactions.Add(new FinancialTransaction
+        if(financialTransaction.IsError)
         {
-            Id = Guid.CreateVersion7(),
-            AccountId = command.AccountId,
-            Currency = account.Currency,
-            Amount = command.Amount,
-            TransactionType = financialTransactionType,
-            ReferenceType = FinancialReferenceType.SupplierLoan,
-            ReferenceId = transactionId,
-            Date = command.Date,
-            Notes = command.Notes ?? $"{GetDirectionLabel(direction)} — {supplier.Name}"
-        });
+            return financialTransaction.Errors;
+        }
+
+        context.FinancialTransactions.Add(financialTransaction.Value);
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(transactionId);
+        return transactionId;
     }
 
-    private static string GetDirectionLabel(SupplierFinancialTransactionDirection direction) => direction switch
-    {
-        SupplierFinancialTransactionDirection.FromSupplier => "سلفة من مورد",
-        SupplierFinancialTransactionDirection.ToSupplier => "سلفة لمورد",
-        _ => "معاملة مالية"
-    };
 }

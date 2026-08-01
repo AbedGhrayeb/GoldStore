@@ -4,7 +4,7 @@ using Application.Abstractions.Services;
 using Domain.Common;
 using Domain.Inventory;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Inventory.GoldLedger.GetKpis;
 
@@ -19,9 +19,9 @@ internal sealed class GetInventoryKpisQueryHandler(
 
     private static string GetKaratDescription(int karat) => karat switch
     {
-        24 => "سبائك ذهب صافي",
-        21 => "مشغولات قياسية",
-        18 => "مشغولات حديثة",
+        24 => "عيار 24",
+        21 => "عيار 21",
+        18 => "عيار 18",
         _ => $"عيار {karat}"
     };
 
@@ -66,7 +66,7 @@ internal sealed class GetInventoryKpisQueryHandler(
         GoldPriceData? priceData = null;
         try
         {
-            priceData = await goldPriceService.GetCurrentPricesAsync(Currency.Jod, cancellationToken);
+            priceData = await goldPriceService.GetCurrentPricesAsync(Currency.JOD, cancellationToken);
         }
         catch
         {

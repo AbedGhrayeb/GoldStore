@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using SharedKernel.Result;
 
 namespace Application.Features.Expenses.Expenses.Update;
 
@@ -8,4 +9,4 @@ public sealed record UpdateExpenseCommand(
     Guid? CategoryId,
     string? Description,
     decimal Amount,
-    Guid AccountId) : ICommand<bool>;
+    Guid AccountId) : ICommand<Updated>;

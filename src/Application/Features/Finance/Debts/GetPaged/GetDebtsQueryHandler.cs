@@ -1,13 +1,14 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Models;
 using Domain.Debts;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.Finance.Debts.GetPaged;
 
 internal sealed class GetDebtsQueryHandler(IApplicationDbContext context)
-    : IQueryHandler<GetDebtsQuery, PagedDebtResponse>
+    : IQueryHandler<GetDebtsQuery, PaginatedList<DebtResponse>>
 {
     private static string GetDirectionLabel(DebtDirection direction) => direction switch
     {
@@ -16,36 +17,26 @@ internal sealed class GetDebtsQueryHandler(IApplicationDbContext context)
         _ => direction.ToString()
     };
 
-    public async Task<Result<PagedDebtResponse>> Handle(GetDebtsQuery query, CancellationToken cancellationToken)
+    public async Task<Result<PaginatedList<DebtResponse>>> Handle(GetDebtsQuery query, CancellationToken cancellationToken)
     {
-        IQueryable<Debt> debtsQuery = context.Debts.AsNoTracking();
+        IQueryable<Debt> debtsQuery = context.Debts.OrderByDescending(d=>d.CreatedAtUtc).AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(query.Direction) &&
-            Enum.TryParse<DebtDirection>(query.Direction, out var direction))
+            Enum.TryParse<DebtDirection>(query.Direction, out DebtDirection direction))
         {
             debtsQuery = debtsQuery.Where(d => d.Direction == direction);
         }
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
-            string search = query.Search.Trim();
+            string search = query.Search.ToLower().Trim();
             debtsQuery = debtsQuery.Where(d =>
-                d.Name.Contains(search) ||
-                (d.Phone != null && d.Phone.Contains(search)));
+                d.Name.ToLower().Contains(search) ||
+                d.Phone != null && d.Phone.Contains(search));
         }
 
-        int totalCount = await debtsQuery.CountAsync(cancellationToken);
 
-        int page = Math.Max(query.Page, 1);
-        int pageSize = Math.Clamp(query.PageSize, 1, 100);
-
-        List<Debt> pagedData = await debtsQuery
-            .OrderByDescending(d => d.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        List<Guid> debtIds = pagedData.Select(d => d.Id).ToList();
+        var debtIds = debtsQuery.Select(d => d.Id).ToList();
 
         List<DebtLedgerEntry> allEntries = await context.DebtLedgerEntries
             .AsNoTracking()
@@ -58,7 +49,7 @@ internal sealed class GetDebtsQueryHandler(IApplicationDbContext context)
                 g => g.Key,
                 g => g.Sum(e => e.MovementType == DebtBalanceMovementType.Increase ? e.Amount : -e.Amount));
 
-        List<DebtResponse> items = pagedData.Select(d => new DebtResponse
+        IQueryable<DebtResponse> items = debtsQuery.Select(d => new DebtResponse
         {
             Id = d.Id,
             Name = d.Name,
@@ -68,17 +59,13 @@ internal sealed class GetDebtsQueryHandler(IApplicationDbContext context)
             Currency = d.Currency.ToString(),
             AccountId = d.AccountId,
             Notes = d.Notes,
-            CreatedAt = d.CreatedAt,
+            CreatedAt = d.CreatedAtUtc!.Value.LocalDateTime,
             OutstandingBalance = balances.GetValueOrDefault(d.Id, 0m),
             OutstandingBalanceDisplay = balances.GetValueOrDefault(d.Id, 0m).ToString("N3")
-        }).ToList();
+        });
 
-        return new PagedDebtResponse
-        {
-            Items = items,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize
-        };
+        return await PaginatedList<DebtResponse>.CreateAsync(items, query.Page, query.PageSize);
+
+        ;
     }
 }

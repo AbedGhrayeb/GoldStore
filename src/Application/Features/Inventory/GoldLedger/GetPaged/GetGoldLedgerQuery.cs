@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Application.Common.Models;
 
 namespace Application.Features.Inventory.GoldLedger.GetPaged;
 
@@ -8,4 +9,4 @@ public sealed record GetGoldLedgerQuery(
     int? Karat = null,
     DateTime? FromDate = null,
     DateTime? ToDate = null,
-    string? ReferenceType = null) : IQuery<PagedGoldLedgerResponse>;
+    string? ReferenceType = null) : IQuery<PaginatedList<GoldLedgerEntryResponse>>;

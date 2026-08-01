@@ -16,11 +16,11 @@ internal sealed class DebtLedgerEntryConfiguration : IEntityTypeConfiguration<De
 
         builder.Property(e => e.Notes).HasMaxLength(500);
 
-        builder.HasOne<Debt>()
+        builder.HasOne(e => e.Debt)
             .WithMany()
             .HasForeignKey(e => e.DebtId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(e => new { e.DebtId, e.Date });
+        builder.HasIndex(e => new { e.DebtId, e.CreatedAtUtc });
     }
 }

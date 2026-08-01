@@ -1142,7 +1142,7 @@ $.extend( $.validator, {
 		stopRequest: function( element, valid ) {
 			this.pendingRequest--;
 
-			// Sometimes synchronization fails, make sure pendingRequest is never < 0
+			// Sometimes synchronization faILS, make sure pendingRequest is never < 0
 			if ( this.pendingRequest < 0 ) {
 				this.pendingRequest = 0;
 			}
@@ -1175,7 +1175,7 @@ $.extend( $.validator, {
 
 				this.pendingRequest--;
 
-				// Sometimes synchronization fails, make sure pendingRequest is never < 0
+				// Sometimes synchronization faILS, make sure pendingRequest is never < 0
 				if ( this.pendingRequest < 0 ) {
 					this.pendingRequest = 0;
 				}

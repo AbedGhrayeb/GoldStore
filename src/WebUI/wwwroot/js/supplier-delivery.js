@@ -66,7 +66,7 @@ function loadCurrencies() {
                 var option = document.createElement('option');
                 option.value = c.value;
                 option.textContent = c.label;
-                if (c.value === 'Jod') option.selected = true;
+                if (c.value === 'JOD') option.selected = true;
                 select.appendChild(option);
             });
         }
@@ -388,7 +388,7 @@ function renderReview() {
 function submitDelivery() {
     var supplierId = document.getElementById('supplierSelect')?.value;
     var feePerGram = parseFloat(document.getElementById('mfgFeePerGram')?.value) || 0;
-    var currency = document.getElementById('mfgCurrency')?.value || 'Jod';
+    var currency = document.getElementById('mfgCurrency')?.value || 'JOD';
     var notes = document.getElementById('deliveryNotes')?.value || '';
 
     var validLines = goldLines

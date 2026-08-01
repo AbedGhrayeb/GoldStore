@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Application.Todos.Create;
-using Application.Users.Login;
+﻿using Application.Users.Login;
 using FluentValidation;
 
 namespace Application.Features.Users.Login;
 
-    public class LoginUserCommandValidator : AbstractValidator<LoginUserCommand>
+public class LoginUserCommandValidator : AbstractValidator<LoginUserCommand>
+{
+    public LoginUserCommandValidator()
     {
-        public LoginUserCommandValidator()
-        {
-            RuleFor(c => c.Email).NotEmpty().EmailAddress();
-            RuleFor(c => c.Password).NotEmpty().MinimumLength(8).MaximumLength(20);
-        }
+        RuleFor(c => c.Email).NotEmpty().EmailAddress();
+        RuleFor(c => c.Password).NotEmpty().MinimumLength(8).MaximumLength(20);
     }
+}

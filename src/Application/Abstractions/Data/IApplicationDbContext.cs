@@ -1,13 +1,13 @@
 ﻿using Domain.Catalog;
 using Domain.CustomerPurchases;
 using Domain.Debts;
+using Domain.Employees;
 using Domain.Expenses;
 using Domain.Finance;
 using Domain.Inventory;
 using Domain.Sales;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
-using Domain.Todos;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +16,7 @@ namespace Application.Abstractions.Data;
 public interface IApplicationDbContext
 {
     DbSet<User> Users { get; }
-    DbSet<TodoItem> TodoItems { get; }
+    DbSet<Employee> Employees { get; }
     DbSet<FinancialTransaction> FinancialTransactions { get; }
     DbSet<FinancialAccount> FinancialAccounts { get; }
     DbSet<Category> Categories { get; }

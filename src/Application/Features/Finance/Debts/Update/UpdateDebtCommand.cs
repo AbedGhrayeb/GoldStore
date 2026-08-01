@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using SharedKernel.Result;
 
 namespace Application.Features.Finance.Debts.Update;
 
@@ -8,4 +9,4 @@ public sealed record UpdateDebtCommand(
     string? Phone,
     decimal? NewAmount,
     Guid? NewAccountId,
-    string? Notes) : ICommand<Guid>;
+    string? Notes) : ICommand<Updated>;

@@ -1,24 +1,46 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SharedKernel;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using SharedKernel.Result;
 
 namespace WebUI.Controllers;
 
 public abstract class BaseController : Controller
 {
-    protected IActionResult Match(Result result)
+    protected ActionResult Problem(List<Error> errors)
     {
-        return result.IsSuccess ? NoContent()
-            : Problem(title: result.Error.Code,
-            detail: result.Error.Description);
+        if (errors.Count is 0)
+        {
+            return Problem();
+        }
+
+        if (errors.All(error => error.Type == ErrorType.Validation))
+        {
+            return ValidationProblem(errors);
+        }
+
+        return Problem(errors[0]);
     }
-    protected IActionResult Match<T>(
-     Result<T> result,
-     Func<T, IActionResult> onSuccess)
+
+    private ActionResult Problem(Error error)
     {
-        return result.IsSuccess
-            ? onSuccess(result.Value!)
-            : Problem(
-                title: result.Error.Code,
-                detail: result.Error.Description);
+        int statusCode = error.Type switch
+        {
+            ErrorType.Conflict => StatusCodes.Status409Conflict,
+            ErrorType.Validation => StatusCodes.Status400BadRequest,
+            ErrorType.NotFound => StatusCodes.Status404NotFound,
+            ErrorType.Unauthorized => StatusCodes.Status403Forbidden,
+            _ => StatusCodes.Status500InternalServerError,
+        };
+
+        return Problem(statusCode: statusCode, title: error.Description);
+    }
+
+    private ActionResult ValidationProblem(List<Error> errors)
+    {
+        var modelStateDictionary = new ModelStateDictionary();
+
+        errors.ForEach(error => modelStateDictionary.AddModelError(error.Code, error.Description));
+
+        return ValidationProblem(modelStateDictionary);
     }
 }

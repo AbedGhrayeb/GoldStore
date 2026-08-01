@@ -2,7 +2,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Suppliers.Create;
 
@@ -16,24 +16,19 @@ internal sealed class CreateSupplierCommandHandler(IApplicationDbContext context
 
         if (nameExists)
         {
-            return Result.Failure<Guid>(SupplierErrors.DuplicateName);
+            return SupplierErrors.DuplicateName;
         }
 
-        var supplier = new Supplier
-        {
-            Id = Guid.CreateVersion7(),
-            Name = command.Name,
-            PrimaryPhone = command.PrimaryPhone,
-            SecondaryPhone = command.SecondaryPhone,
-            BankAccountNumber = command.BankAccountNumber,
-            Notes = command.Notes,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
+        Result<Supplier> supplierResult = Supplier.Create(command.Name, command.PrimaryPhone, command.SecondaryPhone, command.BankAccountNumber, command.Notes);
 
-        context.Suppliers.Add(supplier);
+        if (supplierResult.IsError)
+        {
+            return supplierResult.Errors;
+        }
+
+        context.Suppliers.Add(supplierResult.Value);
         await context.SaveChangesAsync(cancellationToken);
 
-        return supplier.Id;
+        return supplierResult.Value.Id;
     }
 }

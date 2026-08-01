@@ -1,7 +1,7 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel;
+using SharedKernel.Result;
 
 namespace Application.Features.SalesInvoices.GetNextNumber;
 
@@ -16,8 +16,8 @@ internal sealed class GetNextInvoiceNumberQueryHandler(
         int count = await context.SalesInvoices
             .CountAsync(i => i.InvoiceNumber.StartsWith($"INV-{yearMonth}"), cancellationToken);
 
-        string nextNumber = $"INV-{yearMonth}-{(count + 1):D4}";
+        string nextNumber = $"INV-{yearMonth}-{count + 1:D4}";
 
-        return Result.Success(nextNumber);
+        return nextNumber;
     }
 }
