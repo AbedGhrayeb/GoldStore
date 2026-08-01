@@ -73,6 +73,16 @@ function renderDesktopRow(e) {
     const userHtml = e.userEmail
         ? `<span class="text-xs text-secondary" dir="ltr">${escapeHtml(e.userEmail)}</span>`
         : '<span class="text-xs text-gray-400">غير مرتبط</span>';
+    const lastPayHtml = e.lastPaymentDate && e.lastPaymentNet != null
+        ? `<div class="data-mono text-on-surface" dir="ltr">${formatNumber(e.lastPaymentNet)}</div><div class="text-secondary text-xs" dir="ltr">${e.lastPaymentDate}</div>`
+        : '<span class="text-xs text-gray-400">لا توجد</span>';
+    const canPay = e.isActive && e.salary > 0 && (e.salaryCycle === 2 || e.salaryCycle === 3);
+    const payButton = canPay
+        ? `<a href="/Employees/PaySalary/${e.id}" ajaxType="GET" title="دفع راتب"
+               class="openModal p-1.5 text-gray-400 hover:text-gold hover:bg-gold/5 rounded-lg transition-colors">
+               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+           </a>`
+        : '';
 
     return `<tr class="hover:bg-primary-fixed/10 transition-colors cursor-default"
                 data-employee-id="${e.id}" data-is-active="${e.isActive}" data-search-text="${e.fullName} ${e.roleName} ${e.userEmail || ''}">
@@ -86,7 +96,8 @@ function renderDesktopRow(e) {
                 </div>
             </td>
             <td class="py-3 px-4 text-on-surface">${escapeHtml(e.roleName)}</td>
-            <td class="py-3 px-4 data-mono text-on-surface" dir="ltr">${formatNumber(e.salary)}</td>
+            <td class="py-3 px-4 data-mono text-on-surface" dir="ltr">${formatNumber(e.salary)} ${e.currencySymbol || ''}</td>
+            <td class="py-3 px-4">${lastPayHtml}</td>
             <td class="py-3 px-4">${userHtml}</td>
             <td class="py-3 px-4"><span class="${statusClass}">${statusText}</span></td>
             <td class="py-3 px-4">
@@ -95,6 +106,7 @@ function renderDesktopRow(e) {
                        class="openModal p-1.5 text-gray-400 hover:text-gold hover:bg-gold/5 rounded-lg transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     </a>
+                    ${payButton}
                     <button onclick="toggleActive('${e.id}')"
                             class="p-1.5 ${e.isActive ? 'text-green-500 hover:text-red-500 hover:bg-red-50' : 'text-red-400 hover:text-green-500 hover:bg-green-50'} rounded-lg transition-colors"
                             title="${e.isActive ? 'إلغاء التفعيل' : 'تفعيل'}">
@@ -111,6 +123,13 @@ function renderMobileCard(e) {
     const statusClass = e.isActive ? 'status-active' : 'status-stopped';
     const statusText = e.isActive ? 'نشط' : 'متوقف';
     const initial = e.firstName ? e.firstName.charAt(0) : '?';
+    const canPay = e.isActive && e.salary > 0 && (e.salaryCycle === 2 || e.salaryCycle === 3);
+    const payButton = canPay
+        ? `<a href="/Employees/PaySalary/${e.id}" ajaxType="GET" title="دفع راتب"
+               class="openModal p-2 text-gray-400 hover:text-gold hover:bg-gold/5 rounded-lg transition-colors">
+               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+           </a>`
+        : '';
 
     return `<div class="employee-mobile-card" data-employee-id="${e.id}" data-is-active="${e.isActive}" data-search-text="${e.fullName} ${e.roleName} ${e.userEmail || ''}">
             <div class="flex items-center justify-between">
@@ -126,13 +145,18 @@ function renderMobileCard(e) {
                        class="openModal p-2 text-gray-400 hover:text-gold hover:bg-gold/5 rounded-lg transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     </a>
+                    ${payButton}
                     <span class="${statusClass}">${statusText}</span>
                 </div>
             </div>
             <div class="mt-3 flex gap-4 items-center">
                 <div>
                     <div class="text-secondary text-xs">الراتب</div>
-                    <div class="data-mono text-on-surface" dir="ltr">${formatNumber(e.salary)}</div>
+                    <div class="data-mono text-on-surface" dir="ltr">${formatNumber(e.salary)} ${e.currencySymbol || ''}</div>
+                </div>
+                <div>
+                    <div class="text-secondary text-xs">آخر دفعة</div>
+                    <div class="data-mono text-on-surface" dir="ltr">${e.lastPaymentDate && e.lastPaymentNet != null ? formatNumber(e.lastPaymentNet) + ' — ' + e.lastPaymentDate : 'لا توجد'}</div>
                 </div>
                 <div>
                     <div class="text-secondary text-xs">حساب المستخدم</div>
@@ -253,6 +277,64 @@ function setConnectDisabled(disabled) {
     if (email) email.disabled = disabled;
     if (password) password.disabled = disabled;
 }
+
+// ── Pay Salary Modal: live summary ───────────────────
+function recalcPaymentSummary() {
+    const form = document.getElementById('paySalaryForm');
+    if (!form) return;
+    const dateInput = document.getElementById('PaymentDate');
+    const employeeId = document.querySelector('#paySalaryForm input[name="EmployeeId"]')?.value;
+    if (!dateInput || !dateInput.value || !employeeId) return;
+
+    $.ajax({
+        url: '/Employees/GetPayPeriodSummary',
+        type: 'GET',
+        data: { employeeId, paymentDate: dateInput.value },
+        dataType: 'json',
+        success: function (res) {
+            if (!res.success) {
+                showToastMessage(res.error || 'تعذر حساب ملخص الفترة', 'error', 'دفع راتب');
+                return;
+            }
+            const s = res.summary;
+            const sumScheduled = document.getElementById('sumScheduled');
+            const sumDayOff = document.getElementById('sumDayOff');
+            const sumDiscount = document.getElementById('sumDiscount');
+            const sumNet = document.getElementById('sumNet');
+            const sumPaid = document.getElementById('sumPaid');
+            const sumRemaining = document.getElementById('sumRemaining');
+            const discountRow = document.getElementById('discountRow');
+            const discountRow2 = document.getElementById('discountRow2');
+            const amountInput = document.getElementById('payAmount');
+
+            if (sumScheduled) sumScheduled.textContent = s.scheduledDate;
+            if (sumDayOff) sumDayOff.textContent = s.dayOff + ' يوم';
+            if (sumDiscount) sumDiscount.textContent = formatNumber(s.discountAmount);
+            if (sumNet) sumNet.textContent = formatNumber(s.netAmount);
+            if (sumPaid) sumPaid.textContent = formatNumber(s.alreadyPaid);
+            if (sumRemaining) sumRemaining.textContent = formatNumber(s.remaining);
+            if (discountRow) discountRow.style.display = s.dayOff > 0 ? '' : 'none';
+            if (discountRow2) discountRow2.style.display = s.dayOff > 0 ? '' : 'none';
+
+            if (amountInput) {
+                if (s.isFullyPaid) {
+                    amountInput.value = '';
+                    amountInput.max = '0';
+                } else {
+                    amountInput.max = s.remaining;
+                    if (!amountInput.value || parseFloat(amountInput.value) > s.remaining) {
+                        amountInput.value = s.remaining;
+                    }
+                }
+            }
+        },
+        error: function () {
+            showToastMessage('حدث خطأ أثناء حساب ملخص الفترة', 'error', 'دفع راتب');
+        }
+    });
+}
+
+$(document).on('change', '#PaymentDate', recalcPaymentSummary);
 
 // ── Helper Functions ─────────────────────────────────
 function formatNumber(num) {

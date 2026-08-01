@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Domain.Common;
 using Domain.Employees;
 
 namespace WebUI.Models.Employee;
@@ -22,6 +23,9 @@ public sealed class EditEmployeeModel
     [Required(ErrorMessage = "الراتب مطلوب")]
     [Range(0.001, 999999999, ErrorMessage = "الراتب يجب أن يكون قيمة موجبة")]
     public decimal? Salary { get; set; }
+
+    [Required(ErrorMessage = "عملة الراتب مطلوبة")]
+    public Currency? Currency { get; set; }
 
     [Required(ErrorMessage = "دورة الراتب مطلوبة")]
     public SalaryCycleEnum? SalaryCycle { get; set; }

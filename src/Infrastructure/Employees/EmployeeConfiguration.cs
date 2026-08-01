@@ -14,6 +14,7 @@ internal sealed class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
         builder.Property(category => category.LastName).HasMaxLength(20);
         builder.Property(category => category.Role).HasConversion<string>().IsRequired();
         builder.Property(i => i.Salary).HasPrecision(18, 3);
+        builder.Property(i => i.Currency).HasConversion<string>().HasMaxLength(3).IsRequired();
 
         builder.Property(i => i.SalaryCycle).HasConversion<int>().IsRequired();
         builder.Property(i => i.UserId).IsRequired(false);

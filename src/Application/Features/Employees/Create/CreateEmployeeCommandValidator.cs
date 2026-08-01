@@ -10,6 +10,7 @@ internal sealed class CreateEmployeeCommandValidator : AbstractValidator<CreateE
         RuleFor(c => c.LastName).NotEmpty().MaximumLength(20);
         RuleFor(c => c.Role).IsInEnum();
         RuleFor(c => c.Salary).GreaterThan(0);
+        RuleFor(c => c.Currency).IsInEnum();
         RuleFor(c => c.SalaryCycle).IsInEnum();
 
         When(c => c.ConnectToUser && !c.ExistingUserId.HasValue, () =>

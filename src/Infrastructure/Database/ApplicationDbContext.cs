@@ -25,6 +25,8 @@ public sealed class ApplicationDbContext(
 
     public DbSet<Employee> Employees { get; set; }
 
+    public DbSet<SalaryPayment> SalaryPayments { get; set; }
+
     public DbSet<FinancialTransaction> FinancialTransactions { get; set; }
 
     public DbSet<FinancialAccount> FinancialAccounts { get; set; }

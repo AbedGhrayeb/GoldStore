@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Domain.Common;
 using Domain.Employees;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Result;
@@ -24,9 +25,12 @@ internal sealed class GetEmployeesQueryHandler(IApplicationDbContext context)
                 FullName = e.FullName,
                 Role = e.Role,
                 Salary = e.Salary ?? 0m,
+                Currency = e.Currency,
                 SalaryCycle = e.SalaryCycle,
                 UserId = e.UserId,
                 UserEmail = e.User != null ? e.User.Email : null,
+                LastPaymentDate = e.SalaryPayments.OrderByDescending(p => p.PaymentDate).Select(p => (DateOnly?)p.PaymentDate).FirstOrDefault(),
+                LastPaymentNet = e.SalaryPayments.OrderByDescending(p => p.PaymentDate).Select(p => (decimal?)p.Amount).FirstOrDefault(),
                 IsActive = e.IsActive,
                 CreatedAt = e.CreatedAtUtc.HasValue ? e.CreatedAtUtc.Value.LocalDateTime : default
             })
@@ -36,6 +40,7 @@ internal sealed class GetEmployeesQueryHandler(IApplicationDbContext context)
         {
             employee.RoleName = employee.Role.ToFriendlyString();
             employee.SalaryCycleName = employee.SalaryCycle.ToFriendlyString();
+            employee.CurrencySymbol = CurrencyExtensions.CurrencyLabels[employee.Currency].Symbol;
         }
 
         return employees;

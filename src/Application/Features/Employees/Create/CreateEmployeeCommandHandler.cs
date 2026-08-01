@@ -50,6 +50,7 @@ internal sealed class CreateEmployeeCommandHandler(IApplicationDbContext context
             command.LastName,
             command.Role,
             command.Salary,
+            command.Currency,
             command.SalaryCycle,
             userId);
 

@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Domain.Common;
 using Domain.Employees;
 using SharedKernel.Result;
 
@@ -10,5 +11,6 @@ public sealed record UpdateEmployeeCommand(
     string LastName,
     RoleEnum Role,
     decimal Salary,
+    Currency Currency,
     SalaryCycleEnum SalaryCycle,
     bool IsActive) : ICommand<Updated>;

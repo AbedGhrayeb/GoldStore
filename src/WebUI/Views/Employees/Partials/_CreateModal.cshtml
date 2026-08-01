@@ -1,3 +1,4 @@
+@using Domain.Common
 @using Domain.Employees
 @model WebUI.Models.Employee.CreateEmployeeModel
 @{
@@ -49,11 +50,25 @@
                 <span asp-validation-for="SalaryCycle" class="text-danger text-sm mt-1 invalid-feedback"></span>
             </div>
         </div>
-        <div class="mt-4">
-            <label asp-for="Salary" class="block text-sm font-medium text-gray-700 mb-2">الراتب *</label>
-            <input asp-for="Salary" type="number" step="0.001" min="0.001" dir="ltr"
-                   class="form-control w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gold/20 focus:border-gold transition-colors data-mono" placeholder="مثال: 500" />
-            <span asp-validation-for="Salary" class="text-danger text-sm mt-1 invalid-feedback"></span>
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label asp-for="Salary" class="block text-sm font-medium text-gray-700 mb-2">الراتب *</label>
+                <input asp-for="Salary" type="number" step="0.001" min="0.001" dir="ltr"
+                       class="form-control w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gold/20 focus:border-gold transition-colors data-mono" placeholder="مثال: 500" />
+                <span asp-validation-for="Salary" class="text-danger text-sm mt-1 invalid-feedback"></span>
+            </div>
+            <div>
+                <label asp-for="Currency" class="block text-sm font-medium text-gray-700 mb-2">عملة الراتب *</label>
+                <select asp-for="Currency" class="form-control w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gold/20 focus:border-gold transition-colors">
+                    <option value="">-- اختر العملة --</option>
+                    @foreach (Currency currency in Enum.GetValues<Currency>())
+                    {
+                        var label = CurrencyExtensions.CurrencyLabels[currency];
+                        <option value="@((int)currency)">@label.Code (@label.Symbol)</option>
+                    }
+                </select>
+                <span asp-validation-for="Currency" class="text-danger text-sm mt-1 invalid-feedback"></span>
+            </div>
         </div>
 
         <!-- Optional User Link -->

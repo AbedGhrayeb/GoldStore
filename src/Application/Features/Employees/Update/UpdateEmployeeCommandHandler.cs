@@ -23,6 +23,7 @@ internal sealed class UpdateEmployeeCommandHandler(IApplicationDbContext context
             command.LastName,
             command.Role,
             command.Salary,
+            command.Currency,
             command.SalaryCycle);
 
         if (updateResult.IsError)

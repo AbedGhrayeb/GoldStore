@@ -15,10 +15,8 @@ internal sealed class GetPagedTransactionsQueryHandler(IApplicationDbContext con
         GetPagedTransactionsQuery query,
         CancellationToken cancellationToken)
     {
-        //int page = Math.Max(query.Page, 1);
-        //int pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-        IQueryable<FinancialTransaction> transactionsQuery = context.FinancialTransactions.AsNoTracking();
+        IQueryable<FinancialTransaction> transactionsQuery = context.FinancialTransactions.OrderByDescending(f=>f.CreatedAtUtc).AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(query.Currency)
             && Enum.TryParse<Currency>(query.Currency, ignoreCase: true, out Currency currency))

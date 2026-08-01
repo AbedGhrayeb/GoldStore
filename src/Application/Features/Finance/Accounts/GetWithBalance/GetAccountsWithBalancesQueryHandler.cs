@@ -20,6 +20,11 @@ internal sealed class GetAccountsWithBalancesQueryHandler(IApplicationDbContext 
             accounts = accounts.Where(a => a.IsActive);
         }
 
+        if (query.Currency.HasValue)
+        {
+            accounts = accounts.Where(a => a.Currency == query.Currency.Value);
+        }
+
         if (!string.IsNullOrWhiteSpace(query.AccountType)
             && Enum.TryParse<FinancialAccountType>(query.AccountType, ignoreCase: true, out FinancialAccountType accountType))
         {

@@ -16,6 +16,9 @@ public static class EmployeeErrors
     public static Error SalaryMustbePositive => Error.Validation(
         "Employee.Salary.MustBePositive",
         $"الراتب للموظف يجب أن يكون قيمة موجبة");
+    public static Error CurrencyRequired => Error.Validation(
+        "Employee.Currency.Required",
+        $"عملة الراتب للموظف مطلوبة");
     public static Error RoleRequired => Error.Validation(
         "Employee.Role.Required",
         $"الدور للموظف مطلوب");

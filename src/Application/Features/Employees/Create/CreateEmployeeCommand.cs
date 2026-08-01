@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Domain.Common;
 using Domain.Employees;
 
 namespace Application.Employees.Create;
@@ -8,6 +9,7 @@ public sealed record CreateEmployeeCommand(
     string LastName,
     RoleEnum Role,
     decimal Salary,
+    Currency Currency,
     SalaryCycleEnum SalaryCycle,
     bool ConnectToUser,
     Guid? ExistingUserId,

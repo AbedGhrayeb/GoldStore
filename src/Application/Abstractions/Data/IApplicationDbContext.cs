@@ -17,6 +17,7 @@ public interface IApplicationDbContext
 {
     DbSet<User> Users { get; }
     DbSet<Employee> Employees { get; }
+    DbSet<SalaryPayment> SalaryPayments { get; }
     DbSet<FinancialTransaction> FinancialTransactions { get; }
     DbSet<FinancialAccount> FinancialAccounts { get; }
     DbSet<Category> Categories { get; }
