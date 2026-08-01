@@ -1,0 +1,45 @@
+using Application.Abstractions.Data;
+using Application.Abstractions.Messaging;
+using Domain.Employees;
+using Microsoft.EntityFrameworkCore;
+using SharedKernel.Result;
+
+namespace Application.Employees.GetById;
+
+internal sealed class GetEmployeeByIdQueryHandler(IApplicationDbContext context)
+    : IQueryHandler<GetEmployeeByIdQuery, EmployeeResponse>
+{
+    public async Task<Result<EmployeeResponse>> Handle(
+        GetEmployeeByIdQuery query,
+        CancellationToken cancellationToken)
+    {
+        EmployeeResponse? employee = await context.Employees
+            .AsNoTracking()
+            .Where(e => e.Id == query.Id)
+            .Select(e => new EmployeeResponse
+            {
+                Id = e.Id,
+                FirstName = e.FirstName,
+                LastName = e.LastName,
+                FullName = e.FullName,
+                Role = e.Role,
+                Salary = e.Salary ?? 0m,
+                SalaryCycle = e.SalaryCycle,
+                UserId = e.UserId,
+                UserEmail = e.User != null ? e.User.Email : null,
+                IsActive = e.IsActive,
+                CreatedAt = e.CreatedAtUtc.HasValue ? e.CreatedAtUtc.Value.LocalDateTime : default
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (employee is null)
+        {
+            return EmployeeErrors.NotFound(query.Id);
+        }
+
+        employee.RoleName = employee.Role.ToFriendlyString();
+        employee.SalaryCycleName = employee.SalaryCycle.ToFriendlyString();
+
+        return employee;
+    }
+}
