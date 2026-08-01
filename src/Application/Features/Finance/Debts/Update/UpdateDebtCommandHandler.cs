@@ -1,6 +1,7 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Errors;
+using Application.Common.Ledger;
 using Domain.Debts;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
@@ -38,6 +39,8 @@ internal sealed class UpdateDebtCommandHandler(
             decimal totalDecrease = await context.DebtLedgerEntries
                 .Where(e => e.DebtId == command.Id && e.MovementType == DebtBalanceMovementType.Decrease)
                 .SumAsync(e => e.Amount, cancellationToken);
+
+            decimal pendingOutflowsOnTargetAccount = 0m;
 
             bool accountChanging = targetAccountId.HasValue
                 && targetAccountId != debt.AccountId;
@@ -87,15 +90,34 @@ internal sealed class UpdateDebtCommandHandler(
                     }
 
                     // Re-apply on new account (same directions as original)
+                    decimal reAppliedOutflowTotal = previousTransactions
+                        .Where(t => t.TransactionType == FinancialTransactionType.Outflow)
+                        .Sum(t => t.Amount);
+
+                    if (reAppliedOutflowTotal > 0m)
+                    {
+                        decimal availableBalance = await context.GetAccountBalanceAsync(targetAccountId!.Value, cancellationToken);
+
+                        if (reAppliedOutflowTotal > availableBalance)
+                        {
+                            return FinancialAccountErrors.InsufficientBalance(availableBalance, reAppliedOutflowTotal);
+                        }
+                    }
+
                     foreach (FinancialTransaction tx in previousTransactions)
                     {
                         Result<FinancialTransaction> newTransactionResult = FinancialTransaction.Create(
-                             tx.AccountId,
+                             targetAccountId!.Value,
                             tx.Currency,
                             tx.Amount,
                             tx.TransactionType,
                             FinancialReferenceType.DebtAdjustment, debt.Id, $"نقل حساب — {debt.Name}");
                         context.FinancialTransactions.Add(newTransactionResult.Value);
+
+                        if (tx.TransactionType == FinancialTransactionType.Outflow)
+                        {
+                            pendingOutflowsOnTargetAccount += tx.Amount;
+                        }
                     }
                 }
                 else if (totalIncrease > 0)
@@ -111,6 +133,16 @@ internal sealed class UpdateDebtCommandHandler(
                             DebtDirection.Payable => FinancialTransactionType.Inflow,
                             _ => FinancialTransactionType.Outflow
                         };
+
+                        if (initialTxType == FinancialTransactionType.Outflow)
+                        {
+                            decimal availableBalance = await context.GetAccountBalanceAsync(targetAccountId!.Value, cancellationToken);
+
+                            if (netBalance > availableBalance)
+                            {
+                                return FinancialAccountErrors.InsufficientBalance(availableBalance, netBalance);
+                            }
+                        }
 
                         context.FinancialTransactions.Add(FinancialTransaction.Create(targetAccountId!.Value,
                             targetAccount.Currency, netBalance, initialTxType, FinancialReferenceType.DebtAdjustment, debt.Id, $"نقل حساب — {debt.Name}").Value);
@@ -174,6 +206,21 @@ internal sealed class UpdateDebtCommandHandler(
                                 : FinancialTransactionType.Outflow,
                             _ => FinancialTransactionType.Outflow
                         };
+
+                        if (txType == FinancialTransactionType.Outflow)
+                        {
+                            decimal availableBalance = await context.GetAccountBalanceAsync(effectiveAccountId.Value, cancellationToken);
+
+                            if (effectiveAccountId == targetAccountId)
+                            {
+                                availableBalance -= pendingOutflowsOnTargetAccount;
+                            }
+
+                            if (Math.Abs(diff) > availableBalance)
+                            {
+                                return FinancialAccountErrors.InsufficientBalance(availableBalance, Math.Abs(diff));
+                            }
+                        }
 
                         Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(effectiveAccountId.Value, account.Currency,
                                 Math.Abs(diff), txType,

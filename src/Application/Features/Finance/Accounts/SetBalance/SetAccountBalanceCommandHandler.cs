@@ -30,7 +30,7 @@ internal sealed class SetAccountBalanceCommandHandler(IApplicationDbContext cont
         }
 
         decimal currentBalance = await context.FinancialTransactions
-            .Where(t => t.AccountId == account.Id && t.ReferenceId == account.Id)
+            .Where(t => t.AccountId == account.Id)
             .SumAsync(t => t.TransactionType == FinancialTransactionType.Inflow ? t.Amount : -t.Amount, cancellationToken);
 
         decimal diff = command.TargetBalance - currentBalance;

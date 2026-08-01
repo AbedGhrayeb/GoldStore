@@ -9,7 +9,7 @@ public sealed record InventoryAdjustmentResponse
     public string TypeColor { get; init; } = string.Empty;
     public string TypeBg { get; init; } = string.Empty;
     public string TypeIcon { get; init; } = string.Empty;
-    public int Karat { get; init; }
+    public string Karat { get; init; }
     public decimal WeightInGrams { get; init; }
     public decimal SignedWeight { get; init; }
     public decimal Equivalent21KWeightInGrams { get; init; }

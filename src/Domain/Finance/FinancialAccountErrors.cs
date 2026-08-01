@@ -25,4 +25,8 @@ public static class FinancialAccountErrors
     public static readonly Error InvalidTargetBalance = Error.Validation(
         "Finance.InvalidTargetBalance",
         "Target balance cannot be negative");
+
+    public static Error InsufficientBalance(decimal available, decimal required) => Error.Conflict(
+        "Finance.InsufficientBalance",
+        $"الرصيد غير كافٍ في الحساب (الرصيد المتاح: {available:N2}، المطلوب: {required:N2})");
 }

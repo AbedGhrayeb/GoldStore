@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Domain.Employees;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
@@ -81,6 +82,13 @@ internal sealed class PaySalaryCommandHandler(IApplicationDbContext context)
         if (command.Amount > remaining)
         {
             return SalaryPaymentErrors.AmountExceedsRemaining;
+        }
+
+        decimal availableBalance = await context.GetAccountBalanceAsync(account.Id, cancellationToken);
+
+        if (command.Amount > availableBalance)
+        {
+            return FinancialAccountErrors.InsufficientBalance(availableBalance, command.Amount);
         }
 
         Result<SalaryPayment> salaryPaymentResult = SalaryPayment.Create(

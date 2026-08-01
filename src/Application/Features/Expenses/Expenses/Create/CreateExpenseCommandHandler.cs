@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Domain.Expenses;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,13 @@ internal sealed class CreateExpenseCommandHandler(IApplicationDbContext context)
             {
                 return ExpenseErrors.CategoryNotFound(command.CategoryId.Value);
             }
+        }
+
+        decimal availableBalance = await context.GetAccountBalanceAsync(command.AccountId, cancellationToken);
+
+        if (command.Amount > availableBalance)
+        {
+            return FinancialAccountErrors.InsufficientBalance(availableBalance, command.Amount);
         }
 
         Result<Expense> expenseResult = Expense.Create(command.CategoryId, command.AccountId, command.Amount, command.Description, command.ExpenseDate);

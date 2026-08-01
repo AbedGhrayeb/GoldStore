@@ -1,6 +1,7 @@
 ﻿using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Domain.Common;
 using Domain.CustomerPurchases;
 using Domain.Debts;
@@ -95,6 +96,13 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
             // Add financial transaction for the amount paid
             if (command.AmountPaid > 0)
             {
+                decimal availableBalance = await context.GetAccountBalanceAsync(command.AccountId, cancellationToken);
+
+                if (command.AmountPaid > availableBalance)
+                {
+                    return FinancialAccountErrors.InsufficientBalance(availableBalance, command.AmountPaid);
+                }
+
                 Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(command.AccountId, currency, command.AmountPaid,
                     FinancialTransactionType.Outflow, FinancialReferenceType.CustomerGoldPurchase,
                     invoiceId, $"دفعة فاتورة شراء ذهب {invoiceNumber} — {command.SellerName}");

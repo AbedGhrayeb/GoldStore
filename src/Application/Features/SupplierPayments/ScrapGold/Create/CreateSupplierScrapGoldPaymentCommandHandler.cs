@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Domain.Common;
 using Domain.Inventory;
 using Domain.SupplierOperations;
@@ -30,6 +31,20 @@ internal sealed class CreateSupplierScrapGoldPaymentCommandHandler(
 
         var karat = (Karat)command.Karat;
         // decimal equivalent21K = GoldWeight.CalculateEquivalent21KWeight(command.WeightInGrams, karat);
+        decimal storeStock = await context.GetGoldStockAsync(karat, cancellationToken);
+
+        if (command.WeightInGrams > storeStock)
+        {
+            return GoldInventoryErrors.InsufficientStock(karat, storeStock, command.WeightInGrams);
+        }
+
+        decimal supplierGoldBalance = await context.GetSupplierGoldBalanceAsync(command.SupplierId, karat, cancellationToken);
+
+        if (command.WeightInGrams > supplierGoldBalance)
+        {
+            return SupplierErrors.InsufficientGoldBalance(karat, supplierGoldBalance, command.WeightInGrams);
+        }
+
         DateTime paymentDate = dateTimeProvider.UtcNow;
         var payment = SupplierScrapGoldPayment.Create(command.SupplierId, karat, command.WeightInGrams, command.Notes);
 

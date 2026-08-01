@@ -1,9 +1,18 @@
+using Domain.Common;
 using SharedKernel.Result;
 
 namespace Domain.Suppliers;
 
 public static class SupplierErrors
 {
+    public static Error InsufficientGoldBalance(Karat karat, decimal available, decimal required) => Error.Conflict(
+        "Suppliers.InsufficientGoldBalance",
+        $"رصيد الذهب لدى المورد غير كافٍ في {karat.KaratLabel()} (المتاح: {available:N2} جم، المطلوب: {required:N2} جم)");
+
+    public static Error InsufficientManufacturingBalance(Currency currency, decimal available, decimal required) => Error.Conflict(
+        "Suppliers.InsufficientManufacturingBalance",
+        $"رصيد المصنعية لدى المورد غير كافٍ ({available:N2} {currency.ToCurrencyString()}، المطلوب: {required:N2} {currency.ToCurrencyString()})");
+
     public static Error NotFound(Guid supplierId) => Error.NotFound(
         "Suppliers.NotFound",
         $"الموردي مع Id = '{supplierId}' غير موجود");

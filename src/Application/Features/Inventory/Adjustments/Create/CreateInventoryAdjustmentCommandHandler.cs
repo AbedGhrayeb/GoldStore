@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Domain.Common;
 using Domain.Inventory;
 using SharedKernel.Result;
@@ -35,6 +36,16 @@ internal sealed class CreateInventoryAdjustmentCommandHandler(
                 InventoryAdjustmentType.Correction => GoldMovementType.Decrease,
                 _ => GoldMovementType.Increase
             };
+
+            if (movementType == GoldMovementType.Decrease)
+            {
+                decimal available = await context.GetGoldStockAsync(karat, cancellationToken);
+
+                if (command.WeightInGrams > available)
+                {
+                    return GoldInventoryErrors.InsufficientStock(karat, available, command.WeightInGrams);
+                }
+            }
 
             Result<GoldLedgerEntry> goldLedgerEntryResult = GoldLedgerEntry.Create(
                 karat,

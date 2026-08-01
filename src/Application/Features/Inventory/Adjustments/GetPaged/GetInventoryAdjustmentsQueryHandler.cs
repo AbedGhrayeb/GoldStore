@@ -1,6 +1,7 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Models;
+using Domain.Common;
 using Domain.Inventory;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Result;
@@ -62,7 +63,7 @@ internal sealed class GetInventoryAdjustmentsQueryHandler(IApplicationDbContext 
             TypeColor = a.Type.GetTypeStyling().Color,
             TypeBg = a.Type.GetTypeStyling().Bg,
             TypeIcon = a.Type.GetTypeStyling().Icon,
-            Karat = (int)a.Karat,
+            Karat = a.Karat.KaratLabel(),
             WeightInGrams = a.WeightInGrams,
             SignedWeight = IsIncreaseType(a.Type) ? a.WeightInGrams : -a.WeightInGrams,
             Equivalent21KWeightInGrams = a.Equivalent21KWeightInGrams,

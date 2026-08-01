@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Domain.Common;
 using Domain.Debts;
 using Domain.Finance;
@@ -57,6 +58,17 @@ internal sealed class CreateDebtCommandHandler(
             DebtDirection.Payable => FinancialTransactionType.Inflow,
             _ => FinancialTransactionType.Outflow
         };
+
+        if (financialTransactionType == FinancialTransactionType.Outflow)
+        {
+            decimal availableBalance = await context.GetAccountBalanceAsync(command.AccountId, cancellationToken);
+
+            if (command.Amount > availableBalance)
+            {
+                return FinancialAccountErrors.InsufficientBalance(availableBalance, command.Amount);
+            }
+        }
+
         Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(command.AccountId, currency, command.Amount,
             financialTransactionType, FinancialReferenceType.DebtCreation, debtId, $"إنشاء {GetDirectionLabel(direction)}: {command.Name}");
 

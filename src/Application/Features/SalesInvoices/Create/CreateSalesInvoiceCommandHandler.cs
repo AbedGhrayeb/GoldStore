@@ -1,6 +1,7 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Errors;
+using Application.Common.Ledger;
 using Domain.Common;
 using Domain.Debts;
 using Domain.Finance;
@@ -83,6 +84,18 @@ internal sealed class CreateSalesInvoiceCommandHandler(
             }
             context.SalesInvoices.Add(invoiceResult.Value);
             await context.SalesInvoiceItems.AddRangeAsync(Items, cancellationToken);
+
+            foreach (var karatGroup in Items.GroupBy(i => i.Karat))
+            {
+                decimal required = karatGroup.Sum(i => i.WeightInGrams);
+                decimal available = await context.GetGoldStockAsync(karatGroup.Key, cancellationToken);
+
+                if (required > available)
+                {
+                    return GoldInventoryErrors.InsufficientStock(karatGroup.Key, available, required);
+                }
+            }
+
             foreach (SalesInvoiceItem item in Items)
             {
                 var itemId = Guid.CreateVersion7();

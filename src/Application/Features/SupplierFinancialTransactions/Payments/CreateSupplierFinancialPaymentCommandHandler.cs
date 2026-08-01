@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Domain.Finance;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
@@ -64,6 +65,17 @@ internal sealed class CreateSupplierFinancialPaymentCommandHandler(
             SupplierFinancialTransactionDirection.ToSupplier => FinancialTransactionType.Inflow,
             _ => FinancialTransactionType.Outflow
         };
+
+        if (financialTransactionType == FinancialTransactionType.Outflow)
+        {
+            decimal availableBalance = await context.GetAccountBalanceAsync(account.Id, cancellationToken);
+
+            if (command.Amount > availableBalance)
+            {
+                return FinancialAccountErrors.InsufficientBalance(availableBalance, command.Amount);
+            }
+        }
+
         Result<FinancialTransaction> financialTransaction = FinancialTransaction.Create(
             account.Id,
             account.Currency,

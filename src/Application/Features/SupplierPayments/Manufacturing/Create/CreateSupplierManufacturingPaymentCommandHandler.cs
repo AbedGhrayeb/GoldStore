@@ -1,6 +1,7 @@
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Domain.Common;
 using Domain.Finance;
 using Domain.SupplierOperations;
@@ -45,6 +46,20 @@ internal sealed class CreateSupplierManufacturingPaymentCommandHandler(
         Currency currency = Enum.Parse<Currency>(command.Currency, ignoreCase: true);
         DateTime paymentDate = dateTimeProvider.UtcNow;
         Guid userId = userContext.UserId;
+
+        decimal mfgBalance = await context.GetSupplierManufacturingBalanceAsync(command.SupplierId, currency, cancellationToken);
+
+        if (command.Amount > mfgBalance)
+        {
+            return SupplierErrors.InsufficientManufacturingBalance(currency, mfgBalance, command.Amount);
+        }
+
+        decimal availableBalance = await context.GetAccountBalanceAsync(command.AccountId, cancellationToken);
+
+        if (command.Amount > availableBalance)
+        {
+            return FinancialAccountErrors.InsufficientBalance(availableBalance, command.Amount);
+        }
 
         var payment = SupplierManufacturingPayment.Create(command.SupplierId, command.AccountId, command.Amount, currency, command.Notes);
         context.SupplierManufacturingPayments.Add(payment);

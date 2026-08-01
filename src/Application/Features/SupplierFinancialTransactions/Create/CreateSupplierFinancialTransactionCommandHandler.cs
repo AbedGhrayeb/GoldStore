@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Application.Users.Login;
 using Domain.Common;
 using Domain.Finance;
@@ -66,6 +67,17 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
             SupplierFinancialTransactionDirection.ToSupplier => FinancialTransactionType.Outflow,
             _ => FinancialTransactionType.Inflow
         };
+
+        if (financialTransactionType == FinancialTransactionType.Outflow)
+        {
+            decimal availableBalance = await context.GetAccountBalanceAsync(command.AccountId, cancellationToken);
+
+            if (command.Amount > availableBalance)
+            {
+                return FinancialAccountErrors.InsufficientBalance(availableBalance, command.Amount);
+            }
+        }
+
         Result<FinancialTransaction> financialTransaction = FinancialTransaction.Create(command.AccountId,currency, command.Amount,
             financialTransactionType, FinancialReferenceType.SupplierLoan, 
             supplierFinancialTransaction.Id, command.Notes);

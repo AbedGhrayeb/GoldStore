@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Domain.Debts;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
@@ -61,15 +62,27 @@ internal sealed class CreatePaymentCommandHandler(
         }
         context.DebtLedgerEntries.Add(debtLedgerEntryResult.Value);
 
+        FinancialTransactionType transactionType = debt.Direction switch
+        {
+            DebtDirection.Receivable => FinancialTransactionType.Inflow,
+            DebtDirection.Payable => FinancialTransactionType.Outflow,
+            _ => FinancialTransactionType.Inflow
+        };
+
+        if (transactionType == FinancialTransactionType.Outflow)
+        {
+            decimal availableBalance = await context.GetAccountBalanceAsync(command.AccountId, cancellationToken);
+
+            if (command.Amount > availableBalance)
+            {
+                return FinancialAccountErrors.InsufficientBalance(availableBalance, command.Amount);
+            }
+        }
+
         Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(
             command.AccountId, account.Currency,
             command.Amount,
-            debt.Direction switch
-            {
-                DebtDirection.Receivable => FinancialTransactionType.Inflow,
-                DebtDirection.Payable => FinancialTransactionType.Outflow,
-                _ => FinancialTransactionType.Inflow
-            }, FinancialReferenceType.DebtPayment,
+            transactionType, FinancialReferenceType.DebtPayment,
             command.DebtId,
             command.Notes ?? $"دفعة على {GetDirectionLabel(debt.Direction)}: {debt.Name}");
 
