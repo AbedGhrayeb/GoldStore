@@ -1,4 +1,5 @@
 ﻿using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 
 namespace Application.Features.CustomerPurchaseInvoices.Create;
 
@@ -17,7 +18,8 @@ public sealed record CreateCustomerPurchaseInvoiceCommand(
     Guid AccountId,
     string? SellerAccountNumber,
     string? Notes,
-    List<CustomerPurchaseInvoiceItemDto> Items
+    List<CustomerPurchaseInvoiceItemDto> Items,
+    List<PaymentLegDto>? PaymentLegs
 ) : ICommand<Guid>;
 
 public sealed record CustomerPurchaseInvoiceItemDto(

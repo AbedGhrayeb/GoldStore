@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 
 namespace Application.Features.SupplierFinancialTransactions.Create;
 
@@ -9,4 +10,5 @@ public sealed record CreateSupplierFinancialTransactionCommand(
     string Currency,
     Guid AccountId,
     DateTime Date,
-    string? Notes) : ICommand<Guid>;
+    string? Notes,
+    List<PaymentLegDto>? PaymentLegs) : ICommand<Guid>;

@@ -8,6 +8,9 @@ let financialAccounts = [];
 let karatOptions = [];
 let currentTransactionTab = 'all';
 let lastTransactions = [];
+let mfgLegsEnabled = false;
+let currentMfgBalance = 0;
+let mfgLegsInited = false;
 
 // ── Page Load ────────────────────────────────────────
 $(document).ready(function () {
@@ -79,8 +82,38 @@ function loadCurrencies() {
                 if (c.value === 'JOD') option.selected = true;
                 select.appendChild(option);
             });
+            initMfgLegsEditor();
         }
     });
+}
+
+function initMfgLegsEditor() {
+    if (mfgLegsInited) return;
+    mfgLegsInited = true;
+    PaymentLegs.init({
+        containerId: 'mfgLegsEditor',
+        tbodyId: 'mfgLegsBody',
+        totalsId: 'mfgLegsTotals',
+        getAccounts: function () {
+            return financialAccounts.map(function (a) {
+                return { id: a.id, name: a.displayLabel || a.name, currency: a.currency, accountType: a.accountType || 'Cash' };
+            });
+        },
+        getBaseCurrency: function () {
+            return document.getElementById('mfgCurrency')?.value || 'JOD';
+        },
+        getCap: function () {
+            return mfgLegsEnabled ? Math.abs(currentMfgBalance) || 0 : null;
+        },
+        onTotalsChange: function () { }
+    });
+}
+
+function onMfgLegsToggle(checked) {
+    mfgLegsEnabled = checked;
+    document.getElementById('singleMfgPaymentFields').classList.toggle('hidden', checked);
+    document.getElementById('mfgLegsEditor').classList.toggle('hidden', !checked);
+    if (checked) PaymentLegs.refresh();
 }
 
 function loadFinancialAccounts() {
@@ -91,6 +124,7 @@ function loadFinancialAccounts() {
         success: function (data) {
             financialAccounts = data || [];
             filterAccountsByCurrency();
+            if (window.PaymentLegs && mfgLegsInited) PaymentLegs.refresh();
         },
         error: function () {
             showToastMessage('حدث خطأ أثناء تحميل الحسابات المالية', 'error', 'دفعات المورد');
@@ -116,6 +150,8 @@ function filterAccountsByCurrency() {
             select.appendChild(option);
         });
     }
+
+    if (window.PaymentLegs && mfgLegsEnabled) PaymentLegs.refresh();
 }
 
 // ── Supplier Selection ────────────────────────────────
@@ -155,16 +191,18 @@ function refreshSupplierData() {
             }
 
             var goldBalance = parseFloat(data.goldBalance) || 0;
-            var mfgBalance = parseFloat(data.manufacturingBalance) || 0;
+            currentMfgBalance = parseFloat(data.manufacturingBalance) || 0;
 
             document.getElementById('goldBalanceValue').textContent = formatNumber(Math.abs(goldBalance));
-            document.getElementById('mfgBalanceValue').textContent = formatNumber(Math.abs(mfgBalance));
+            document.getElementById('mfgBalanceValue').textContent = formatNumber(Math.abs(currentMfgBalance));
 
             updateBalanceHint('gold', goldBalance);
-            updateBalanceHint('mfg', mfgBalance);
+            updateBalanceHint('mfg', currentMfgBalance);
 
             lastTransactions = data.recentTransactions || [];
             renderTransactions();
+
+            if (window.PaymentLegs && mfgLegsEnabled) PaymentLegs.updateTotals();
         },
         error: function () {
             showToastMessage('حدث خطأ أثناء تحميل بيانات المورد', 'error', 'دفعات المورد');
@@ -322,22 +360,38 @@ function submitManufacturingPayment() {
         return;
     }
 
-    var amount = parseFloat(document.getElementById('mfgAmount')?.value) || 0;
-    var currency = document.getElementById('mfgCurrency')?.value || 'JOD';
-    var accountId = document.getElementById('mfgAccount')?.value || '';
-    var notes = document.getElementById('mfgNotes')?.value || '';
+    var amount, currency, accountId, notes;
+    var paymentLegs = null;
 
-    if (amount <= 0) {
-        showToastMessage('يجب إدخال المبلغ', 'error', 'دفعات المورد');
-        return;
-    }
+    if (mfgLegsEnabled) {
+        var legsError = PaymentLegs.validate();
+        if (legsError) {
+            showToastMessage(legsError, 'error', 'دفعات المورد');
+            return;
+        }
+        paymentLegs = PaymentLegs.getLegs();
+        amount = PaymentLegs.getEquivalentTotal();
+        currency = document.getElementById('mfgCurrency')?.value || 'JOD';
+        accountId = paymentLegs[0].accountId;
+        notes = document.getElementById('mfgNotes')?.value || '';
+    } else {
+        amount = parseFloat(document.getElementById('mfgAmount')?.value) || 0;
+        currency = document.getElementById('mfgCurrency')?.value || 'JOD';
+        accountId = document.getElementById('mfgAccount')?.value || '';
+        notes = document.getElementById('mfgNotes')?.value || '';
 
-    if (!accountId) {
-        document.getElementById('mfgAccountError').classList.remove('hidden');
-        showToastMessage('يجب اختيار حساب الدفع', 'error', 'دفعات المورد');
-        return;
+        if (amount <= 0) {
+            showToastMessage('يجب إدخال المبلغ', 'error', 'دفعات المورد');
+            return;
+        }
+
+        if (!accountId) {
+            document.getElementById('mfgAccountError').classList.remove('hidden');
+            showToastMessage('يجب اختيار حساب الدفع', 'error', 'دفعات المورد');
+            return;
+        }
+        document.getElementById('mfgAccountError').classList.add('hidden');
     }
-    document.getElementById('mfgAccountError').classList.add('hidden');
 
     var payload = {
         supplierId: selectedSupplierId,
@@ -346,6 +400,7 @@ function submitManufacturingPayment() {
         currency: currency,
         notes: notes || null
     };
+    if (paymentLegs) payload.paymentLegs = paymentLegs;
 
     var token = document.querySelector('#manufacturingForm input[name="__RequestVerificationToken"]')?.value || '';
 
@@ -379,6 +434,7 @@ function refreshPaymentPage() {
     document.getElementById('scrapNotes').value = '';
     document.getElementById('mfgAmount').value = '';
     document.getElementById('mfgNotes').value = '';
+    if (window.PaymentLegs && mfgLegsInited) PaymentLegs.reset();
 }
 
 // ── Utility ──────────────────────────────────────────

@@ -3,6 +3,7 @@ let categories = [];
 let accounts = [];
 let employees = [];
 let karatTotals = { 24: 0, 21: 0, 18: 0 };
+let paymentLegsEnabled = false;
 
 function formatDate(d) {
     const date = new Date(d);
@@ -20,7 +21,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadEmployees();
     addItemRow();
     updateAccountSelect();
+    initPurchaseLegs();
 });
+
+// ─── Multi-Currency Payment Legs ──────────────
+
+function initPurchaseLegs() {
+    PaymentLegs.init({
+        containerId: 'purchaseLegsEditor',
+        tbodyId: 'purchaseLegsBody',
+        totalsId: 'purchaseLegsTotals',
+        accounts: accounts,
+        getBaseCurrency: () => getSelectedCurrency() || 'JOD',
+        getCap: () => parseFloat(document.getElementById('totalAmount').value) || 0,
+        onTotalsChange: (equivalent) => {
+            if (!paymentLegsEnabled) return;
+            const amountPaid = document.getElementById('amountPaid');
+            amountPaid.value = equivalent.toFixed(3);
+            updateSummary();
+        }
+    });
+}
+
+function onPurchaseLegsToggle(checked) {
+    paymentLegsEnabled = checked;
+    document.getElementById('singlePaymentFields').classList.toggle('hidden', checked);
+    document.getElementById('purchaseLegsEditor').classList.toggle('hidden', !checked);
+    const amountPaid = document.getElementById('amountPaid');
+    if (checked) {
+        amountPaid.disabled = true;
+        PaymentLegs.refresh();
+    } else {
+        amountPaid.disabled = false;
+        amountPaid.value = '0';
+        updateSummary();
+    }
+}
+
+function onTotalAmountLegsChange() {
+    if (paymentLegsEnabled) PaymentLegs.updateTotals();
+}
 
 async function loadNextNumber() {
     try {
@@ -143,8 +183,12 @@ function updateSummary() {
 
     document.getElementById('summaryTotalWeight').textContent = totalWeight.toFixed(3);
     document.getElementById('summaryGoldValue').textContent = itemValue.toFixed(3);
+    document.getElementById('summaryTotalAmount').textContent = totalAmount.toFixed(3);
+    document.getElementById('summaryPaidAmount').textContent = amountPaid.toFixed(3);
     document.getElementById('remainingBalance').textContent = remaining.toFixed(3);
     document.getElementById('summaryCurrency').textContent = getSelectedCurrency() || '---';
+    const summaryCurrencyMain = document.getElementById('summaryCurrencyMain');
+    if (summaryCurrencyMain) summaryCurrencyMain.textContent = getSelectedCurrency() || '---';
 
     purchaseItems.forEach((item, idx) => {
         const el = document.getElementById(`itemTotal_${idx}`);
@@ -180,6 +224,7 @@ function updateItemsSummary() {
 function onCurrencyChange() {
     updateSummary();
     updateAccountSelect();
+    if (paymentLegsEnabled) PaymentLegs.refresh();
 }
 
 function onPaymentMethodChange() {
@@ -227,7 +272,6 @@ async function submitPurchaseInvoice() {
     const sellerPhone = document.getElementById('sellerPhone').value.trim();
     const sellerAddress = document.getElementById('sellerAddress').value.trim();
     const employeeId = document.getElementById('employeeSelect').value;
-    const buyerName = document.getElementById('buyerName')?.value || '';
     const dateVal = document.getElementById('invoiceDate').dataset.date || new Date().toISOString();
     const currency = getSelectedCurrency();
     const paymentMethod = getSelectedPaymentMethod();
@@ -248,22 +292,23 @@ async function submitPurchaseInvoice() {
         return;
     }
 
-    if (!buyerName) {
-        toastr.error('يرجى إدخال اسم المشتري');
-        return;
-    }
-
     if (!currency) {
         toastr.error('يرجى اختيار عملة الفاتورة');
         return;
     }
 
-    if (!paymentMethod) {
+    if (paymentLegsEnabled) {
+        const legsError = PaymentLegs.validate();
+        if (legsError) {
+            toastr.error(legsError);
+            return;
+        }
+    } else if (!paymentMethod) {
         toastr.error('يرجى اختيار طريقة الدفع');
         return;
     }
 
-    if (!accountId) {
+    if (!paymentLegsEnabled && !accountId) {
         toastr.error('يرجى اختيار حساب الدفع');
         return;
     }
@@ -278,10 +323,24 @@ async function submitPurchaseInvoice() {
         return;
     }
 
-    if (amountPaid < 0 || amountPaid > totalAmount) {
+    if (paymentLegsEnabled) {
+        const legsEquivalent = PaymentLegs.getEquivalentTotal();
+        if (legsEquivalent > totalAmount) {
+            toastr.error('مجموع الدفعات يتجاوز المبلغ المستحق');
+            return;
+        }
+    } else if (amountPaid < 0 || amountPaid > totalAmount) {
         toastr.error('المبلغ المدفوع يجب أن يكون بين صفر وإجمالي الفاتورة');
         return;
     }
+
+    const paymentLegs = paymentLegsEnabled ? PaymentLegs.getLegs() : null;
+    const resolvedAmountPaid = paymentLegs ? PaymentLegs.getEquivalentTotal() : amountPaid;
+    const resolvedAccountId = paymentLegs ? paymentLegs[0].accountId : accountId;
+    const firstAccount = paymentLegs ? accounts.find(a => a.id === resolvedAccountId) : null;
+    const resolvedPaymentMethod = paymentLegs
+        ? (firstAccount && firstAccount.accountType === 'Bank' ? 2 : 1)
+        : paymentMethod;
 
     const payload = {
         sellerName,
@@ -289,7 +348,6 @@ async function submitPurchaseInvoice() {
         sellerIdNumber,
         sellerYearOfBirth: sellerYearOfBirth ? parseInt(sellerYearOfBirth) : null,
         sellerAddress: sellerAddress || null,
-        buyerName,
         date: new Date(dateVal).toISOString(),
         currency,
         items: validItems.map(i => ({
@@ -299,12 +357,13 @@ async function submitPurchaseInvoice() {
             pricePerGram: i.pricePerGram
         })),
         totalAmount,
-        amountPaid,
-        paymentMethod,
-        accountId,
+        amountPaid: resolvedAmountPaid,
+        paymentMethod: resolvedPaymentMethod,
+        accountId: resolvedAccountId,
         sellerAccountNumber: sellerAccountNumber || null,
         employeeId,
-        notes: notes || null
+        notes: notes || null,
+        paymentLegs: paymentLegs || null
     };
 
     const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';

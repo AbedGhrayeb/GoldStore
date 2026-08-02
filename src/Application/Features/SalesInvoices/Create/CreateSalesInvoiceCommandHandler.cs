@@ -42,21 +42,51 @@ internal sealed class CreateSalesInvoiceCommandHandler(
 
         }
 
-        decimal remainingBalance = command.TotalAmount - command.AmountPaid;
-
-        if (command.AmountPaid > command.TotalAmount)
-        {
-            return SalesInvoiceErrors.InvalidPaymentAmount;
-        }
-
         string invoiceNumber = await GenerateInvoiceNumberAsync(cancellationToken);
 
+        decimal amountPaid;
+        Guid accountId;
+        PaymentMethod paymentMethod;
+
+        if (command.PaymentLegs is { Count: > 0 } legs)
+        {
+            Result<PaymentLegResult> paymentResult = await context.ProcessPaymentLegsAsync(
+                legs, currency, FinancialTransactionType.Inflow, FinancialReferenceType.SalesPayment,
+                invoiceId, $"دفعة فاتورة {invoiceNumber} — {command.CustomerName}", cancellationToken);
+
+            if (paymentResult.IsError)
+            {
+                return paymentResult.Errors;
+            }
+
+            amountPaid = paymentResult.Value.TotalBaseAmount;
+            accountId = paymentResult.Value.PrimaryAccountId;
+            paymentMethod = paymentResult.Value.PrimaryMethod;
+
+            if (amountPaid > command.TotalAmount)
+            {
+                return SalesInvoiceErrors.InvalidPaymentAmount;
+            }
+        }
+        else
+        {
+            amountPaid = command.AmountPaid;
+            accountId = command.AccountId ?? Guid.Empty;
+            paymentMethod = command.PaymentMethod.HasValue ? (PaymentMethod)command.PaymentMethod.Value : PaymentMethod.Cash;
+
+            if (command.AmountPaid > command.TotalAmount)
+            {
+                return SalesInvoiceErrors.InvalidPaymentAmount;
+            }
+        }
+
+        decimal remainingBalance = command.TotalAmount - amountPaid;
 
         SalesInvoiceStatus status = remainingBalance switch
         {
-            0 when command.AmountPaid > 0 => SalesInvoiceStatus.Completed,
-            > 0 when command.AmountPaid > 0 => SalesInvoiceStatus.PartiallyPaid,
-            > 0 when command.AmountPaid == 0 => SalesInvoiceStatus.Draft,
+            0 when amountPaid > 0 => SalesInvoiceStatus.Completed,
+            > 0 when amountPaid > 0 => SalesInvoiceStatus.PartiallyPaid,
+            > 0 when amountPaid == 0 => SalesInvoiceStatus.Draft,
             _ => SalesInvoiceStatus.Draft
         };
         try
@@ -69,12 +99,12 @@ internal sealed class CreateSalesInvoiceCommandHandler(
                 command.Date,
                 currency,
                 command.TotalAmount,
-                command.AmountPaid,
-                command.PaymentMethod.HasValue ? (PaymentMethod)command.PaymentMethod.Value : PaymentMethod.Cash,
+                amountPaid,
+                paymentMethod,
                 status,
                 command.BuyerAccountNumber,
                 command.Notes,
-                command.AccountId ?? Guid.Empty,
+                accountId,
                 command.EmployeeId ?? Guid.Empty,
                 Items
                 );
@@ -113,9 +143,9 @@ internal sealed class CreateSalesInvoiceCommandHandler(
                 }
                 context.GoldLedgerEntries.Add(goldLedgerEntryResult.Value);
             }
-            if (command.AmountPaid > 0 && command.AccountId.HasValue)
+            if (command.PaymentLegs is not { Count: > 0 } && amountPaid > 0 && accountId != Guid.Empty)
             {
-                Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(command.AccountId ?? Guid.Empty, currency, command.AmountPaid,
+                Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(accountId, currency, amountPaid,
                     FinancialTransactionType.Inflow, FinancialReferenceType.SalesPayment,
                     invoiceId, $"دفعة فاتورة {invoiceNumber} — {command.CustomerName}");
 
@@ -131,7 +161,7 @@ internal sealed class CreateSalesInvoiceCommandHandler(
             {
                 Result<Debt> debtResult = Debt.Create(command.CustomerName, command.CustomerPhone,
                     DebtDirection.Receivable, currency,
-                    command.AccountId ?? Guid.Empty,
+                    accountId,
                     $"باقي فاتورة {invoiceNumber} بتاريخ {command.Date:yyyy-MM-dd}");
                 if (debtResult.IsError)
                 {

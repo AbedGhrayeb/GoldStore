@@ -1,4 +1,5 @@
 ﻿using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Application.Features.CustomerPurchaseInvoices.Create;
 using Application.Features.CustomerPurchaseInvoices.GetNextNumber;
 using Microsoft.AspNetCore.Authorization;
@@ -63,7 +64,12 @@ public class CustomerPurchaseInvoicesController(
                 i.CategoryId,
                 i.Karat,
                 i.WeightInGrams,
-                i.PricePerGram)).ToList());
+                i.PricePerGram)).ToList(),
+            model.PaymentLegs?.Select(l => new PaymentLegDto(
+                l.AccountId,
+                l.Currency,
+                l.Amount,
+                l.ExchangeRate)).ToList());
 
         Result<Guid> result = await createHandler.Handle(command, cancellationToken);
 

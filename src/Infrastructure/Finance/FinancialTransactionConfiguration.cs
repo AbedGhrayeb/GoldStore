@@ -14,6 +14,10 @@ internal sealed class FinancialTransactionConfiguration : IEntityTypeConfigurati
 
         builder.Property(transaction => transaction.Amount).HasPrecision(18, 3);
 
+        builder.Property(transaction => transaction.ExchangeRate).HasPrecision(18, 6);
+
+        builder.Property(transaction => transaction.BaseAmount).HasPrecision(18, 3);
+
         builder.Property(transaction => transaction.TransactionType).HasConversion<string>().HasMaxLength(20);
 
         builder.Property(transaction => transaction.ReferenceType).HasConversion<string>().HasMaxLength(50);

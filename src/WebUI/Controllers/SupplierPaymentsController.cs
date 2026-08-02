@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Application.Finance.Accounts;
 using Application.Finance.Accounts.GetAll;
 using Application.SupplierPayments.Manufacturing.Create;
@@ -177,7 +178,12 @@ public class SupplierPaymentsController(
             model.AccountId,
             model.Amount,
             model.Currency,
-            model.Notes);
+            model.Notes,
+            model.PaymentLegs?.Select(l => new PaymentLegDto(
+                l.AccountId,
+                l.Currency,
+                l.Amount,
+                l.ExchangeRate)).ToList());
 
         Result<Guid> result = await createManufacturingPaymentHandler.Handle(command, cancellationToken);
 

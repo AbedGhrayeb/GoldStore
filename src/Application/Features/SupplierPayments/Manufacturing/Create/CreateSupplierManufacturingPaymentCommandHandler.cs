@@ -49,6 +49,38 @@ internal sealed class CreateSupplierManufacturingPaymentCommandHandler(
 
         decimal mfgBalance = await context.GetSupplierManufacturingBalanceAsync(command.SupplierId, currency, cancellationToken);
 
+        if (command.PaymentLegs is { Count: > 0 } legs)
+        {
+            var paymentId = Guid.CreateVersion7();
+
+            Result<PaymentLegResult> paymentResult = await context.ProcessPaymentLegsAsync(
+                legs, currency, FinancialTransactionType.Outflow, FinancialReferenceType.SupplierManufacturingPayment,
+                paymentId, command.Notes ?? "دفعة أجرة تصنيع", cancellationToken);
+
+            if (paymentResult.IsError)
+            {
+                return paymentResult.Errors;
+            }
+
+            decimal totalBaseAmount = paymentResult.Value.TotalBaseAmount;
+            Guid accountId = paymentResult.Value.PrimaryAccountId;
+
+            if (totalBaseAmount > mfgBalance)
+            {
+                return SupplierErrors.InsufficientManufacturingBalance(currency, mfgBalance, totalBaseAmount);
+            }
+
+            var payment = SupplierManufacturingPayment.Create(command.SupplierId, accountId, totalBaseAmount, currency, command.Notes);
+            context.SupplierManufacturingPayments.Add(payment);
+            var manufacturingLedgerEntry = SupplierManufacturingLedgerEntry.Create(command.SupplierId, totalBaseAmount, currency,
+                SupplierBalanceMovementType.Decrease, SupplierManufacturingReferenceType.SupplierManufacturingPayment, payment.Id, command.Notes);
+            context.SupplierManufacturingLedgerEntries.Add(manufacturingLedgerEntry);
+
+            await context.SaveChangesAsync(cancellationToken);
+
+            return payment.Id;
+        }
+
         if (command.Amount > mfgBalance)
         {
             return SupplierErrors.InsufficientManufacturingBalance(currency, mfgBalance, command.Amount);
@@ -61,14 +93,14 @@ internal sealed class CreateSupplierManufacturingPaymentCommandHandler(
             return FinancialAccountErrors.InsufficientBalance(availableBalance, command.Amount);
         }
 
-        var payment = SupplierManufacturingPayment.Create(command.SupplierId, command.AccountId, command.Amount, currency, command.Notes);
-        context.SupplierManufacturingPayments.Add(payment);
-        var manufacturingLedgerEntry = SupplierManufacturingLedgerEntry.Create(command.SupplierId, command.Amount, currency,
-            SupplierBalanceMovementType.Decrease, SupplierManufacturingReferenceType.SupplierManufacturingPayment, payment.Id, command.Notes);
-        context.SupplierManufacturingLedgerEntries.Add(manufacturingLedgerEntry);
+        var legacyPayment = SupplierManufacturingPayment.Create(command.SupplierId, command.AccountId, command.Amount, currency, command.Notes);
+        context.SupplierManufacturingPayments.Add(legacyPayment);
+        var legacyLedgerEntry = SupplierManufacturingLedgerEntry.Create(command.SupplierId, command.Amount, currency,
+            SupplierBalanceMovementType.Decrease, SupplierManufacturingReferenceType.SupplierManufacturingPayment, legacyPayment.Id, command.Notes);
+        context.SupplierManufacturingLedgerEntries.Add(legacyLedgerEntry);
 
         Result<FinancialTransaction> financialTransaction = FinancialTransaction.Create(command.AccountId, currency, command.Amount, FinancialTransactionType.Outflow,
-            FinancialReferenceType.SupplierManufacturingPayment, payment.Id, command.Notes);
+            FinancialReferenceType.SupplierManufacturingPayment, legacyPayment.Id, command.Notes);
 
         if (financialTransaction.IsError)
         {
@@ -77,6 +109,6 @@ internal sealed class CreateSupplierManufacturingPaymentCommandHandler(
         context.FinancialTransactions.Add(financialTransaction.Value);
         await context.SaveChangesAsync(cancellationToken);
 
-        return payment.Id;
+        return legacyPayment.Id;
     }
 }

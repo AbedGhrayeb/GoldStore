@@ -12,6 +12,10 @@ public sealed class FinancialTransaction : AuditableEntity
 
     public decimal Amount { get; set; }
 
+    public decimal? ExchangeRate { get; set; }
+
+    public decimal? BaseAmount { get; set; }
+
     public FinancialTransactionType TransactionType { get; private set; }
 
     public FinancialReferenceType ReferenceType { get; private set; }

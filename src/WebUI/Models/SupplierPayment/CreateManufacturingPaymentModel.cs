@@ -18,4 +18,6 @@ public class CreateManufacturingPaymentModel
 
     [StringLength(1000, ErrorMessage = "ملاحظات طويلة جداً")]
     public string? Notes { get; set; }
+
+    public List<PaymentLegModel>? PaymentLegs { get; set; }
 }

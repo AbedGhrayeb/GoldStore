@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 
 namespace Application.SupplierPayments.Manufacturing.Create;
 
@@ -7,5 +8,6 @@ public sealed record CreateSupplierManufacturingPaymentCommand(
     Guid AccountId,
     decimal Amount,
     string Currency,
-    string? Notes)
+    string? Notes,
+    List<PaymentLegDto>? PaymentLegs)
     : ICommand<Guid>;

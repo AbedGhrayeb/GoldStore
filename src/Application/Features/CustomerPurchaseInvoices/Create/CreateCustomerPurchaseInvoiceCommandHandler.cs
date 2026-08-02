@@ -24,7 +24,7 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
             return CustomerPurchaseInvoiceErrors.NoItems;
         }
 
-        if (command.AmountPaid > command.TotalAmount)
+        if (command.PaymentLegs is not { Count: > 0 } && command.AmountPaid > command.TotalAmount)
         {
             return CustomerPurchaseInvoiceErrors.InvalidPaymentAmount;
         }
@@ -34,27 +34,60 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
         try
         {
             Currency currency = Enum.Parse<Currency>(command.Currency);
-            var paymentMethod = (PaymentMethod)command.PaymentMethod;
-            FinancialAccountType expectedAccountType = paymentMethod == PaymentMethod.Cash
-                ? FinancialAccountType.Cash
-                : FinancialAccountType.Bank;
-
-            FinancialAccount? account = await context.FinancialAccounts
-                .AsNoTracking()
-                .FirstOrDefaultAsync(a => a.Id == command.AccountId && a.IsActive, cancellationToken);
-
-            if (account is null)
-            {
-                return CustomerPurchaseInvoiceErrors.AccountNotFound;
-            }
-
-            if (account.Currency != currency || account.AccountType != expectedAccountType)
-            {
-                return CustomerPurchaseInvoiceErrors.AccountDoesNotMatchPayment;
-            }
-            Guid userId = userContext.UserId;
             string invoiceNumber = await GenerateInvoiceNumberAsync(cancellationToken);
-            decimal remainingBalance = command.TotalAmount - command.AmountPaid;
+
+            decimal amountPaid;
+            Guid accountId;
+            PaymentMethod paymentMethod;
+
+            if (command.PaymentLegs is { Count: > 0 } legs)
+            {
+                Result<PaymentLegResult> paymentResult = await context.ProcessPaymentLegsAsync(
+                    legs, currency, FinancialTransactionType.Outflow, FinancialReferenceType.CustomerGoldPurchase,
+                    invoiceId, $"دفعة فاتورة شراء ذهب {invoiceNumber} — {command.SellerName}", cancellationToken);
+
+                if (paymentResult.IsError)
+                {
+                    return paymentResult.Errors;
+                }
+
+                amountPaid = paymentResult.Value.TotalBaseAmount;
+                accountId = paymentResult.Value.PrimaryAccountId;
+                paymentMethod = paymentResult.Value.PrimaryMethod;
+
+                if (amountPaid > command.TotalAmount)
+                {
+                    return CustomerPurchaseInvoiceErrors.InvalidPaymentAmount;
+                }
+            }
+            else
+            {
+                var legacyPaymentMethod = (PaymentMethod)command.PaymentMethod;
+                FinancialAccountType expectedAccountType = legacyPaymentMethod == PaymentMethod.Cash
+                    ? FinancialAccountType.Cash
+                    : FinancialAccountType.Bank;
+
+                FinancialAccount? account = await context.FinancialAccounts
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(a => a.Id == command.AccountId && a.IsActive, cancellationToken);
+
+                if (account is null)
+                {
+                    return CustomerPurchaseInvoiceErrors.AccountNotFound;
+                }
+
+                if (account.Currency != currency || account.AccountType != expectedAccountType)
+                {
+                    return CustomerPurchaseInvoiceErrors.AccountDoesNotMatchPayment;
+                }
+
+                amountPaid = command.AmountPaid;
+                accountId = command.AccountId;
+                paymentMethod = legacyPaymentMethod;
+            }
+
+            Guid userId = userContext.UserId;
+            decimal remainingBalance = command.TotalAmount - amountPaid;
             List<CustomerPurchaseInvoiceItem> items = [];
             foreach (CustomerPurchaseInvoiceItemDto item in command.Items)
             {
@@ -79,9 +112,9 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
                 command.Date,
                 currency,
                 command.TotalAmount,
-                command.AmountPaid,
+                amountPaid,
                 paymentMethod,
-                command.AccountId,
+                accountId,
                 command.SellerAccountNumber,
                 command.Notes,
                 items
@@ -94,16 +127,16 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
             context.CustomerPurchaseInvoices.Add(invoiceResult.Value);
 
             // Add financial transaction for the amount paid
-            if (command.AmountPaid > 0)
+            if (command.PaymentLegs is not { Count: > 0 } && amountPaid > 0)
             {
-                decimal availableBalance = await context.GetAccountBalanceAsync(command.AccountId, cancellationToken);
+                decimal availableBalance = await context.GetAccountBalanceAsync(accountId, cancellationToken);
 
-                if (command.AmountPaid > availableBalance)
+                if (amountPaid > availableBalance)
                 {
-                    return FinancialAccountErrors.InsufficientBalance(availableBalance, command.AmountPaid);
+                    return FinancialAccountErrors.InsufficientBalance(availableBalance, amountPaid);
                 }
 
-                Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(command.AccountId, currency, command.AmountPaid,
+                Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(accountId, currency, amountPaid,
                     FinancialTransactionType.Outflow, FinancialReferenceType.CustomerGoldPurchase,
                     invoiceId, $"دفعة فاتورة شراء ذهب {invoiceNumber} — {command.SellerName}");
                 if (financialTransactionResult.IsError)

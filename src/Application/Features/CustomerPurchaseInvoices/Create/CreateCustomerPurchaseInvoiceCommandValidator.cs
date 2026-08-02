@@ -21,7 +21,7 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandValidator : AbstractVa
 
         RuleFor(x => x.Currency)
             .NotEmpty()
-            .Must(c => c is "Jod" or "Usd" or "Ils")
+            .Must(c => c is "JOD" or "USD" or "ILS")
             .WithMessage("العملة غير صالحة");
 
         RuleFor(x => x.Items)

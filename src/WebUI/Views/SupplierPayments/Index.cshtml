@@ -107,13 +107,24 @@
 
         <!-- Manufacturing Payment -->
         <div class="bg-surface-container-lowest p-md rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-surface-container">
-            <div class="flex items-center gap-sm mb-md pb-sm border-b border-surface-container">
-                <span class="material-symbols-outlined text-secondary">account_balance</span>
-                <h2 class="font-title-lg text-title-lg text-on-surface">دفعة أجور تصنيع</h2>
+            <div class="flex items-center justify-between mb-md pb-sm border-b border-surface-container">
+                <div class="flex items-center gap-sm">
+                    <span class="material-symbols-outlined text-secondary">account_balance</span>
+                    <h2 class="font-title-lg text-title-lg text-on-surface">دفعة أجور تصنيع</h2>
+                </div>
+                <label class="inline-flex items-center gap-xs cursor-pointer select-none">
+                    <span class="relative inline-flex items-center">
+                        <input type="checkbox" id="mfgLegsToggle" class="peer sr-only" onchange="onMfgLegsToggle(this.checked)">
+                        <span class="w-9 h-5 rounded-full bg-outline-variant peer-checked:bg-primary transition-colors"></span>
+                        <span class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-white shadow peer-checked:right-auto peer-checked:left-0.5 transition-all pointer-events-none"></span>
+                    </span>
+                    <span class="font-label-md text-label-md text-secondary">دفع بعملات متعددة</span>
+                </label>
             </div>
             <form id="manufacturingForm" class="space-y-md" novalidate>
                 @Html.AntiForgeryToken()
                 <input type="hidden" id="mfgSupplierId" name="SupplierId" />
+                <div id="singleMfgPaymentFields" class="space-y-md">
                 <div>
                     <label class="font-label-md text-label-md text-secondary mb-xs block">المبلغ</label>
                     <div class="flex gap-2">
@@ -131,6 +142,8 @@
                     </select>
                     <span class="text-xs text-error hidden" id="mfgAccountError">يجب اختيار حساب الدفع</span>
                 </div>
+                </div>
+                <div id="mfgLegsEditor" class="hidden"></div>
                 <div>
                     <label class="font-label-md text-label-md text-secondary mb-xs block">ملاحظات</label>
                     <input type="text" id="mfgNotes" class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 font-body-md text-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm" placeholder="ملاحظات اختيارية..." />
@@ -178,5 +191,6 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/payment-legs.js" asp-append-version="true"></script>
     <script src="~/js/supplier-payments.js" asp-append-version="true"></script>
 }

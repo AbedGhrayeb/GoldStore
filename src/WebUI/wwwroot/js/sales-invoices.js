@@ -6,6 +6,7 @@ let accounts = [];
 let employees = [];
 let currentInvoiceNumber = '';
 let karatTotals = { 24: 0, 21: 0, 18: 0 };
+let paymentLegsEnabled = false;
 
 function formatDate(d) {
     const date = new Date(d);
@@ -20,9 +21,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadNextNumber();
     await loadCategories();
     await loadAccounts();
+    initPaymentLegs();
     await loadEmployees();
     addItemRow();
 });
+
+function initPaymentLegs() {
+    PaymentLegs.init({
+        containerId: 'paymentLegsEditor',
+        tbodyId: 'paymentLegsBody',
+        totalsId: 'paymentLegsTotals',
+        accounts: accounts,
+        getBaseCurrency: () => document.querySelector('input[name="currency"]:checked')?.value || 'JOD',
+        getCap: () => parseFloat(document.getElementById('totalAmount').value) || 0,
+        onTotalsChange: (equivalent) => {
+            if (!paymentLegsEnabled) return;
+            const amountPaid = document.getElementById('amountPaid');
+            amountPaid.value = equivalent.toFixed(3);
+            updateSummary();
+        }
+    });
+}
+
+function onPaymentLegsToggle(checked) {
+    paymentLegsEnabled = checked;
+    document.getElementById('singlePaymentFields').classList.toggle('hidden', checked);
+    document.getElementById('paymentLegsEditor').classList.toggle('hidden', !checked);
+    const amountPaid = document.getElementById('amountPaid');
+    if (checked) {
+        amountPaid.disabled = true;
+        PaymentLegs.refresh();
+    } else {
+        amountPaid.disabled = false;
+        amountPaid.value = '0';
+        updateSummary();
+    }
+}
+
+function onTotalAmountLegsChange() {
+    if (paymentLegsEnabled) PaymentLegs.updateTotals();
+}
 
 async function loadNextNumber() {
     try {
@@ -189,9 +227,13 @@ function updateSummary() {
     const goldValue = items.reduce((sum, item) => sum + (item.weight * item.pricePerGram), 0);
     document.getElementById('summaryGoldValue').textContent = goldValue.toFixed(3);
 
+    document.getElementById('summaryTotalAmount').textContent = manualTotal.toFixed(3);
+    document.getElementById('summaryPaidAmount').textContent = amountPaid.toFixed(3);
     document.getElementById('remainingBalance').textContent = remaining.toFixed(3);
     const currency = document.querySelector('input[name="currency"]:checked')?.value || 'JOD';
     document.getElementById('summaryCurrency').textContent = currency;
+    const summaryCurrencyMain = document.getElementById('summaryCurrencyMain');
+    if (summaryCurrencyMain) summaryCurrencyMain.textContent = currency;
 
     items.forEach((item, idx) => {
         const el = document.getElementById(`itemTotal_${idx}`);
@@ -211,6 +253,7 @@ function onCurrencyChange() {
     const summaryCurrencyMain = document.getElementById('summaryCurrencyMain');
     if (summaryCurrencyMain) summaryCurrencyMain.textContent = currency;
     onPaymentMethodChange();
+    if (paymentLegsEnabled) PaymentLegs.refresh();
 }
 
 function onPaymentMethodChange() {
@@ -252,12 +295,12 @@ async function submitInvoice() {
     const notes = document.getElementById('invoiceNotes').value.trim();
     const dateVal = document.getElementById('invoiceDate').dataset.date || new Date().toISOString();
     const currency = document.querySelector('input[name="currency"]:checked')?.value;
-    const paymentMethod = parseInt(document.querySelector('input[name="paymentMethod"]:checked')?.value) || null;
-    const accountId = document.getElementById('accountSelect').value;
-    const buyerAccountNumber = document.getElementById('buyerAccountNumber').value.trim();
-    const sellerName = document.getElementById('sellerName').value.trim();
+    let paymentMethod = parseInt(document.querySelector('input[name="paymentMethod"]:checked')?.value) || null;
+    let accountId = document.getElementById('accountSelect').value;
+    let buyerAccountNumber = document.getElementById('buyerAccountNumber').value.trim();
     const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
-    const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
+    let amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
+    let paymentLegs = null;
 
     // Validate
     if (!customerName) {
@@ -270,19 +313,39 @@ async function submitInvoice() {
         return;
     }
 
-    if (!sellerName) {
-        toastr.error('يرجى إدخال اسم المشتري');
-        return;
-    }
-
     if (!currency) {
         toastr.error('يرجى اختيار عملة الفاتورة');
         return;
     }
 
-    if (!paymentMethod) {
-        toastr.error('يرجى اختيار طريقة الدفع');
-        return;
+    if (paymentLegsEnabled) {
+        const legsError = PaymentLegs.validate();
+        if (legsError) {
+            toastr.error(legsError);
+            return;
+        }
+        paymentLegs = PaymentLegs.getLegs();
+        amountPaid = PaymentLegs.getEquivalentTotal();
+        accountId = paymentLegs[0].accountId;
+        const firstAccount = accounts.find(a => a.id === accountId);
+        paymentMethod = firstAccount && firstAccount.accountType === 'Bank' ? 2 : 1;
+        buyerAccountNumber = null;
+    } else {
+        if (!paymentMethod) {
+            toastr.error('يرجى اختيار طريقة الدفع');
+            return;
+        }
+
+        if (paymentMethod === 2) {
+            if (!accountId) {
+                toastr.error('يرجى اختيار حساب الاستلام');
+                return;
+            }
+            if (!buyerAccountNumber) {
+                toastr.error('يرجى إدخال رقم حساب المشتري');
+                return;
+            }
+        }
     }
 
     if (totalAmount <= 0) {
@@ -328,9 +391,9 @@ async function submitInvoice() {
         paymentMethod,
         accountId: accountId || null,
         buyerAccountNumber: buyerAccountNumber || null,
-        sellerName: sellerName || null,
         emplyeeId: employeeId,
-        notes: notes || null
+        notes: notes || null,
+        paymentLegs: paymentLegs || null
     };
 
     const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';

@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Application.Common.Models;
 using Application.Features.SalesInvoices;
 using Application.Features.SalesInvoices.Create;
@@ -102,6 +103,11 @@ public class SalesInvoicesController(
             model.AccountId,
             model.BuyerAccountNumber,
             model.EmplyeeId,
+            model.PaymentLegs?.Select(l => new PaymentLegDto(
+                l.AccountId,
+                l.Currency,
+                l.Amount,
+                l.ExchangeRate)).ToList(),
             model.Notes);
 
         Result<Guid> result = await createHandler.Handle(command, cancellationToken);

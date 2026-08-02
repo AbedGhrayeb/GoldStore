@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Application.Features.SupplierFinancialTransactions.Create;
 using Application.Features.SupplierFinancialTransactions.GetKpis;
 using Application.Features.SupplierFinancialTransactions.GetPaged;
@@ -115,7 +116,12 @@ public class SupplierFinancialTransactionsController(
             model.Currency,
             model.AccountId,
             model.Date,
-            model.Notes);
+            model.Notes,
+            model.PaymentLegs?.Select(l => new PaymentLegDto(
+                l.AccountId,
+                l.Currency,
+                l.Amount,
+                l.ExchangeRate)).ToList());
 
         Result<Guid> result = await createHandler.Handle(command, cancellationToken);
 
@@ -146,7 +152,12 @@ public class SupplierFinancialTransactionsController(
             model.AccountId,
             model.Amount,
             model.Date,
-            model.Notes);
+            model.Notes,
+            model.PaymentLegs?.Select(l => new PaymentLegDto(
+                l.AccountId,
+                l.Currency,
+                l.Amount,
+                l.ExchangeRate)).ToList());
 
         Result<Guid> result = await paymentHandler.Handle(command, cancellationToken);
 

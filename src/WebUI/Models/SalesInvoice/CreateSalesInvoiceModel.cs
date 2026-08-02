@@ -39,4 +39,6 @@ public class CreateSalesInvoiceModel
 
     [StringLength(1000)]
     public string? Notes { get; set; }
+
+    public List<PaymentLegModel>? PaymentLegs { get; set; }
 }

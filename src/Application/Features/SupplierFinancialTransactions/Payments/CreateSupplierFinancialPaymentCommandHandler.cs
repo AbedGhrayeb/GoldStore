@@ -20,45 +20,6 @@ internal sealed class CreateSupplierFinancialPaymentCommandHandler(
         if (transaction is null)
         { return SupplierFinancialErrors.NotFound(command.TransactionId); }
 
-        FinancialAccount? account = await context.FinancialAccounts
-            .FirstOrDefaultAsync(a => a.Id == command.AccountId, cancellationToken);
-
-        if (account is null)
-        { return SupplierFinancialErrors.AccountNotFound(command.AccountId); }
-
-        if (!account.IsActive)
-        { return SupplierFinancialErrors.AccountNotActive; }
-
-        if (account.Currency != transaction.Currency)
-        { return SupplierFinancialErrors.AccountCurrencyMismatch; }
-
-        if (command.Amount <= 0)
-        { return SupplierFinancialErrors.PaymentAmountMustBePositive; }
-
-        decimal outstandingBalance = await context.SupplierFinancialLedgerEntries
-            .Where(e => e.SupplierFinancialTransactionId == command.TransactionId)
-            .SumAsync(e => e.MovementType == SupplierBalanceMovementType.Increase
-                ? e.Amount
-                : -e.Amount, cancellationToken);
-
-        if (command.Amount > outstandingBalance)
-        { return SupplierFinancialErrors.PaymentExceedsBalance(command.Amount, outstandingBalance); }
-
-
-        Result<SupplierFinancialPayment> paymentResult = SupplierFinancialPayment.Create(command.TransactionId, command.Amount,
-            command.AccountId, command.Notes ?? "دفعة على سلفة");
-        if (paymentResult.IsError)
-        {
-            return paymentResult.Errors;
-        }
-        context.SupplierFinancialPayments.Add(paymentResult.Value);
-
-        var supplierFinancialLedgerEntry = SupplierFinancialLedgerEntry.Create(command.TransactionId, command.Amount,
-            SupplierBalanceMovementType.Decrease, command.Notes ?? "دفعة على سلفة");
-
-        context.SupplierFinancialLedgerEntries.Add(supplierFinancialLedgerEntry);
-
-
         FinancialTransactionType financialTransactionType = transaction.Direction switch
         {
             SupplierFinancialTransactionDirection.FromSupplier => FinancialTransactionType.Outflow,
@@ -66,32 +27,98 @@ internal sealed class CreateSupplierFinancialPaymentCommandHandler(
             _ => FinancialTransactionType.Outflow
         };
 
+        decimal outstandingBalance = await context.SupplierFinancialLedgerEntries
+            .Where(e => e.SupplierFinancialTransactionId == command.TransactionId)
+            .SumAsync(e => e.MovementType == SupplierBalanceMovementType.Increase
+                ? e.Amount
+                : -e.Amount, cancellationToken);
+
+        decimal amount;
+        Guid accountId;
+
+        if (command.PaymentLegs is { Count: > 0 } legs)
+        {
+            Result<PaymentLegResult> paymentResult = await context.ProcessPaymentLegsAsync(
+                legs, transaction.Currency, financialTransactionType, FinancialReferenceType.SupplierLoan,
+                command.TransactionId, command.Notes ?? "دفعة على سلفة", cancellationToken);
+
+            if (paymentResult.IsError)
+            {
+                return paymentResult.Errors;
+            }
+
+            amount = paymentResult.Value.TotalBaseAmount;
+            accountId = paymentResult.Value.PrimaryAccountId;
+
+            if (amount > outstandingBalance)
+            { return SupplierFinancialErrors.PaymentExceedsBalance(amount, outstandingBalance); }
+        }
+        else
+        {
+            if (command.Amount <= 0)
+            { return SupplierFinancialErrors.PaymentAmountMustBePositive; }
+
+            if (command.Amount > outstandingBalance)
+            { return SupplierFinancialErrors.PaymentExceedsBalance(command.Amount, outstandingBalance); }
+
+            FinancialAccount? account = await context.FinancialAccounts
+                .FirstOrDefaultAsync(a => a.Id == command.AccountId, cancellationToken);
+
+            if (account is null)
+            { return SupplierFinancialErrors.AccountNotFound(command.AccountId); }
+
+            if (!account.IsActive)
+            { return SupplierFinancialErrors.AccountNotActive; }
+
+            if (account.Currency != transaction.Currency)
+            { return SupplierFinancialErrors.AccountCurrencyMismatch; }
+
+            amount = command.Amount;
+            accountId = command.AccountId;
+        }
+
+        Result<SupplierFinancialPayment> paymentResultValue = SupplierFinancialPayment.Create(command.TransactionId, amount,
+            accountId, command.Notes ?? "دفعة على سلفة");
+        if (paymentResultValue.IsError)
+        {
+            return paymentResultValue.Errors;
+        }
+        context.SupplierFinancialPayments.Add(paymentResultValue.Value);
+
+        var supplierFinancialLedgerEntry = SupplierFinancialLedgerEntry.Create(command.TransactionId, amount,
+            SupplierBalanceMovementType.Decrease, command.Notes ?? "دفعة على سلفة");
+
+        context.SupplierFinancialLedgerEntries.Add(supplierFinancialLedgerEntry);
+
         if (financialTransactionType == FinancialTransactionType.Outflow)
         {
-            decimal availableBalance = await context.GetAccountBalanceAsync(account.Id, cancellationToken);
+            decimal availableBalance = await context.GetAccountBalanceAsync(accountId, cancellationToken);
 
-            if (command.Amount > availableBalance)
+            if (amount > availableBalance)
             {
-                return FinancialAccountErrors.InsufficientBalance(availableBalance, command.Amount);
+                return FinancialAccountErrors.InsufficientBalance(availableBalance, amount);
             }
         }
 
-        Result<FinancialTransaction> financialTransaction = FinancialTransaction.Create(
-            account.Id,
-            account.Currency,
-            command.Amount,
-            financialTransactionType,
-            FinancialReferenceType.SupplierLoan,
-            command.TransactionId,
-            command.Notes ?? "دفعة على سلفة");
-        if (financialTransaction.IsError)
+        if (command.PaymentLegs is not { Count: > 0 })
         {
-            return financialTransaction.Errors;
+            Result<FinancialTransaction> financialTransaction = FinancialTransaction.Create(
+                accountId,
+                transaction.Currency,
+                amount,
+                financialTransactionType,
+                FinancialReferenceType.SupplierLoan,
+                command.TransactionId,
+                command.Notes ?? "دفعة على سلفة");
+            if (financialTransaction.IsError)
+            {
+                return financialTransaction.Errors;
+            }
+            context.FinancialTransactions.Add(financialTransaction.Value);
         }
-        context.FinancialTransactions.Add(financialTransaction.Value);
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return paymentResult.Value.Id;
+        return paymentResultValue.Value.Id;
     }
 }

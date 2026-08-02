@@ -123,12 +123,35 @@
                     </label>
                 </div>
             </div>
-
             <div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.02)] border border-outline-variant/50 p-md flex flex-col gap-sm">
+                <h3 class="font-label-md text-label-md font-bold text-secondary flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px]">request_quote</span>
+                    المبلغ المستحق <span class="text-error">*</span>
+                </h3>
+                <div class="relative">
+                    <input id="totalAmount" class="w-full bg-surface border border-outline-variant rounded-lg py-2 pl-3 pr-12 font-data-mono text-data-mono text-left focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-on-surface" dir="ltr" type="number" step="0.001" value="0" oninput="updateSummary(); onTotalAmountLegsChange()" />
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-secondary font-label-md pointer-events-none" id="summaryCurrency">---</span>
+                </div>
+                <p class="font-label-md text-label-md text-secondary">إجمالي المبلغ المستحق عن الفاتورة بعملة الفاتورة المحددة.</p>
+            </div>
+        </section>
+
+        <section class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.02)] border border-outline-variant/50 p-md flex flex-col gap-sm">
+            <div class="flex items-center justify-between">
                 <h3 class="font-label-md text-label-md font-bold text-secondary flex items-center gap-xs">
                     <span class="material-symbols-outlined text-[18px]">payments</span>
                     طريقة الدفع <span class="text-error">*</span>
                 </h3>
+                <label class="inline-flex items-center gap-xs cursor-pointer select-none">
+                    <span class="relative inline-flex items-center">
+                        <input id="purchaseLegsToggle" class="peer sr-only" type="checkbox" onchange="onPurchaseLegsToggle(this.checked)">
+                        <span class="w-9 h-5 rounded-full bg-outline-variant peer-checked:bg-primary transition-colors"></span>
+                        <span class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-white shadow peer-checked:right-auto peer-checked:left-0.5 transition-all pointer-events-none"></span>
+                    </span>
+                    <span class="font-label-md text-label-md text-secondary">دفع بعملات متعددة</span>
+                </label>
+            </div>
+            <div id="singlePaymentFields" class="flex flex-col gap-sm">
                 <div class="grid grid-cols-2 gap-sm">
                     <label class="cursor-pointer">
                         <input class="peer sr-only" name="paymentMethod" type="radio" value="1" onchange="onPaymentMethodChange()">
@@ -145,18 +168,27 @@
                         </span>
                     </label>
                 </div>
-                <div class="flex flex-col gap-xs mt-sm p-sm bg-surface-container-low rounded-lg border border-outline-variant/50">
-                    <label class="font-label-md text-label-md text-secondary">حساب الدفع <span class="text-error">*</span></label>
-                    <select id="accountSelect" disabled class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary text-body-md font-body-md text-on-surface disabled:opacity-60 disabled:cursor-not-allowed">
-                        <option value="">اختر العملة وطريقة الدفع أولاً</option>
-                    </select>
-                    <p id="accountHint" class="font-label-md text-label-md text-secondary">يظهر الحساب بعد اختيار العملة وطريقة الدفع.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-sm">
+                    <div class="flex flex-col gap-xs p-sm bg-surface-container-low rounded-lg border border-outline-variant/50">
+                        <label class="font-label-md text-label-md text-secondary">المبلغ المدفوع الآن</label>
+                        <input id="amountPaid" class="bg-transparent border border-outline-variant rounded-lg px-sm py-2 font-data-mono text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none text-left" dir="ltr" type="number" step="0.001" value="0" oninput="updateSummary()" />
+                        <p class="font-label-md text-label-md text-secondary">الرصيد المتبقي يُسجل ديناً على المشتري.</p>
+                    </div>
+                    <div class="flex flex-col gap-xs p-sm bg-surface-container-low rounded-lg border border-outline-variant/50">
+                        <label class="font-label-md text-label-md text-secondary">حساب الدفع <span class="text-error">*</span></label>
+                        <select id="accountSelect" disabled class="w-full bg-surface border border-outline-variant rounded-lg py-2 px-3 focus:outline-none focus:border-primary text-body-md font-body-md text-on-surface disabled:opacity-60 disabled:cursor-not-allowed">
+                            <option value="">اختر العملة وطريقة الدفع أولاً</option>
+                        </select>
+                        <p id="accountHint" class="font-label-md text-label-md text-secondary">يظهر الحساب بعد اختيار العملة وطريقة الدفع.</p>
+                    </div>
                 </div>
                 <div id="referenceWrapper" class="hidden flex flex-col gap-xs">
                     <label class="font-label-md text-label-md text-secondary">رقم حساب البائع (اختياري)</label>
                     <input id="sellerAccountNumber" class="bg-transparent border border-outline-variant rounded-lg px-sm py-2 font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="رقم الحوالة" type="text" />
                 </div>
             </div>
+            <!-- Multi-Currency Payment Legs Editor (shown when toggle enabled) -->
+            <div id="purchaseLegsEditor" class="hidden"></div>
         </section>
 
         <section class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.02)] border border-outline-variant/50 p-md">
@@ -184,16 +216,16 @@
                     </div>
                 </div>
                 <div class="bg-surface p-sm rounded-lg border border-outline-variant flex flex-col items-center justify-center mt-xs">
-                    <span class="font-label-md text-secondary mb-1">المبلغ المستحق <span class="text-error">*</span></span>
+                    <span class="font-label-md text-secondary mb-1">المبلغ المستحق</span>
                     <div class="flex items-baseline gap-xs w-full justify-center">
-                        <input id="totalAmount" class="w-28 bg-transparent border-b-2 border-primary text-center font-display-lg text-display-lg font-bold text-primary tracking-tight outline-none" dir="ltr" type="number" step="0.001" value="0" oninput="updateSummary()" />
-                        <span class="font-data-mono text-secondary" id="summaryCurrency">---</span>
+                        <span class="font-display-lg text-display-lg font-bold text-primary tracking-tight font-data-mono" id="summaryTotalAmount">0.000</span>
+                        <span class="font-data-mono text-secondary" id="summaryCurrencyMain">---</span>
                     </div>
                 </div>
                 <div class="flex flex-col gap-sm bg-surface-container-low p-sm rounded-lg border border-outline-variant/50">
                     <div class="flex justify-between items-center">
                         <span class="text-secondary">المبلغ المدفوع</span>
-                        <input id="amountPaid" class="w-28 bg-surface border border-outline-variant rounded px-2 py-1 font-data-mono text-left" dir="ltr" type="number" step="0.001" value="0" oninput="updateSummary()" />
+                        <span class="font-data-mono font-bold text-primary" id="summaryPaidAmount">0.000</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-secondary">الرصيد المتبقي</span>
@@ -210,5 +242,6 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/payment-legs.js" asp-append-version="true"></script>
     <script src="~/js/customer-purchase-invoices.js" asp-append-version="true"></script>
 }
