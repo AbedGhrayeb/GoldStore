@@ -10,7 +10,7 @@
 
     <!-- Google Fonts: IBM Plex Sans Arabic (preloaded for fast render) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
@@ -46,7 +46,7 @@
             <!-- Nav links -->
             <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
                <p class="px-3 pb-1 text-xs font-label-md text-secondary uppercase tracking-wider">لوحة القيادة</p>
-                <a href="#" class="nav-link" data-page="dashboard">
+                <a asp-controller="Home" asp-action="Index" class="nav-link" data-page="dashboard">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>
                     لوحة القيادة
                 </a> 

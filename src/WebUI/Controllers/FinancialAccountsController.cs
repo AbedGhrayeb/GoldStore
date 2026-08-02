@@ -102,10 +102,10 @@ public class FinancialAccountsController(
     }
 
     [HttpGet]
-    public async Task<JsonResult> GetRecentTransactions(CancellationToken cancellationToken)
+    public async Task<JsonResult> GetRecentTransactions(int? count = null, CancellationToken cancellationToken = default)
     {
         Result<List<RecentTransactionResponse>> result = await getRecentTransactionsHandler.Handle(
-            new GetRecentTransactionsQuery(20), cancellationToken);
+            new GetRecentTransactionsQuery(count ?? 20), cancellationToken);
 
         if (!result.IsSuccess)
         {

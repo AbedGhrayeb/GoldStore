@@ -6,26 +6,27 @@
 <!-- ── KPI CARDS ───────────────────────── -->
 <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
 
-    <!-- Card: إجمالي رصيد الذهب -->
+    <!-- Card: سعر الذهب -->
     <div class="kpi-card">
-        <div class="kpi-icon bg-primary-cont text-on-primary-cont">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" /></svg>
+        <div class="kpi-icon bg-amber-100 text-amber-700">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9" /><path d="M12 7v10M15 9.5a3 3 0 00-3-2.5 3 3 0 100 5 3 3 0 010 5 3 3 0 01-3-2.5" /></svg>
         </div>
         <div class="flex-1 text-right">
-            <p class="kpi-label">إجمالي رصيد الذهب</p>
-            <p class="kpi-value">4,520 <span class="kpi-unit">جم</span></p>
+            <p class="kpi-label">سعر الذهب (عيار 21 / جم)</p>
+            <p class="kpi-value"><span id="goldPriceValue" class="font-data-mono">—</span> <span class="kpi-unit" id="goldPriceUnit"></span></p>
+            <div id="goldPriceChange"></div>
         </div>
-        <span class="badge-up">↑ 2.4%</span>
     </div>
 
     <!-- Card: معادل عيار 21 -->
     <div class="kpi-card">
-        <div class="kpi-icon bg-amber-100 text-amber-700">
+        <div class="kpi-icon bg-primary-cont text-on-primary-cont">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
         </div>
         <div class="flex-1 text-right">
             <p class="kpi-label">معادل عيار 21</p>
-            <p class="kpi-value">3,980 <span class="kpi-unit">جم</span></p>
+            <p class="kpi-value"><span id="goldWeightValue" class="font-data-mono">—</span> <span class="kpi-unit" id="goldWeightUnit"></span></p>
+            <p class="text-xs text-secondary mt-0.5" id="goldWeightSub"></p>
         </div>
     </div>
 
@@ -35,9 +36,8 @@
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" /></svg>
         </div>
         <div class="flex-1 text-right">
-            <p class="kpi-label">أرصدة النقدية (JOD)</p>
-            <p class="kpi-value">125,400 <span class="kpi-unit">د.أ</span></p>
-            <p class="text-xs text-muted mt-0.5">ILS: ₪80K &nbsp;·&nbsp; USD: $45K</p>
+            <p class="kpi-label">أرصدة النقدية</p>
+            <div id="cashBalanceRows" class="mt-1 flex flex-col gap-1"></div>
         </div>
     </div>
 
@@ -48,7 +48,7 @@
         </div>
         <div class="flex-1 text-right">
             <p class="kpi-label">أرصدة البنوك</p>
-            <p class="kpi-value">450,000 <span class="kpi-unit">د.أ</span></p>
+            <div id="bankBalanceRows" class="mt-1 flex flex-col gap-1"></div>
         </div>
     </div>
 
@@ -57,52 +57,24 @@
 <!-- ── CHART + STATS ROW ──────────────── -->
 <section class="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
-    <!-- Gold Price Chart (spans 3 cols on lg) -->
+    <!-- Gold Inventory Trend (spans 3 cols on lg) -->
     <div class="lg:col-span-3 card">
         <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-            <h2 class="section-title">مؤشر أسعار الذهب</h2>
-            <div class="flex gap-1.5">
-                <button class="tab-btn active" data-period="day">اليوم</button>
-                <button class="tab-btn" data-period="week">أسبوع</button>
-                <button class="tab-btn" data-period="month">شهر</button>
+            <h2 class="section-title">مخزون الذهب (معادل عيار 21)</h2>
+            <div class="flex gap-1.5" id="trendTabs">
+                <button type="button" class="tab-btn active" data-period="week">أسبوع</button>
+                <button type="button" class="tab-btn" data-period="month">شهر</button>
             </div>
         </div>
         <div class="relative h-52 sm:h-64">
-            <canvas id="goldChart"></canvas>
+            <canvas id="goldTrendChart"></canvas>
         </div>
     </div>
 
-    <!-- Today's Stats (spans 2 cols on lg) -->
+    <!-- Today's Employee Stats (spans 2 cols on lg) -->
     <div class="lg:col-span-2 card flex flex-col gap-4">
         <h2 class="section-title">إحصائيات اليوم</h2>
-
-        <!-- Sales -->
-        <div>
-            <div class="flex justify-between items-center mb-1.5">
-                <span class="stat-label">مبيعات اليوم</span>
-                <span class="stat-value text-gold font-semibold">150 جم</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-bar bg-gold" style="width: 75%"></div>
-            </div>
-        </div>
-
-        <!-- Purchases -->
-        <div>
-            <div class="flex justify-between items-center mb-1.5">
-                <span class="stat-label">مشتريات الذهب</span>
-                <span class="stat-value text-gray-500 font-semibold">80 جم</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-bar bg-gray-400" style="width: 40%"></div>
-            </div>
-        </div>
-
-        <!-- Divider -->
-        <div class="border-t border-outline-var pt-3 mt-auto">
-            <p class="stat-label text-right">أجور التصنيع المستحقة</p>
-            <p class="text-xl font-bold text-on-surface text-right mt-1">4,200 <span class="text-sm font-normal text-muted">د.أ</span></p>
-        </div>
+        <div id="employeeStats" class="flex flex-col gap-3"></div>
     </div>
 
 </section>
@@ -110,8 +82,8 @@
 <!-- ── RECENT TRANSACTIONS ────────────── -->
 <section class="card">
     <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 class="section-title">أحدث العمليات</h2>
-        <a href="#" class="text-sm text-gold hover:underline flex items-center gap-1">
+        <h2 class="section-title">أحدث الحركات المالية</h2>
+        <a asp-controller="FinancialTransactions" asp-action="Index" class="text-sm text-primary hover:underline flex items-center gap-1">
             عرض الكل
             <svg class="w-3.5 h-3.5 rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
         </a>
@@ -121,17 +93,15 @@
     <div class="overflow-x-auto -mx-4 lg:-mx-6 px-4 lg:px-6">
         <table class="w-full min-w-[640px] text-sm">
             <thead>
-                <tr class="border-b border-outline-var text-muted text-right">
-                    <th class="pb-2.5 font-medium">رقم المرجع</th>
-                    <th class="pb-2.5 font-medium">النوع</th>
-                    <th class="pb-2.5 font-medium">العميل / المورد</th>
-                    <th class="pb-2.5 font-medium">الوزن (جم)</th>
-                    <th class="pb-2.5 font-medium">القيمة</th>
+                <tr class="border-b border-outline-variant text-secondary text-right">
                     <th class="pb-2.5 font-medium">التاريخ</th>
-                    <th class="pb-2.5 font-medium">الحالة</th>
+                    <th class="pb-2.5 font-medium">النوع</th>
+                    <th class="pb-2.5 font-medium">الحساب</th>
+                    <th class="pb-2.5 font-medium">المبلغ</th>
+                    <th class="pb-2.5 font-medium">الاتجاه</th>
                 </tr>
             </thead>
-            <tbody id="tx-table-body" class="divide-y divide-outline-var/50">
+            <tbody id="recent-transactions-body" class="divide-y divide-outline-variant/50">
                 <!-- Rows injected by JS -->
             </tbody>
         </table>
@@ -140,4 +110,6 @@
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="~/js/gold-prices.js" asp-append-version="true"></script>
+    <script src="~/js/home.js" asp-append-version="true"></script>
 }

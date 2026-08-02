@@ -3,6 +3,7 @@ using Application.Features.StoreOperations.GetDetail;
 using Application.Features.StoreOperations.GetEmployees;
 using Application.Features.StoreOperations.GetKpis;
 using Application.Features.StoreOperations.GetPaged;
+using Application.Features.StoreOperations.GetTodayEmployeeStats;
 using Application.Features.StoreOperations.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,8 @@ public class StoreOperationsController(
     IQueryHandler<GetStoreOperationsQuery, PagedStoreOperationsResponse> getPagedHandler,
     IQueryHandler<GetStoreOperationsKpisQuery, StoreOperationsKpiResponse> getKpisHandler,
     IQueryHandler<GetStoreEmployeesQuery, List<EmployeeResponse>> getEmployeesHandler,
-    IQueryHandler<GetStoreOperationDetailQuery, StoreOperationDetailResponse> getDetailHandler) : Controller
+    IQueryHandler<GetStoreOperationDetailQuery, StoreOperationDetailResponse> getDetailHandler,
+    IQueryHandler<GetTodayEmployeeStatsQuery, List<EmployeeDayStatsResponse>> getTodayEmployeeStatsHandler) : Controller
 {
     public IActionResult Index() => View();
 
@@ -48,6 +50,20 @@ public class StoreOperationsController(
     {
         Result<StoreOperationsKpiResponse> result = await getKpisHandler.Handle(
             new GetStoreOperationsKpisQuery(), cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return Json(new { success = false, error = result.TopError.Description });
+        }
+
+        return Json(result.Value);
+    }
+
+    [HttpGet]
+    public async Task<JsonResult> GetTodayEmployeeStats(CancellationToken cancellationToken)
+    {
+        Result<List<EmployeeDayStatsResponse>> result = await getTodayEmployeeStatsHandler.Handle(
+            new GetTodayEmployeeStatsQuery(), cancellationToken);
 
         if (!result.IsSuccess)
         {

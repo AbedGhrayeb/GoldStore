@@ -4,6 +4,7 @@ using Application.Features.GoldPrices.GetCurrent;
 using Application.Features.Inventory.GoldLedger;
 using Application.Features.Inventory.GoldLedger.GetKpis;
 using Application.Features.Inventory.GoldLedger.GetPaged;
+using Application.Features.Inventory.GoldLedger.GetTrend;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
@@ -14,7 +15,8 @@ namespace WebUI.Controllers;
 public class InventoryController(
     IQueryHandler<GetGoldPricesQuery, GoldPricesResponse> getGoldPricesHandler,
     IQueryHandler<GetInventoryKpisQuery, InventoryKpiResponse> getKpisHandler,
-    IQueryHandler<GetGoldLedgerQuery, PaginatedList<GoldLedgerEntryResponse>> getLedgerHandler) : BaseController
+    IQueryHandler<GetGoldLedgerQuery, PaginatedList<GoldLedgerEntryResponse>> getLedgerHandler,
+    IQueryHandler<GetGoldLedgerTrendQuery, List<GoldTrendPoint>> getTrendHandler) : BaseController
 {
     public IActionResult Index() => View();
 
@@ -37,6 +39,21 @@ public class InventoryController(
     public async Task<JsonResult> GetKpis(CancellationToken cancellationToken)
     {
         Result<InventoryKpiResponse> result = await getKpisHandler.Handle(new GetInventoryKpisQuery(), cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return Json(new { success = false, error = result.TopError.Description });
+        }
+
+        return Json(result.Value);
+    }
+
+    [HttpGet]
+    public async Task<JsonResult> GetTrend(int days = 7, CancellationToken cancellationToken = default)
+    {
+        Result<List<GoldTrendPoint>> result = await getTrendHandler.Handle(
+            new GetGoldLedgerTrendQuery(days),
+            cancellationToken);
 
         if (!result.IsSuccess)
         {
