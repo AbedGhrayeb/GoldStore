@@ -1,5 +1,6 @@
 using Application.Abstractions.Authentication;
 using Domain.Common;
+using Domain.Employees;
 using Domain.Finance;
 using Domain.Users;
 using Infrastructure.Database;
@@ -21,7 +22,7 @@ public class ApplicationDbContextInitializer(
     private readonly IConfiguration _configuration = configuration;
     private readonly IPasswordHasher _passwordHasher = passwordHasher;
 
-    public async Task InitializeAsync(CancellationToken cancellationToken=default)
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
 #pragma warning disable S2139 // Exceptions should be either logged or rethrown but not both
         try
@@ -36,7 +37,7 @@ public class ApplicationDbContextInitializer(
 #pragma warning restore S2139 // Exceptions should be either logged or rethrown but not both
     }
 
-    public async Task SeedAsync(CancellationToken cancellationToken=default)
+    public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
 #pragma warning disable S2139 // Exceptions should be either logged or rethrown but not both
         try
@@ -51,14 +52,14 @@ public class ApplicationDbContextInitializer(
 #pragma warning restore S2139 // Exceptions should be either logged or rethrown but not both
     }
 
-    public async Task TrySeedAsync(CancellationToken cancellationToken=default)
+    public async Task TrySeedAsync(CancellationToken cancellationToken = default)
     {
         // Default users
         if (!_context.Users.Any())
         {
             string defaultPassword = _configuration["DefaultUserPassword"]!;
             string hashedPassword = _passwordHasher.Hash(defaultPassword);
-            Result<User> defaultUser = User.Create(Guid.CreateVersion7(), "admin@goldstore", "Admin", "Admin", hashedPassword);
+            Result<User> defaultUser = User.Create(Guid.CreateVersion7(), "admin@goldstore", "Admin", "Admin", hashedPassword, RoleEnum.Admin.ToString());
 
             _context.Users.Add(defaultUser.Value);
         }
@@ -84,7 +85,7 @@ public class ApplicationDbContextInitializer(
 
 public static class InitializerExtensions
 {
-    public static async Task InitializeDatabaseAsync(this WebApplication app,CancellationToken cancellationToken=default)
+    public static async Task InitializeDatabaseAsync(this WebApplication app, CancellationToken cancellationToken = default)
     {
         using IServiceScope scope = app.Services.CreateScope();
 

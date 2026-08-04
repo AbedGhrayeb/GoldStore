@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using Domain.Employees;
 
 namespace WebUI.Models.User;
 
@@ -15,5 +16,6 @@ public sealed class CreateUserModel
     [Required, MinLength(8), MaxLength(20)]
     [PasswordPropertyText]
     public string Password { get; set; } = string.Empty;
+    public RoleEnum Role { get; set; } = RoleEnum.None;
 }
 

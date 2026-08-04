@@ -17,7 +17,7 @@ internal sealed class CreateUserCommandHandler(IApplicationDbContext context, IP
             return UserErrors.EmailNotUnique;
         }
 
-        Result<User> user = User.Create(Guid.CreateVersion7(), command.Email, command.FirstName, command.LastName, passwordHasher.Hash(command.Password));
+        Result<User> user = User.Create(Guid.CreateVersion7(), command.Email, command.FirstName, command.LastName, passwordHasher.Hash(command.Password), command.Role.ToString());
         if (user.IsError)
         {
             return user.Errors;

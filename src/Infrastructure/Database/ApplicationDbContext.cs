@@ -2,14 +2,15 @@
 using Domain.Catalog;
 using Domain.CustomerPurchases;
 using Domain.Debts;
+using Domain.Employees;
 using Domain.Expenses;
 using Domain.Finance;
 using Domain.Inventory;
 using Domain.Sales;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
-using Domain.Employees;
 using Domain.Users;
+using Domain.Users.RefreshToken;
 using Infrastructure.DomainEvents;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -70,6 +71,8 @@ public sealed class ApplicationDbContext(
     public DbSet<CustomerPurchaseInvoice> CustomerPurchaseInvoices { get; set; }
 
     public DbSet<CustomerPurchaseInvoiceItem> CustomerPurchaseInvoiceItems { get; set; }
+
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

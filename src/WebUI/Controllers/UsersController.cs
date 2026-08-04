@@ -104,7 +104,7 @@ public class UsersController(
         }
 
         Result<Guid> result = await createUserHandler.Handle(
-            new CreateUserCommand(model.Email, model.FirstName, model.LastName, model.Password),
+            new CreateUserCommand(model.Email, model.FirstName, model.LastName, model.Password, model.Role),
             cancellationToken);
 
         if (!result.IsSuccess)

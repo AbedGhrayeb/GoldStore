@@ -55,12 +55,12 @@ public static class DependencyInjection
     {
         string? connectionString = configuration.GetConnectionString("Database");
 
-         services.AddDbContext<ApplicationDbContext>((sp, options) =>
-         {
-             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
-             options.UseSqlServer(connectionString, sqlServerOptions =>
-                              sqlServerOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName));
-         });
+        services.AddDbContext<ApplicationDbContext>((sp, options) =>
+        {
+            options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
+            options.UseSqlServer(connectionString, sqlServerOptions =>
+                             sqlServerOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName));
+        });
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ApplicationDbContextInitializer>();
@@ -94,6 +94,7 @@ public static class DependencyInjection
         services.AddScoped<IUserContext, UserContext>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IAuthSessionManager, CookieAuthSessionManager>();
+        services.AddScoped<ITokenProvider, TokenProvider>();
 
         return services;
     }

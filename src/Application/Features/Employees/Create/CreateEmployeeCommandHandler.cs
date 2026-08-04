@@ -77,7 +77,8 @@ internal sealed class CreateEmployeeCommandHandler(IApplicationDbContext context
             command.NewUserEmail!,
             command.FirstName,
             command.LastName,
-            passwordHasher.Hash(command.NewUserPassword!));
+            passwordHasher.Hash(command.NewUserPassword!),
+            command.Role.ToString());
 
         if (userResult.IsError)
         {
