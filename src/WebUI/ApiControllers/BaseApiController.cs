@@ -3,29 +3,28 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using SharedKernel.Result;
 
-namespace WebUI.Controllers;
+namespace WebUI.ApiControllers;
 
-[Authorize(Policy = "MvcPolicy")]
-public abstract class BaseController : Controller
+[Route("api/[controller]")]
+[ApiController]
+[Authorize(Policy = "ApiPolicy")]
+public class BaseApiController : ControllerBase
 {
-    protected ActionResult Problem(List<Error> errors)
+    public ActionResult Problem(List<Error> errors)
     {
-        if (errors.Count is 0)
+        if (errors != null && errors.Any())
         {
             return Problem();
         }
-
-        if (errors.All(error => error.Type == ErrorType.Validation))
+        if (errors.All(e => e.Type == ErrorType.Validation))
         {
             return ValidationProblem(errors);
         }
-
         return Problem(errors[0]);
     }
-
-    private ActionResult Problem(Error error)
+    private ObjectResult Problem(Error error)
     {
-        int statusCode = error.Type switch
+        var statusCode = error.Type switch
         {
             ErrorType.Conflict => StatusCodes.Status409Conflict,
             ErrorType.Validation => StatusCodes.Status400BadRequest,
@@ -36,7 +35,6 @@ public abstract class BaseController : Controller
 
         return Problem(statusCode: statusCode, title: error.Description);
     }
-
     private ActionResult ValidationProblem(List<Error> errors)
     {
         var modelStateDictionary = new ModelStateDictionary();

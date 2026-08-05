@@ -19,7 +19,7 @@ public sealed class GenerateTokenQueryHandler(ILogger<GenerateTokenQueryHandler>
     private readonly ITokenProvider _tokenProvider = tokenProvider;
     private readonly IPasswordHasher _passwordHasher = passwordHasher;
 
-    public async Task<Result<TokenResponse>> Handle(GenerateTokenQuery query, CancellationToken ct)
+    public async Task<Result<TokenResponse>> Handle(GenerateTokenQuery query, CancellationToken ct = default)
     {
         var user = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == query.Email, ct);
 
@@ -28,7 +28,7 @@ public sealed class GenerateTokenQueryHandler(ILogger<GenerateTokenQueryHandler>
             return ApplicationErrors.LoginFailed;
         }
 
-        var verified = _passwordHasher.Verify(query.Password,user.PasswordHash);
+        var verified = _passwordHasher.Verify(query.Password, user.PasswordHash);
         if (!verified)
         {
             return ApplicationErrors.LoginFailed;

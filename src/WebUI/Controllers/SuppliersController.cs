@@ -19,7 +19,7 @@ public class SuppliersController(
     IQueryHandler<GetSupplierByIdQuery, SupplierDetailResponse> getSupplierByIdHandler,
     ICommandHandler<CreateSupplierCommand, Guid> createSupplierHandler,
     ICommandHandler<UpdateSupplierCommand, Updated> updateSupplierHandler,
-    ICommandHandler<ToggleActiveSupplierCommand, Updated> toggleActiveHandler) : Controller
+    ICommandHandler<ToggleActiveSupplierCommand, Updated> toggleActiveHandler) : BaseController
 {
     public IActionResult Index()
     {

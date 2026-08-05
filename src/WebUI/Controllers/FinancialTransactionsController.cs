@@ -12,7 +12,7 @@ namespace WebUI.Controllers;
 
 [Authorize]
 public class FinancialTransactionsController(
-    IQueryHandler<GetPagedTransactionsQuery, PaginatedList<RecentTransactionResponse>> getPagedTransactionsHandler) : Controller
+    IQueryHandler<GetPagedTransactionsQuery, PaginatedList<RecentTransactionResponse>> getPagedTransactionsHandler) : BaseController
 {
     public IActionResult Index()
     {

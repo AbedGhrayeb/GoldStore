@@ -17,7 +17,7 @@ public class StoreOperationsController(
     IQueryHandler<GetStoreOperationsKpisQuery, StoreOperationsKpiResponse> getKpisHandler,
     IQueryHandler<GetStoreEmployeesQuery, List<EmployeeResponse>> getEmployeesHandler,
     IQueryHandler<GetStoreOperationDetailQuery, StoreOperationDetailResponse> getDetailHandler,
-    IQueryHandler<GetTodayEmployeeStatsQuery, List<EmployeeDayStatsResponse>> getTodayEmployeeStatsHandler) : Controller
+    IQueryHandler<GetTodayEmployeeStatsQuery, List<EmployeeDayStatsResponse>> getTodayEmployeeStatsHandler) : BaseController
 {
     public IActionResult Index() => View();
 

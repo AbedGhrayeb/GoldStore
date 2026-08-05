@@ -29,7 +29,7 @@ public class EmployeesController(
     ICommandHandler<CreateEmployeeCommand, Guid> createEmployeeHandler,
     ICommandHandler<UpdateEmployeeCommand, Updated> updateEmployeeHandler,
     ICommandHandler<ToggleActiveEmployeeCommand, Updated> toggleActiveHandler,
-    ICommandHandler<PaySalaryCommand, Guid> paySalaryHandler) : Controller
+    ICommandHandler<PaySalaryCommand, Guid> paySalaryHandler) : BaseController
 {
     public IActionResult Index()
     {

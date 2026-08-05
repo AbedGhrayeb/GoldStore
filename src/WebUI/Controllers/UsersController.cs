@@ -20,7 +20,7 @@ public class UsersController(
     ICommandHandler<CreateUserCommand, Guid> createUserHandler,
     ICommandHandler<UpdateUserCommand, bool> updateUserHandler,
     ICommandHandler<DeleteUserCommand, bool> deleteUserHandler,
-    IUserContext userContext) : Controller
+    IUserContext userContext) : BaseController
 {
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {

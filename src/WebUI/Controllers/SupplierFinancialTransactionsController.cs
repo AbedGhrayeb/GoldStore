@@ -22,7 +22,7 @@ public class SupplierFinancialTransactionsController(
     IQueryHandler<GetFinancialAccountsQuery, List<FinancialAccountResponse>> getFinancialAccountsHandler,
     IQueryHandler<GetPaymentsByTransactionIdQuery, List<SupplierFinancialPaymentResponse>> getPaymentsHandler,
     ICommandHandler<CreateSupplierFinancialTransactionCommand, Guid> createHandler,
-    ICommandHandler<CreateSupplierFinancialPaymentCommand, Guid> paymentHandler) : Controller
+    ICommandHandler<CreateSupplierFinancialPaymentCommand, Guid> paymentHandler) : BaseController
 {
     public IActionResult Index() => View();
 

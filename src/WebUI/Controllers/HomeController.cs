@@ -5,7 +5,7 @@ using WebUI.Models;
 
 namespace WebUI.Controllers;
 
-public class HomeController : Controller
+public class HomeController : BaseController
 {
     [Authorize]
     public IActionResult Index()

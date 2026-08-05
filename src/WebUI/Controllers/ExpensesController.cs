@@ -29,7 +29,7 @@ public class ExpensesController(
     IQueryHandler<GetExpenseCategoriesQuery, List<ExpenseCategoryResponse>> getCategoriesHandler,
     ICommandHandler<CreateExpenseCategoryCommand, Guid> createCategoryHandler,
     ICommandHandler<UpdateExpenseCategoryCommand, Updated> updateCategoryHandler,
-    ICommandHandler<DeleteExpenseCategoryCommand, Deleted> deleteCategoryHandler) : Controller
+    ICommandHandler<DeleteExpenseCategoryCommand, Deleted> deleteCategoryHandler) : BaseController
 {
     public IActionResult Index() => View();
 

@@ -1,8 +1,8 @@
 using Application;
 using Infrastructure;
 using Infrastructure.Data;
+using Scalar.AspNetCore;
 using Serilog;
-using WebUI;
 using WebUI.Extensions;
 
 namespace WebUI
@@ -52,6 +52,16 @@ namespace WebUI
             if (app.Environment.IsDevelopment())
             {
                 await app.InitializeDatabaseAsync();
+                app.MapOpenApi();
+                app.MapScalarApiReference(static options =>
+                {
+                    options.Title = "Gold Store API";
+                    options.Theme = ScalarTheme.BluePlanet;
+
+                    options.ShowSidebar = true;
+                    options.HideModels = false;
+                });
+
             }
 
             //app.MapHealthChecks("health", new HealthCheckOptions
