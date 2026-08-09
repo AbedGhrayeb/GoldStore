@@ -1,6 +1,7 @@
 ﻿using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Services;
+using Application.Abstractions.Tenancy;
 using Infrastructure.Authentication;
 using Infrastructure.Authorization;
 using Infrastructure.Data;
@@ -8,12 +9,15 @@ using Infrastructure.Database;
 using Infrastructure.Database.Interceptors;
 using Infrastructure.DomainEvents;
 using Infrastructure.GoldPrices;
+using Infrastructure.Platform;
+using Infrastructure.Tenancy;
 using Infrastructure.Time;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +33,7 @@ public static class DependencyInjection
         services
             .AddServices(configuration)
             .AddDatabase(configuration)
+            .AddTenancy(configuration)
             .AddAuthenticationInternal()
             .AddAuthorizationInternal();
 
@@ -57,13 +62,57 @@ public static class DependencyInjection
 
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
+            // Escape hatch: tenants with a dedicated connection string run on their own
+            // database; everyone else shares the main database (schema per tenant).
+            ITenantContext tenantContext = sp.GetRequiredService<ITenantContext>();
+            string effectiveConnectionString = tenantContext is { IsResolved: true, ConnectionString: not null }
+                ? tenantContext.ConnectionString
+                : connectionString!;
+
             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
+            options.ReplaceService<IModelCacheKeyFactory, TenantModelCacheKeyFactory>();
+            // The history table lives in the tenant schema (placeholder $tenant) so each
+            // tenant tracks its own applied migrations — a shared dbo history table would
+            // make the idempotent provision script skip all tables for later tenants.
+            options.UseSqlServer(effectiveConnectionString, sqlServerOptions =>
+                             sqlServerOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, ApplicationDbContext.PlaceholderSchema));
+        });
+
+        // Platform catalog (tenants, plans, subscriptions, platform admins).
+        // Same SQL Server database, isolated under the "platform" schema.
+        // No interceptors: auditing is tenant-user based and does not apply here.
+        services.AddDbContext<PlatformDbContext>((sp, options) =>
+        {
             options.UseSqlServer(connectionString, sqlServerOptions =>
-                             sqlServerOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName));
+                             sqlServerOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, PlatformDbContext.Schema));
         });
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IPlatformDbContext>(sp => sp.GetRequiredService<PlatformDbContext>());
         services.AddScoped<ApplicationDbContextInitializer>();
+        services.AddScoped<PlatformDbContextInitializer>();
+        return services;
+    }
+
+    private static IServiceCollection AddTenancy(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<TenancyOptions>(configuration.GetSection(TenancyOptions.SectionName));
+
+        // One scoped instance behind both contracts: readers use ITenantContext,
+        // the middleware/background services use ITenantContextSetter to establish it.
+        services.AddScoped<TenantContext>();
+        services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
+        services.AddScoped<ITenantContextSetter>(sp => sp.GetRequiredService<TenantContext>());
+        services.AddScoped<ITenantResolver, TenantResolver>();
+
+        // Singletons: both create their own scopes for tenant-scoped work.
+        services.AddSingleton<ITenantSchemaProvisioner, TenantSchemaProvisioner>();
+        services.AddSingleton<ITenantSeeder, TenantSeeder>();
+
+        // Startup migration runner for all active tenants (adopts legacy schemas too).
+        services.AddSingleton<ITenantMigrationRunner, TenantMigrationRunner>();
+        services.AddHostedService<TenantMigrationHostedService>();
+
         return services;
     }
 
@@ -95,6 +144,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IAuthSessionManager, CookieAuthSessionManager>();
         services.AddScoped<ITokenProvider, TokenProvider>();
+        services.AddSingleton<IPlatformTokenProvider, PlatformTokenProvider>();
 
         return services;
     }

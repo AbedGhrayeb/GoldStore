@@ -12,7 +12,7 @@ public class BaseApiController : ControllerBase
 {
     public ActionResult Problem(List<Error> errors)
     {
-        if (errors != null && errors.Any())
+        if (errors is null || errors.Count is 0)
         {
             return Problem();
         }
@@ -29,7 +29,8 @@ public class BaseApiController : ControllerBase
             ErrorType.Conflict => StatusCodes.Status409Conflict,
             ErrorType.Validation => StatusCodes.Status400BadRequest,
             ErrorType.NotFound => StatusCodes.Status404NotFound,
-            ErrorType.Unauthorized => StatusCodes.Status403Forbidden,
+            ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+            ErrorType.Forbidden => StatusCodes.Status403Forbidden,
             _ => StatusCodes.Status500InternalServerError,
         };
 

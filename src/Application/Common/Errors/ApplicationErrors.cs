@@ -9,7 +9,7 @@ public static class ApplicationErrors
            "ApplicationErrors.Users.NotFoundAnyUsers",
            "المستخدم غير موجود.");
     public static Error LoginFailed =>
-    Error.Failure(
+    Error.Unauthorized(
            "ApplicationErrors.Users.LoginFailed",
            $"البريد الإلكتروني أو كلمة المرور غير صحيحة.");
     public static readonly Error TokenGenerationFailed = Error.Failure(

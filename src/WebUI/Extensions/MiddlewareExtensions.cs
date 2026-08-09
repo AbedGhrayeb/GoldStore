@@ -10,4 +10,18 @@ public static class MiddlewareExtensions
 
         return app;
     }
+
+    public static IApplicationBuilder UseTenantResolution(this IApplicationBuilder app)
+    {
+        app.UseMiddleware<TenantResolutionMiddleware>();
+
+        return app;
+    }
+
+    public static IApplicationBuilder UseReadOnlyTenantEnforcement(this IApplicationBuilder app)
+    {
+        app.UseMiddleware<ReadOnlyTenantMiddleware>();
+
+        return app;
+    }
 }

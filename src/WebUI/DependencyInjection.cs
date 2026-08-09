@@ -130,6 +130,24 @@ public static class DependencyInjection
                         Encoding.UTF8.GetBytes(jwtSettings["Secret"]!)
                     )
                 };
+            })
+            .AddJwtBearer(AuthConstants.PlatformBearerScheme, options =>
+            {
+                var jwtSettings = configuration.GetSection("Jwt");
+
+                options.TokenValidationParameters = new()
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSettings["Issuer"],
+                    ValidAudience = jwtSettings["PlatformAudience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtSettings["Secret"]!)
+                    )
+                };
             });
 
         services.AddAuthorization(options =>
@@ -148,6 +166,14 @@ public static class DependencyInjection
                     JwtBearerDefaults.AuthenticationScheme);
 
                 policy.RequireAuthenticatedUser();
+            });
+
+            options.AddPolicy(AuthConstants.PlatformApiPolicy, policy =>
+            {
+                policy.AuthenticationSchemes.Add(AuthConstants.PlatformBearerScheme);
+
+                policy.RequireAuthenticatedUser();
+                policy.RequireRole(AuthConstants.PlatformAdminRole);
             });
         });
         return services;
