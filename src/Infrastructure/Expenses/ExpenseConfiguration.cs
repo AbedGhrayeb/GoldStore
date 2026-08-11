@@ -24,8 +24,8 @@ internal sealed class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
             .HasForeignKey(e => e.ExpenseCategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(e => new { e.ExpenseDate });
-        builder.HasIndex(e => new { e.AccountId, e.ExpenseDate });
-        builder.HasIndex(e => new { e.ExpenseCategoryId, e.ExpenseDate });
+        builder.HasIndex(e => new { e.TenantId, e.ExpenseDate });
+        builder.HasIndex(e => new { e.TenantId, e.AccountId, e.ExpenseDate });
+        builder.HasIndex(e => new { e.TenantId, e.ExpenseCategoryId, e.ExpenseDate });
     }
 }

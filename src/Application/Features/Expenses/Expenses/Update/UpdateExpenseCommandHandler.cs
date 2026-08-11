@@ -13,13 +13,16 @@ internal sealed class UpdateExpenseCommandHandler(IApplicationDbContext context)
 {
     public async Task<Result<Updated>> Handle(UpdateExpenseCommand command, CancellationToken cancellationToken)
     {
-        Expense? expense = await context.Expenses.FindAsync([command.Id], cancellationToken);
+        Expense? expense = await context.Expenses
+            .FirstOrDefaultAsync(e => e.Id == command.Id, cancellationToken);
         if (expense is null)
         {
             return ExpenseErrors.NotFound(command.Id);
         }
 
-        FinancialAccount? account = await context.FinancialAccounts.FindAsync([command.AccountId], cancellationToken);
+        FinancialAccount? account = await context.FinancialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == command.AccountId, cancellationToken);
         if (account is null)
         {
             return Error.NotFound("Finance.AccountNotFound", "حساب الدفع غير موجود");

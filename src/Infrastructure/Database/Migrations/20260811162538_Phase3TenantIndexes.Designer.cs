@@ -4,6 +4,7 @@ using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260811162538_Phase3TenantIndexes")]
+    partial class Phase3TenantIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -68,7 +71,7 @@ namespace Infrastructure.Database.Migrations
                         .IsUnique()
                         .HasFilter("[ParentCategoryId] IS NOT NULL");
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("Domain.CustomerPurchases.CustomerPurchaseInvoice", b =>
@@ -167,7 +170,7 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("TenantId", "InvoiceNumber")
                         .IsUnique();
 
-                    b.ToTable("CustomerPurchaseInvoices", (string)null);
+                    b.ToTable("CustomerPurchaseInvoices");
                 });
 
             modelBuilder.Entity("Domain.CustomerPurchases.CustomerPurchaseInvoiceItem", b =>
@@ -225,7 +228,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "CustomerPurchaseInvoiceId");
 
-                    b.ToTable("CustomerPurchaseInvoiceItems", (string)null);
+                    b.ToTable("CustomerPurchaseInvoiceItems");
                 });
 
             modelBuilder.Entity("Domain.Debts.Debt", b =>
@@ -286,7 +289,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "Name");
 
-                    b.ToTable("Debts", (string)null);
+                    b.ToTable("Debts");
                 });
 
             modelBuilder.Entity("Domain.Debts.DebtLedgerEntry", b =>
@@ -335,7 +338,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "DebtId", "CreatedAtUtc");
 
-                    b.ToTable("DebtLedgerEntries", (string)null);
+                    b.ToTable("DebtLedgerEntries");
                 });
 
             modelBuilder.Entity("Domain.Employees.Employee", b =>
@@ -397,7 +400,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Employees", (string)null);
+                    b.ToTable("Employees");
                 });
 
             modelBuilder.Entity("Domain.Employees.SalaryPayment", b =>
@@ -467,7 +470,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "EmployeeId", "PaymentDate");
 
-                    b.ToTable("SalaryPayments", (string)null);
+                    b.ToTable("SalaryPayments");
                 });
 
             modelBuilder.Entity("Domain.Expenses.Expense", b =>
@@ -523,7 +526,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "ExpenseCategoryId", "ExpenseDate");
 
-                    b.ToTable("Expenses", (string)null);
+                    b.ToTable("Expenses");
                 });
 
             modelBuilder.Entity("Domain.Expenses.ExpenseCategory", b =>
@@ -560,7 +563,7 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("TenantId", "Name")
                         .IsUnique();
 
-                    b.ToTable("ExpenseCategories", (string)null);
+                    b.ToTable("ExpenseCategories");
                 });
 
             modelBuilder.Entity("Domain.Finance.FinancialAccount", b =>
@@ -615,7 +618,7 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("TenantId", "Name", "Currency")
                         .IsUnique();
 
-                    b.ToTable("FinancialAccounts", (string)null);
+                    b.ToTable("FinancialAccounts");
                 });
 
             modelBuilder.Entity("Domain.Finance.FinancialTransaction", b =>
@@ -687,7 +690,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "ReferenceType", "ReferenceId");
 
-                    b.ToTable("FinancialTransactions", (string)null);
+                    b.ToTable("FinancialTransactions");
                 });
 
             modelBuilder.Entity("Domain.Inventory.GoldLedgerEntry", b =>
@@ -750,7 +753,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "ReferenceType", "ReferenceId");
 
-                    b.ToTable("GoldLedgerEntries", (string)null);
+                    b.ToTable("GoldLedgerEntries");
                 });
 
             modelBuilder.Entity("Domain.Inventory.InventoryAdjustment", b =>
@@ -810,7 +813,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "Type", "CreatedAtUtc");
 
-                    b.ToTable("InventoryAdjustments", (string)null);
+                    b.ToTable("InventoryAdjustments");
                 });
 
             modelBuilder.Entity("Domain.Sales.SalesInvoice", b =>
@@ -905,7 +908,7 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("TenantId", "InvoiceNumber")
                         .IsUnique();
 
-                    b.ToTable("SalesInvoices", (string)null);
+                    b.ToTable("SalesInvoices");
                 });
 
             modelBuilder.Entity("Domain.Sales.SalesInvoiceItem", b =>
@@ -967,7 +970,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "SalesInvoiceId");
 
-                    b.ToTable("SalesInvoiceItems", (string)null);
+                    b.ToTable("SalesInvoiceItems");
                 });
 
             modelBuilder.Entity("Domain.SupplierOperations.SupplierDelivery", b =>
@@ -1033,7 +1036,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "SupplierId", "CreatedAtUtc");
 
-                    b.ToTable("SupplierDeliveries", (string)null);
+                    b.ToTable("SupplierDeliveries");
                 });
 
             modelBuilder.Entity("Domain.SupplierOperations.SupplierManufacturingPayment", b =>
@@ -1087,7 +1090,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "SupplierId", "CreatedAtUtc");
 
-                    b.ToTable("SupplierManufacturingPayments", (string)null);
+                    b.ToTable("SupplierManufacturingPayments");
                 });
 
             modelBuilder.Entity("Domain.SupplierOperations.SupplierScrapGoldPayment", b =>
@@ -1140,7 +1143,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "SupplierId", "CreatedAtUtc");
 
-                    b.ToTable("SupplierScrapGoldPayments", (string)null);
+                    b.ToTable("SupplierScrapGoldPayments");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.Supplier", b =>
@@ -1194,7 +1197,7 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("TenantId", "Name")
                         .IsUnique();
 
-                    b.ToTable("Suppliers", (string)null);
+                    b.ToTable("Suppliers");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.SupplierFinancialLedgerEntry", b =>
@@ -1243,7 +1246,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "SupplierFinancialTransactionId", "CreatedAtUtc");
 
-                    b.ToTable("SupplierFinancialLedgerEntries", (string)null);
+                    b.ToTable("SupplierFinancialLedgerEntries");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.SupplierFinancialPayment", b =>
@@ -1292,7 +1295,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "SupplierFinancialTransactionId", "CreatedAtUtc");
 
-                    b.ToTable("SupplierFinancialPayments", (string)null);
+                    b.ToTable("SupplierFinancialPayments");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.SupplierFinancialTransaction", b =>
@@ -1351,7 +1354,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "SupplierId", "CreatedAtUtc");
 
-                    b.ToTable("SupplierFinancialTransactions", (string)null);
+                    b.ToTable("SupplierFinancialTransactions");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.SupplierGoldLedgerEntry", b =>
@@ -1417,7 +1420,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "SupplierId", "CreatedAtUtc");
 
-                    b.ToTable("SupplierGoldLedgerEntries", (string)null);
+                    b.ToTable("SupplierGoldLedgerEntries");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.SupplierManufacturingLedgerEntry", b =>
@@ -1479,7 +1482,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "SupplierId", "CreatedAtUtc");
 
-                    b.ToTable("SupplierManufacturingLedgerEntries", (string)null);
+                    b.ToTable("SupplierManufacturingLedgerEntries");
                 });
 
             modelBuilder.Entity("Domain.Tenants.PlatformUser", b =>
@@ -1516,7 +1519,7 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("PlatformUsers", (string)null);
+                    b.ToTable("PlatformUsers");
                 });
 
             modelBuilder.Entity("Domain.Tenants.SubscriptionPlan", b =>
@@ -1555,7 +1558,7 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("Key")
                         .IsUnique();
 
-                    b.ToTable("SubscriptionPlans", (string)null);
+                    b.ToTable("SubscriptionPlans");
                 });
 
             modelBuilder.Entity("Domain.Tenants.Tenant", b =>
@@ -1605,7 +1608,7 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("Key")
                         .IsUnique();
 
-                    b.ToTable("Tenants", (string)null);
+                    b.ToTable("Tenants");
                 });
 
             modelBuilder.Entity("Domain.Tenants.TenantSettings", b =>
@@ -1657,7 +1660,7 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("TenantId")
                         .IsUnique();
 
-                    b.ToTable("TenantSettings", (string)null);
+                    b.ToTable("TenantSettings");
                 });
 
             modelBuilder.Entity("Domain.Tenants.TenantSubscription", b =>
@@ -1705,7 +1708,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId", "EndsAtUtc");
 
-                    b.ToTable("TenantSubscriptions", (string)null);
+                    b.ToTable("TenantSubscriptions");
                 });
 
             modelBuilder.Entity("Domain.Users.User", b =>
@@ -1743,7 +1746,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Domain.Catalog.Category", b =>

@@ -24,8 +24,8 @@ internal sealed class InventoryAdjustmentConfiguration : IEntityTypeConfiguratio
 
 
 
-        builder.HasIndex(a => new { a.Type, a.CreatedAtUtc });
+        builder.HasIndex(a => new { a.TenantId, a.Type, a.CreatedAtUtc });
 
-        builder.HasIndex(a => a.CreatedAtUtc);
+        builder.HasIndex(a => new { a.TenantId, a.CreatedAtUtc });
     }
 }

@@ -26,8 +26,8 @@ internal sealed class DebtConfiguration : IEntityTypeConfiguration<Debt>
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
 
-        builder.HasIndex(d => d.CreatedAtUtc);
+        builder.HasIndex(d => new { d.TenantId, d.CreatedAtUtc });
 
-        builder.HasIndex(d => d.Name);
+        builder.HasIndex(d => new { d.TenantId, d.Name });
     }
 }

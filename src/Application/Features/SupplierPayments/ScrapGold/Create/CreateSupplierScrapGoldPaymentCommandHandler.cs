@@ -5,6 +5,7 @@ using Domain.Common;
 using Domain.Inventory;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
+using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -17,7 +18,8 @@ internal sealed class CreateSupplierScrapGoldPaymentCommandHandler(
 {
     public async Task<Result<Guid>> Handle(CreateSupplierScrapGoldPaymentCommand command, CancellationToken cancellationToken)
     {
-        Supplier? supplier = await context.Suppliers.FindAsync([command.SupplierId], cancellationToken);
+        Supplier? supplier = await context.Suppliers
+            .FirstOrDefaultAsync(s => s.Id == command.SupplierId, cancellationToken);
 
         if (supplier is null)
         {

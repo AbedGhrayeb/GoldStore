@@ -23,8 +23,8 @@ internal sealed class GoldLedgerEntryConfiguration : IEntityTypeConfiguration<Go
         builder.Property(entry => entry.Notes).HasMaxLength(1000);
 
 
-        builder.HasIndex(entry => new { entry.Karat, entry.CreatedAtUtc });
+        builder.HasIndex(entry => new { entry.TenantId, entry.Karat, entry.CreatedAtUtc });
 
-        builder.HasIndex(entry => new { entry.ReferenceType, entry.ReferenceId });
+        builder.HasIndex(entry => new { entry.TenantId, entry.ReferenceType, entry.ReferenceId });
     }
 }

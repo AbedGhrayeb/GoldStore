@@ -30,8 +30,8 @@ internal sealed class FinancialTransactionConfiguration : IEntityTypeConfigurati
             .OnDelete(DeleteBehavior.Restrict);
 
 
-        builder.HasIndex(transaction => new { transaction.AccountId, transaction.CreatedAtUtc });
+        builder.HasIndex(transaction => new { transaction.TenantId, transaction.AccountId, transaction.CreatedAtUtc });
 
-        builder.HasIndex(transaction => new { transaction.ReferenceType, transaction.ReferenceId });
+        builder.HasIndex(transaction => new { transaction.TenantId, transaction.ReferenceType, transaction.ReferenceId });
     }
 }

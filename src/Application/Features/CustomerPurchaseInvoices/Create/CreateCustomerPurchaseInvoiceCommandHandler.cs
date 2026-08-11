@@ -2,9 +2,11 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Ledger;
+using Domain.Catalog;
 using Domain.Common;
 using Domain.CustomerPurchases;
 using Domain.Debts;
+using Domain.Employees;
 using Domain.Finance;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
@@ -86,11 +88,24 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
                 paymentMethod = legacyPaymentMethod;
             }
 
+            Guid? employeeId = command.EmployeeId;
+            if (employeeId is not null && employeeId != Guid.Empty
+                && !await context.Employees.AnyAsync(e => e.Id == employeeId, cancellationToken))
+            {
+                return EmployeeErrors.NotFound(employeeId.Value);
+            }
+
             Guid userId = userContext.UserId;
             decimal remainingBalance = command.TotalAmount - amountPaid;
             List<CustomerPurchaseInvoiceItem> items = [];
             foreach (CustomerPurchaseInvoiceItemDto item in command.Items)
             {
+                if (item.CategoryId is { } categoryId
+                    && !await context.Categories.AnyAsync(c => c.Id == categoryId, cancellationToken))
+                {
+                    return CategoryErrors.NotFound(categoryId);
+                }
+
                 var karat = (Karat)item.Karat;
 
                 Result<CustomerPurchaseInvoiceItem> itemResult =

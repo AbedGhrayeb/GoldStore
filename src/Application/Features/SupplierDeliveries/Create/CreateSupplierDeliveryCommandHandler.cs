@@ -5,6 +5,7 @@ using Domain.Common;
 using Domain.Inventory;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
+using Microsoft.EntityFrameworkCore;
 using SharedKernel.Result;
 
 namespace Application.SupplierDeliveries.Create;
@@ -16,7 +17,8 @@ internal sealed class CreateSupplierDeliveryCommandHandler(
 {
     public async Task<Result<string>> Handle(CreateSupplierDeliveryCommand command, CancellationToken cancellationToken)
     {
-        Supplier? supplier = await context.Suppliers.FindAsync([command.SupplierId], cancellationToken);
+        Supplier? supplier = await context.Suppliers
+            .FirstOrDefaultAsync(s => s.Id == command.SupplierId, cancellationToken);
         if (supplier is null)
         {
             return SupplierErrors.NotFound(command.SupplierId);

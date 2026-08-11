@@ -12,7 +12,8 @@ internal sealed class DeleteExpenseCommandHandler(IApplicationDbContext context)
 {
     public async Task<Result<Deleted>> Handle(DeleteExpenseCommand command, CancellationToken cancellationToken)
     {
-        Expense? expense = await context.Expenses.FindAsync([command.Id], cancellationToken);
+        Expense? expense = await context.Expenses
+            .FirstOrDefaultAsync(e => e.Id == command.Id, cancellationToken);
         if (expense is null)
         {
             return ExpenseErrors.NotFound(command.Id);

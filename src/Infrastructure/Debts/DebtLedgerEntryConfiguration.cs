@@ -21,6 +21,6 @@ internal sealed class DebtLedgerEntryConfiguration : IEntityTypeConfiguration<De
             .HasForeignKey(e => e.DebtId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(e => new { e.DebtId, e.CreatedAtUtc });
+        builder.HasIndex(e => new { e.TenantId, e.DebtId, e.CreatedAtUtc });
     }
 }

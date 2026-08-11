@@ -2,8 +2,10 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Errors;
 using Application.Common.Ledger;
+using Domain.Catalog;
 using Domain.Common;
 using Domain.Debts;
+using Domain.Employees;
 using Domain.Finance;
 using Domain.Inventory;
 using Domain.Sales;
@@ -23,6 +25,13 @@ internal sealed class CreateSalesInvoiceCommandHandler(
             return SalesInvoiceErrors.NoItems;
         }
 
+        Guid? employeeId = command.EmployeeId;
+        if (employeeId is not null && employeeId != Guid.Empty
+            && !await context.Employees.AnyAsync(e => e.Id == employeeId, cancellationToken))
+        {
+            return EmployeeErrors.NotFound(employeeId.Value);
+        }
+
         Currency currency = Enum.Parse<Currency>(command.Currency);
         var invoiceId = Guid.CreateVersion7();
 
@@ -30,6 +39,12 @@ internal sealed class CreateSalesInvoiceCommandHandler(
 
         foreach (SalesInvoiceItemDto item in command.Items)
         {
+            if (item.CategoryId is { } categoryId
+                && !await context.Categories.AnyAsync(c => c.Id == categoryId, cancellationToken))
+            {
+                return CategoryErrors.NotFound(categoryId);
+            }
+
             var karat = (Karat)item.Karat;
 
             Result<SalesInvoiceItem> saleInvoceItemResult = SalesInvoiceItem.Create(invoiceId, item.CategoryId ?? Guid.Empty, karat, item.WeightInGrams, item.PricePerGram);
@@ -74,6 +89,12 @@ internal sealed class CreateSalesInvoiceCommandHandler(
             accountId = command.AccountId ?? Guid.Empty;
             paymentMethod = command.PaymentMethod.HasValue ? (PaymentMethod)command.PaymentMethod.Value : PaymentMethod.Cash;
 
+            if (accountId != Guid.Empty
+                && !await context.FinancialAccounts.AnyAsync(a => a.Id == accountId, cancellationToken))
+            {
+                return FinancialAccountErrors.NotFound(accountId);
+            }
+
             if (command.AmountPaid > command.TotalAmount)
             {
                 return SalesInvoiceErrors.InvalidPaymentAmount;
@@ -105,7 +126,7 @@ internal sealed class CreateSalesInvoiceCommandHandler(
                 command.BuyerAccountNumber,
                 command.Notes,
                 accountId,
-                command.EmployeeId ?? Guid.Empty,
+                employeeId ?? Guid.Empty,
                 Items
                 );
             if (invoiceResult.IsError)
