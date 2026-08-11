@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>بريق للذهب - مركز التقارير</title>
+<!-- Google Fonts: IBM Plex Sans Arabic -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface": "#1a1b22",
+                    "error": "#ba1a1a",
+                    "secondary": "#5f5e5e",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed": "#6ffbbe",
+                    "secondary-fixed-dim": "#c8c6c5",
+                    "surface-bright": "#fbf8ff",
+                    "on-error-container": "#93000a",
+                    "on-background": "#1a1b22",
+                    "surface-container": "#eeedf7",
+                    "on-secondary-fixed-variant": "#474746",
+                    "primary-container": "#d4af37",
+                    "on-primary-fixed": "#241a00",
+                    "inverse-on-surface": "#f1effa",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-highest": "#e3e1ec",
+                    "tertiary-container": "#33ca90",
+                    "surface-dim": "#dad9e3",
+                    "on-secondary": "#ffffff",
+                    "primary": "#735c00",
+                    "on-primary-container": "#554300",
+                    "outline-variant": "#d0c5af",
+                    "on-tertiary-container": "#005035",
+                    "primary-fixed": "#ffe088",
+                    "on-error": "#ffffff",
+                    "secondary-container": "#e2dfde",
+                    "inverse-primary": "#e9c349",
+                    "secondary-fixed": "#e5e2e1",
+                    "surface": "#fbf8ff",
+                    "inverse-surface": "#2f3038",
+                    "on-secondary-fixed": "#1c1b1b",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed-dim": "#4edea3",
+                    "surface-container-high": "#e8e7f1",
+                    "on-tertiary-fixed-variant": "#005236",
+                    "on-surface-variant": "#4d4635",
+                    "surface-tint": "#735c00",
+                    "on-primary-fixed-variant": "#574500",
+                    "on-secondary-container": "#636262",
+                    "on-primary": "#ffffff",
+                    "surface-container-low": "#f4f2fd",
+                    "tertiary": "#006c49",
+                    "primary-fixed-dim": "#e9c349",
+                    "on-tertiary-fixed": "#002113",
+                    "surface-variant": "#e3e1ec",
+                    "outline": "#7f7663",
+                    "background": "#fbf8ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "base": "8px",
+                    "xl": "64px",
+                    "gutter": "24px",
+                    "container-max": "1440px",
+                    "md": "24px",
+                    "lg": "40px",
+                    "sm": "12px",
+                    "xs": "4px"
+            },
+            "fontFamily": {
+                    "headline-md": ["IBM Plex Sans Arabic"],
+                    "headline-lg": ["IBM Plex Sans Arabic"],
+                    "body-md": ["IBM Plex Sans Arabic"],
+                    "body-lg": ["IBM Plex Sans Arabic"],
+                    "display-lg": ["IBM Plex Sans Arabic"],
+                    "label-md": ["IBM Plex Sans Arabic"],
+                    "title-lg": ["IBM Plex Sans Arabic"],
+                    "data-mono": ["IBM Plex Sans Arabic"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                    "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                    "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                    "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                    "display-lg": ["40px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                    "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                    "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                    "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            background-color: #fbf8ff; /* background */
+        }
+    </style>
+</head>
+<body class="text-on-surface bg-background antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- Shared Component: SideNavBar -->
+<nav class="fixed top-0 right-0 h-full w-[280px] border-l border-outline-variant bg-surface-container-lowest shadow-[0px_4px_20px_rgba(0,0,0,0.04)] flex flex-col z-50 text-right">
+<!-- Header -->
+<div class="p-gutter border-b border-outline-variant flex items-center gap-sm">
+<div class="w-12 h-12 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined icon-fill text-title-lg">diamond</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md text-primary">بريق للذهب</h1>
+<p class="font-label-md text-label-md text-secondary">نظام إدارة الذهب</p>
+</div>
+</div>
+<!-- CTA -->
+<div class="p-gutter">
+<button class="w-full bg-primary-container text-on-primary-container font-title-lg text-title-lg rounded-xl py-sm px-md flex items-center justify-center gap-sm hover:brightness-105 transition-all">
+<span class="material-symbols-outlined">add</span>
+                عملية بيع جديدة
+            </button>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto px-base py-sm flex flex-col gap-xs">
+<!-- 0: لوحة القيادة -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                لوحة القيادة
+            </a>
+<!-- 1: المخزون -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+                المخزون
+            </a>
+<!-- 2: المبيعات -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">payments</span>
+                المبيعات
+            </a>
+<!-- 3: الموردين -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+                الموردين
+            </a>
+<!-- 4: المالية -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+                المالية
+            </a>
+<!-- 5: التقارير (ACTIVE) -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-primary border-r-2 border-primary bg-surface-container-high font-bold font-body-lg text-body-lg scale-[0.99] transition-transform" href="#">
+<span class="material-symbols-outlined icon-fill">analytics</span>
+                التقارير
+            </a>
+</div>
+<!-- Footer Links -->
+<div class="p-base border-t border-outline-variant flex flex-col gap-xs">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+                الإعدادات
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-error hover:bg-error-container hover:text-on-error-container transition-colors duration-200 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined">logout</span>
+                تسجيل الخروج
+            </a>
+</div>
+</nav>
+<!-- Shared Component: TopAppBar -->
+<header class="fixed top-0 left-0 right-[280px] h-16 border-b border-outline-variant bg-surface/80 backdrop-blur-md flex flex-row-reverse justify-between items-center px-gutter z-40">
+<!-- Search -->
+<div class="flex items-center bg-surface-container-low rounded-full px-md py-2 border border-outline-variant/50 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all w-96">
+<span class="material-symbols-outlined text-secondary ml-sm">search</span>
+<input class="bg-transparent border-none outline-none w-full text-body-md font-body-md text-on-surface placeholder:text-secondary focus:ring-0" placeholder="البحث في التقارير..." type="text"/>
+</div>
+<!-- Actions & Profile -->
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs">
+<button class="text-on-surface-variant hover:bg-surface-container-low rounded-full p-2 transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low rounded-full p-2 transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low rounded-full p-2 transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+<div class="h-8 w-px bg-outline-variant mx-sm"></div>
+<button class="flex items-center gap-sm">
+<img alt="صورة المستخدم الشخصية" class="w-10 h-10 rounded-full object-cover border border-outline-variant" data-alt="A professional headshot of a confident Middle Eastern male executive wearing a tailored dark suit and white shirt, set against a bright minimalist modern office background with soft daylight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2E0Y8nwQxgry9vdc3Sn5fvVf9rlH-pZGaySIZKJzN_xsr5wRp3mzG5Lpiz7SwoIK6tYW5lUkD8wTuWLKLfOtCD1Ow9WXaEmPZpzuYr509ve5wwUJyLRht63yG84MfqmsmgEE0tUTNN_ZBBt0QVcTg1KLL5Xiuw_xMO6b5OddpwuVi6IsID2EsDUk2ULnEe5xbKz0oFHuCqR9kCrEiniTv9kmfTtxsUcuw2pJ8AB2M2-3CrsVq5p2Eqydl9OjNXs7PXuIjE2eguRA"/>
+<div class="text-right hidden lg:block">
+<p class="font-title-lg text-title-lg text-on-surface text-sm">أحمد محمود</p>
+<p class="font-label-md text-label-md text-secondary">مدير النظام</p>
+</div>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="mr-[280px] pt-16 min-h-screen p-gutter pb-xl flex flex-col gap-lg max-w-container-max mx-auto">
+<!-- Page Header & Global Filters -->
+<section class="flex flex-col md:flex-row justify-between items-start md:items-center gap-md">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">مركز التقارير</h2>
+<p class="font-body-lg text-body-lg text-secondary mt-xs">نظرة شاملة على أداء الأعمال والتحليلات المالية</p>
+</div>
+<div class="flex items-center gap-sm">
+<!-- Date Filter -->
+<div class="relative">
+<button class="flex items-center gap-sm px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-secondary">calendar_today</span>
+                        هذا الشهر
+                        <span class="material-symbols-outlined text-secondary">arrow_drop_down</span>
+</button>
+</div>
+<!-- Export Actions -->
+<button class="flex items-center gap-xs px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-secondary">picture_as_pdf</span>
+                    تصدير PDF
+                </button>
+<button class="flex items-center gap-xs px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-tertiary">table_view</span>
+                    تصدير Excel
+                </button>
+</div>
+</section>
+<!-- Executive Dashboard KPIs -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- KPI 1 -->
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<span class="flex items-center text-tertiary font-label-md text-label-md bg-tertiary-container/20 px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+                        +12.5%
+                    </span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-secondary">إجمالي المبيعات</p>
+<h3 class="font-headline-lg text-headline-lg text-on-surface font-bold mt-xs" dir="ltr"><span class="text-secondary text-title-lg">SAR</span> 452,000</h3>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined">inventory_2</span>
+</div>
+<span class="flex items-center text-tertiary font-label-md text-label-md bg-tertiary-container/20 px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+                        +3.2%
+                    </span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-secondary">قيمة المخزون الحالي</p>
+<h3 class="font-headline-lg text-headline-lg text-on-surface font-bold mt-xs" dir="ltr"><span class="text-secondary text-title-lg">SAR</span> 2,150,000</h3>
+</div>
+</div>
+<!-- KPI 3 -->
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+<span class="flex items-center text-error font-label-md text-label-md bg-error-container/50 px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[14px]">trending_down</span>
+                        -1.4%
+                    </span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-secondary">التدفق النقدي (هذا الشهر)</p>
+<h3 class="font-headline-lg text-headline-lg text-on-surface font-bold mt-xs" dir="ltr"><span class="text-secondary text-title-lg">SAR</span> 128,400</h3>
+</div>
+</div>
+<!-- KPI 4 -->
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined">monitor_weight</span>
+</div>
+<span class="flex items-center text-tertiary font-label-md text-label-md bg-tertiary-container/20 px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+                        مستقر
+                    </span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-secondary">متوسط سعر الذهب (عيار 21)</p>
+<h3 class="font-headline-lg text-headline-lg text-on-surface font-bold mt-xs" dir="ltr"><span class="text-secondary text-title-lg">SAR</span> 245.50 <span class="text-body-md font-normal">/ جم</span></h3>
+</div>
+</div>
+</section>
+<!-- Advanced Charts Section -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Main Chart: Revenue vs Expenses -->
+<div class="lg:col-span-2 bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 p-md flex flex-col h-[400px]">
+<div class="flex justify-between items-center mb-lg">
+<h3 class="font-title-lg text-title-lg text-on-surface">الإيرادات مقابل المصروفات</h3>
+<button class="text-primary font-label-md text-label-md hover:underline">عرض التفاصيل</button>
+</div>
+<!-- Abstract Chart Representation using CSS -->
+<div class="flex-1 relative flex items-end justify-between gap-2 px-md pb-md border-b border-outline-variant">
+<!-- Y Axis Labels -->
+<div class="absolute right-0 top-0 h-full flex flex-col justify-between text-secondary font-data-mono text-label-md pr-2">
+<span>400k</span>
+<span>300k</span>
+<span>200k</span>
+<span>100k</span>
+<span>0</span>
+</div>
+<!-- Bars -->
+<div class="w-full flex justify-around items-end h-full pl-8">
+<div class="w-8 flex flex-col justify-end h-[60%] group relative cursor-pointer">
+<div class="w-full bg-primary-container rounded-t-sm hover:brightness-110 transition-all"></div>
+</div>
+<div class="w-8 flex flex-col justify-end h-[40%] group relative cursor-pointer">
+<div class="w-full bg-surface-dim rounded-t-sm hover:brightness-90 transition-all"></div>
+</div>
+<div class="w-8 flex flex-col justify-end h-[80%] group relative cursor-pointer">
+<div class="w-full bg-primary-container rounded-t-sm hover:brightness-110 transition-all"></div>
+</div>
+<div class="w-8 flex flex-col justify-end h-[45%] group relative cursor-pointer">
+<div class="w-full bg-surface-dim rounded-t-sm hover:brightness-90 transition-all"></div>
+</div>
+<div class="w-8 flex flex-col justify-end h-[50%] group relative cursor-pointer">
+<div class="w-full bg-primary-container rounded-t-sm hover:brightness-110 transition-all"></div>
+</div>
+<div class="w-8 flex flex-col justify-end h-[30%] group relative cursor-pointer">
+<div class="w-full bg-surface-dim rounded-t-sm hover:brightness-90 transition-all"></div>
+</div>
+<div class="w-8 flex flex-col justify-end h-[90%] group relative cursor-pointer">
+<div class="w-full bg-primary-container rounded-t-sm hover:brightness-110 transition-all"></div>
+</div>
+<div class="w-8 flex flex-col justify-end h-[55%] group relative cursor-pointer">
+<div class="w-full bg-surface-dim rounded-t-sm hover:brightness-90 transition-all"></div>
+</div>
+</div>
+</div>
+<!-- X Axis Labels -->
+<div class="flex justify-around items-center pt-sm pl-8 text-secondary font-label-md text-label-md">
+<span>الأسبوع 1</span>
+<span>الأسبوع 2</span>
+<span>الأسبوع 3</span>
+<span>الأسبوع 4</span>
+</div>
+</div>
+<!-- Mini Chart: Inventory Distribution -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 p-md flex flex-col h-[400px]">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-xl">توزيع المخزون</h3>
+<div class="flex-1 flex flex-col items-center justify-center relative">
+<!-- Abstract Donut Chart -->
+<div class="w-48 h-48 rounded-full border-[16px] border-surface-container relative">
+<!-- Simulated segments using conic-gradient -->
+<div class="absolute inset-[-16px] rounded-full border-[16px] border-transparent" style="border-top-color: #d4af37; border-right-color: #d4af37; transform: rotate(45deg);"></div>
+<div class="absolute inset-[-16px] rounded-full border-[16px] border-transparent" style="border-left-color: #33ca90; transform: rotate(15deg);"></div>
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+<span class="font-headline-md text-headline-md text-on-surface font-bold">1,450</span>
+<span class="font-label-md text-label-md text-secondary">قطعة</span>
+</div>
+</div>
+</div>
+<div class="mt-lg flex flex-col gap-sm">
+<div class="flex justify-between items-center font-body-md text-body-md">
+<div class="flex items-center gap-xs"><div class="w-3 h-3 rounded-full bg-primary-container"></div> عيار 21</div>
+<span class="font-data-mono">65%</span>
+</div>
+<div class="flex justify-between items-center font-body-md text-body-md">
+<div class="flex items-center gap-xs"><div class="w-3 h-3 rounded-full bg-tertiary-container"></div> عيار 18</div>
+<span class="font-data-mono">20%</span>
+</div>
+<div class="flex justify-between items-center font-body-md text-body-md">
+<div class="flex items-center gap-xs"><div class="w-3 h-3 rounded-full bg-surface-dim"></div> أخرى</div>
+<span class="font-data-mono">15%</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Report Types Grid (Bento Style) -->
+<section>
+<h3 class="font-title-lg text-title-lg text-on-surface mb-md">نماذج التقارير التفصيلية</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md">
+<!-- Report Card 1: Sales -->
+<a class="group block bg-surface-container-lowest rounded-xl p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 hover:border-primary hover:shadow-[0px_10px_32px_rgba(0,0,0,0.08)] transition-all duration-300 relative overflow-hidden" href="#">
+<div class="absolute top-0 right-0 w-1 h-full bg-transparent group-hover:bg-primary transition-colors"></div>
+<div class="w-12 h-12 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface mb-md group-hover:bg-primary-container/10 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">point_of_sale</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-on-surface mb-xs">تقرير المبيعات</h4>
+<p class="font-body-md text-body-md text-secondary mb-md">تفاصيل الفواتير، المرتجعات، وأداء المبيعات اليومي والشهري.</p>
+<span class="text-primary font-label-md text-label-md flex items-center gap-xs opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all">
+                        عرض التقرير <span class="material-symbols-outlined text-[16px] rtl:-scale-x-100">arrow_forward</span>
+</span>
+</a>
+<!-- Report Card 2: Purchases -->
+<a class="group block bg-surface-container-lowest rounded-xl p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 hover:border-primary hover:shadow-[0px_10px_32px_rgba(0,0,0,0.08)] transition-all duration-300 relative overflow-hidden" href="#">
+<div class="absolute top-0 right-0 w-1 h-full bg-transparent group-hover:bg-primary transition-colors"></div>
+<div class="w-12 h-12 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface mb-md group-hover:bg-primary-container/10 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">shopping_cart</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-on-surface mb-xs">تقرير المشتريات</h4>
+<p class="font-body-md text-body-md text-secondary mb-md">تحليل مشتريات الذهب الخام والمصاغ من الموردين المختلفين.</p>
+<span class="text-primary font-label-md text-label-md flex items-center gap-xs opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all">
+                        عرض التقرير <span class="material-symbols-outlined text-[16px] rtl:-scale-x-100">arrow_forward</span>
+</span>
+</a>
+<!-- Report Card 3: Suppliers -->
+<a class="group block bg-surface-container-lowest rounded-xl p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 hover:border-primary hover:shadow-[0px_10px_32px_rgba(0,0,0,0.08)] transition-all duration-300 relative overflow-hidden" href="#">
+<div class="absolute top-0 right-0 w-1 h-full bg-transparent group-hover:bg-primary transition-colors"></div>
+<div class="w-12 h-12 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface mb-md group-hover:bg-primary-container/10 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">handshake</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-on-surface mb-xs">تقرير الموردين</h4>
+<p class="font-body-md text-body-md text-secondary mb-md">كشوف حسابات الموردين، الأرصدة المستحقة، وحركة التعاملات.</p>
+<span class="text-primary font-label-md text-label-md flex items-center gap-xs opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all">
+                        عرض التقرير <span class="material-symbols-outlined text-[16px] rtl:-scale-x-100">arrow_forward</span>
+</span>
+</a>
+<!-- Report Card 4: Inventory -->
+<a class="group block bg-surface-container-lowest rounded-xl p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 hover:border-primary hover:shadow-[0px_10px_32px_rgba(0,0,0,0.08)] transition-all duration-300 relative overflow-hidden" href="#">
+<div class="absolute top-0 right-0 w-1 h-full bg-transparent group-hover:bg-primary transition-colors"></div>
+<div class="w-12 h-12 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface mb-md group-hover:bg-primary-container/10 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">inventory</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-on-surface mb-xs">تقرير المخزون</h4>
+<p class="font-body-md text-body-md text-secondary mb-md">جرد القطع، النواقص، الأوزان الإجمالية حسب العيارات والتصنيفات.</p>
+<span class="text-primary font-label-md text-label-md flex items-center gap-xs opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all">
+                        عرض التقرير <span class="material-symbols-outlined text-[16px] rtl:-scale-x-100">arrow_forward</span>
+</span>
+</a>
+<!-- Report Card 5: Expenses -->
+<a class="group block bg-surface-container-lowest rounded-xl p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 hover:border-primary hover:shadow-[0px_10px_32px_rgba(0,0,0,0.08)] transition-all duration-300 relative overflow-hidden" href="#">
+<div class="absolute top-0 right-0 w-1 h-full bg-transparent group-hover:bg-primary transition-colors"></div>
+<div class="w-12 h-12 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface mb-md group-hover:bg-primary-container/10 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">receipt_long</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-on-surface mb-xs">تقرير المصروفات</h4>
+<p class="font-body-md text-body-md text-secondary mb-md">تحليل المصروفات التشغيلية، الإيجارات، وتكاليف التشغيل الأخرى.</p>
+<span class="text-primary font-label-md text-label-md flex items-center gap-xs opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all">
+                        عرض التقرير <span class="material-symbols-outlined text-[16px] rtl:-scale-x-100">arrow_forward</span>
+</span>
+</a>
+<!-- Report Card 6: Salaries -->
+<a class="group block bg-surface-container-lowest rounded-xl p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 hover:border-primary hover:shadow-[0px_10px_32px_rgba(0,0,0,0.08)] transition-all duration-300 relative overflow-hidden" href="#">
+<div class="absolute top-0 right-0 w-1 h-full bg-transparent group-hover:bg-primary transition-colors"></div>
+<div class="w-12 h-12 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface mb-md group-hover:bg-primary-container/10 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">badge</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-on-surface mb-xs">تقرير الرواتب</h4>
+<p class="font-body-md text-body-md text-secondary mb-md">مسيرات الرواتب للموظفين، البدلات، الخصومات، والعمولات.</p>
+<span class="text-primary font-label-md text-label-md flex items-center gap-xs opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all">
+                        عرض التقرير <span class="material-symbols-outlined text-[16px] rtl:-scale-x-100">arrow_forward</span>
+</span>
+</a>
+<!-- Report Card 7: Cash Flow -->
+<a class="group block bg-surface-container-lowest rounded-xl p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 hover:border-primary hover:shadow-[0px_10px_32px_rgba(0,0,0,0.08)] transition-all duration-300 relative overflow-hidden" href="#">
+<div class="absolute top-0 right-0 w-1 h-full bg-transparent group-hover:bg-primary transition-colors"></div>
+<div class="w-12 h-12 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface mb-md group-hover:bg-primary-container/10 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">account_balance</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-on-surface mb-xs">تقرير التدفق النقدي</h4>
+<p class="font-body-md text-body-md text-secondary mb-md">حركة الأموال في الصناديق والحسابات البنكية، والسيولة المتاحة.</p>
+<span class="text-primary font-label-md text-label-md flex items-center gap-xs opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all">
+                        عرض التقرير <span class="material-symbols-outlined text-[16px] rtl:-scale-x-100">arrow_forward</span>
+</span>
+</a>
+<!-- Report Card 8: Gold Prices -->
+<a class="group block bg-surface-container-lowest rounded-xl p-md shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 hover:border-primary hover:shadow-[0px_10px_32px_rgba(0,0,0,0.08)] transition-all duration-300 relative overflow-hidden" href="#">
+<div class="absolute top-0 right-0 w-1 h-full bg-transparent group-hover:bg-primary transition-colors"></div>
+<div class="w-12 h-12 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface mb-md group-hover:bg-primary-container/10 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">trending_up</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-on-surface mb-xs">تقرير أسعار الذهب</h4>
+<p class="font-body-md text-body-md text-secondary mb-md">تتبع تاريخي لتغيرات أسعار الذهب العالمية والمحلية وتأثيرها.</p>
+<span class="text-primary font-label-md text-label-md flex items-center gap-xs opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all">
+                        عرض التقرير <span class="material-symbols-outlined text-[16px] rtl:-scale-x-100">arrow_forward</span>
+</span>
+</a>
+</div>
+</section>
+</main>
+</body></html>

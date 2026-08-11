@@ -1,4 +1,5 @@
-﻿using Application.Abstractions.Authentication;
+﻿using System.Security.Claims;
+using Application.Abstractions.Authentication;
 using Microsoft.AspNetCore.Http;
 
 namespace Infrastructure.Authentication;
@@ -11,6 +12,11 @@ internal sealed class UserContext : IUserContext
     {
         _httpContextAccessor = httpContextAccessor;
     }
+
+    public bool IsAvailable =>
+        Guid.TryParse(
+            _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier),
+            out _);
 
     public Guid UserId =>
         _httpContextAccessor

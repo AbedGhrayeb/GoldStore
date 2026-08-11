@@ -4,8 +4,10 @@ using SharedKernel.Result;
 
 namespace Domain.Expenses;
 
-public sealed class Expense : AuditableEntity
+public sealed class Expense : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
 
     public Guid? ExpenseCategoryId { get; private set; }
 

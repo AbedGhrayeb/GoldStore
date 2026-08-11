@@ -3,8 +3,10 @@ using SharedKernel.Result;
 
 namespace Domain.Debts;
 
-public sealed class DebtLedgerEntry : AuditableEntity
+public sealed class DebtLedgerEntry : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
 
     public Guid DebtId { get; private set; }
 

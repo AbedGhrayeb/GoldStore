@@ -18,9 +18,9 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .HasForeignKey(category => category.ParentCategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(category => new { category.ParentCategoryId, category.Name }).IsUnique();
+        builder.HasIndex(category => new { category.TenantId, category.ParentCategoryId, category.Name }).IsUnique();
 
-        builder.HasIndex(category => category.Name);
+        builder.HasIndex(category => new { category.TenantId, category.Name });
     }
 }
 

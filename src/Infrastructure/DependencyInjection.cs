@@ -1,6 +1,7 @@
 ﻿using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Services;
+using Application.Abstractions.Tenants;
 using Infrastructure.Authentication;
 using Infrastructure.Authorization;
 using Infrastructure.Data;
@@ -8,6 +9,7 @@ using Infrastructure.Database;
 using Infrastructure.Database.Interceptors;
 using Infrastructure.DomainEvents;
 using Infrastructure.GoldPrices;
+using Infrastructure.Tenants;
 using Infrastructure.Time;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -35,6 +37,7 @@ public static class DependencyInjection
     private static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+        services.AddSingleton(TimeProvider.System);
 
         services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
 
@@ -46,6 +49,15 @@ public static class DependencyInjection
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
         services.AddScoped<IGoldPriceService, GoldPriceService>();
+
+        // Ambient tenant for the current scope (claims-based on HTTP requests,
+        // explicitly selected for host/background flows).
+        services.AddScoped<CurrentTenant>();
+        services.AddScoped<ICurrentTenant>(sp => sp.GetRequiredService<CurrentTenant>());
+        services.AddScoped<ICurrentTenantSetter>(sp => sp.GetRequiredService<CurrentTenant>());
+
+        // Order matters: the tenant write guard runs before the audit interceptor.
+        services.AddScoped<ISaveChangesInterceptor, TenantEntityInterceptor>();
         services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
 
         return services;

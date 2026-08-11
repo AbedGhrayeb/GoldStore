@@ -32,6 +32,13 @@ public class AuditableEntityInterceptor(IUserContext user, TimeProvider dateTime
             return;
         }
 
+        // Host and background flows (seeding, provisioning, migrations) run without
+        // an authenticated user; audit fields stay unset for those writes.
+        if (!_user.IsAvailable)
+        {
+            return;
+        }
+
         foreach (EntityEntry<AuditableEntity> entry in context.ChangeTracker.Entries<AuditableEntity>())
         {
             if (entry.State is EntityState.Added or EntityState.Modified || entry.HasChangedOwnedEntities())

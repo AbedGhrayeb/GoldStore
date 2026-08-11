@@ -1,4 +1,6 @@
-﻿using Application.Abstractions.Data;
+﻿using System.Reflection;
+using Application.Abstractions.Data;
+using Application.Abstractions.Tenants;
 using Domain.Catalog;
 using Domain.CustomerPurchases;
 using Domain.Debts;
@@ -9,16 +11,20 @@ using Domain.Sales;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
 using Domain.Employees;
+using Domain.Tenants;
 using Domain.Users;
 using Infrastructure.DomainEvents;
+using Infrastructure.Tenants;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using SharedKernel;
 
 namespace Infrastructure.Database;
 
 public sealed class ApplicationDbContext(
     DbContextOptions<ApplicationDbContext> options,
-    IDomainEventsDispatcher domainEventsDispatcher)
+    IDomainEventsDispatcher domainEventsDispatcher,
+    ICurrentTenant currentTenant)
     : DbContext(options), IApplicationDbContext
 {
     public DbSet<User> Users { get; set; }
@@ -71,11 +77,51 @@ public sealed class ApplicationDbContext(
 
     public DbSet<CustomerPurchaseInvoiceItem> CustomerPurchaseInvoiceItems { get; set; }
 
+    public DbSet<Tenant> Tenants { get; set; }
+
+    public DbSet<TenantSettings> TenantSettings { get; set; }
+
+    public DbSet<TenantSubscription> TenantSubscriptions { get; set; }
+
+    public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
+
+    public DbSet<PlatformUser> PlatformUsers { get; set; }
+
+    /// <summary>
+    /// The tenant applied by the global query filters. Read from the scoped
+    /// <see cref="ICurrentTenant"/> at query time, never captured at model-build
+    /// time. Deny by default: when no tenant is available the filters match nothing.
+    /// </summary>
+    private Guid CurrentTenantId => currentTenant.IsAvailable ? currentTenant.TenantId : Guid.Empty;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
-
+        modelBuilder.ApplyTenantOwnership();
+        ApplyTenantQueryFilters(modelBuilder);
     }
+
+    private void ApplyTenantQueryFilters(ModelBuilder modelBuilder)
+    {
+        foreach (IMutableEntityType entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (!typeof(ITenantEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                continue;
+            }
+
+            SetTenantQueryFilterMethod.MakeGenericMethod(entityType.ClrType).Invoke(this, [modelBuilder]);
+        }
+    }
+
+    private static readonly MethodInfo SetTenantQueryFilterMethod = typeof(ApplicationDbContext)
+        .GetMethod(nameof(SetTenantQueryFilter), BindingFlags.NonPublic | BindingFlags.Instance)
+        ?? throw new InvalidOperationException("SetTenantQueryFilter method not found.");
+
+    private void SetTenantQueryFilter<TEntity>(ModelBuilder modelBuilder)
+        where TEntity : class, ITenantEntity =>
+        modelBuilder.Entity<TEntity>().HasQueryFilter(e => e.TenantId == CurrentTenantId);
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

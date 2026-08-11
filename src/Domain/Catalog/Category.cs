@@ -3,8 +3,10 @@ using SharedKernel.Result;
 
 namespace Domain.Catalog;
 
-public sealed class Category : AuditableEntity
+public sealed class Category : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
 
 
     public Guid? ParentCategoryId { get;  set; }

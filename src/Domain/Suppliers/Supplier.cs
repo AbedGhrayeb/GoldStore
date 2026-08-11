@@ -3,8 +3,10 @@ using SharedKernel.Result;
 
 namespace Domain.Suppliers;
 
-public sealed class Supplier : AuditableEntity
+public sealed class Supplier : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
 
     public string Name { get; private set; }
 

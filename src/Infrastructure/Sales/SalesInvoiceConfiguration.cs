@@ -49,9 +49,9 @@ internal sealed class SalesInvoiceConfiguration : IEntityTypeConfiguration<Sales
             .HasForeignKey(i => i.SalesInvoiceId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(i => i.InvoiceNumber).IsUnique();
+        builder.HasIndex(i => new { i.TenantId, i.InvoiceNumber }).IsUnique();
 
-        builder.HasIndex(i => i.Date);
+        builder.HasIndex(i => new { i.TenantId, i.Date });
 
     }
 }

@@ -8,6 +8,7 @@ using Domain.Inventory;
 using Domain.Sales;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
+using Domain.Tenants;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -46,6 +47,16 @@ public interface IApplicationDbContext
     DbSet<CustomerPurchaseInvoice> CustomerPurchaseInvoices { get; }
 
     DbSet<CustomerPurchaseInvoiceItem> CustomerPurchaseInvoiceItems { get; }
+
+    DbSet<Tenant> Tenants { get; }
+
+    DbSet<TenantSettings> TenantSettings { get; }
+
+    DbSet<TenantSubscription> TenantSubscriptions { get; }
+
+    DbSet<SubscriptionPlan> SubscriptionPlans { get; }
+
+    DbSet<PlatformUser> PlatformUsers { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -5,8 +5,10 @@ using SharedKernel.Result;
 
 namespace Domain.Debts;
 
-public sealed class Debt : AuditableEntity
+public sealed class Debt : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
     public string Name { get; private set; }
 
     public string? Phone { get; private set; }

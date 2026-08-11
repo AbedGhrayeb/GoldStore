@@ -20,6 +20,6 @@ internal sealed class FinancialAccountConfiguration : IEntityTypeConfiguration<F
 
         builder.Property(account => account.Notes).HasMaxLength(500);
 
-        builder.HasIndex(account => new { account.Name, account.Currency }).IsUnique();
+        builder.HasIndex(account => new { account.TenantId, account.Name, account.Currency }).IsUnique();
     }
 }

@@ -3,8 +3,10 @@ using SharedKernel.Result;
 
 namespace Domain.Expenses;
 
-public sealed class ExpenseCategory : AuditableEntity
+public sealed class ExpenseCategory : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
     public string Name { get; private set; }
     private readonly List<Expense> _expenses = new();
     public IReadOnlyCollection<Expense> Expenses => _expenses.AsReadOnly();

@@ -8,6 +8,9 @@ public static class UserErrors
     public static Error IdRequired => Error.Validation(
         "Users.Id.Required",
         $"The user Id is Required");
+    public static Error TenantRequired => Error.Validation(
+        "Users.Tenant.Required",
+        "The tenant Id is required");
     public static Error EmailRequired => Error.Validation(
         "User.Email.Required",
         $"البريد الإلكتروني مطلوب");

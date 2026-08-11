@@ -4,8 +4,10 @@ using SharedKernel.Result;
 
 namespace Domain.Inventory;
 
-public sealed class InventoryAdjustment : AuditableEntity
+public sealed class InventoryAdjustment : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
 
     public InventoryAdjustmentType Type { get; private set; }
 
