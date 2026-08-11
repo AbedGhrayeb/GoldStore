@@ -41,11 +41,14 @@ namespace WebUI
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
-                app.UseExceptionHandler("/Home/Error");
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
                 //app.ApplyMigrations();
             }
+
+            // Route exceptions through the registered IExceptionHandler
+            // (GlobalExceptionHandler) so tenant failures return consistent ProblemDetails.
+            app.UseExceptionHandler();
 
             app.UseHttpsRedirection();
 
@@ -69,12 +72,13 @@ namespace WebUI
             }
             app.UseCors("AllowAngularApp");
 
-            // UseExceptionHandler is already configured above for non-development environments:
-            // app.UseExceptionHandler("/Home/Error");
-            // Do not call the parameterless overload here because it requires configuration in services.
             app.UseRouting();
             app.MapStaticAssets();
             app.UseAuthentication();
+
+            // Resolve and enforce the ambient tenant before authorization and
+            // controllers run (plan Phase 2). Exemptions are explicit.
+            app.UseTenantResolution();
 
             app.UseAuthorization();
 

@@ -10,6 +10,7 @@ using Infrastructure.Database.Interceptors;
 using Infrastructure.DomainEvents;
 using Infrastructure.GoldPrices;
 using Infrastructure.Tenants;
+using Infrastructure.Tenancy;
 using Infrastructure.Time;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -31,7 +32,7 @@ public static class DependencyInjection
         services
             .AddServices(configuration)
             .AddDatabase(configuration)
-            .AddAuthenticationInternal()
+            .AddAuthenticationInternal(configuration)
             .AddAuthorizationInternal();
 
     private static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
@@ -42,6 +43,7 @@ public static class DependencyInjection
         services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
 
         services.Configure<GoldApiOptions>(configuration.GetSection("GoldApi"));
+        services.Configure<TenantHostOptions>(configuration.GetSection(TenantHostOptions.SectionName));
         services.AddMemoryCache();
         services.AddHttpClient("GoldApi", client =>
         {
@@ -80,7 +82,8 @@ public static class DependencyInjection
     }
 
     private static IServiceCollection AddAuthenticationInternal(
-        this IServiceCollection services)
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         services
  .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -94,13 +97,23 @@ public static class DependencyInjection
      opts.SlidingExpiration = true;
      opts.ExpireTimeSpan = TimeSpan.FromHours(8);
 
-     // Cookie hardening
-     opts.Cookie.Name = "GoldStoreAuth.Session";
-     opts.Cookie.HttpOnly = true;              // JS cannot read the cookie
-     opts.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-     opts.Cookie.SameSite = SameSiteMode.Strict;
-     opts.Cookie.IsEssential = true;
- });
+         // Cookie hardening
+         opts.Cookie.Name = "GoldStoreAuth.Session";
+         opts.Cookie.HttpOnly = true;              // JS cannot read the cookie
+         opts.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+         opts.Cookie.SameSite = SameSiteMode.Strict;
+         opts.Cookie.IsEssential = true;
+
+         // When hostname verification is enabled, share the session cookie across
+         // tenant subdomains of the parent domain so a login on the public host
+         // carries over to https://{tenant-key}.{BaseDomain} after the redirect.
+         TenantHostOptions tenancy = configuration.GetSection(TenantHostOptions.SectionName)
+             .Get<TenantHostOptions>() ?? new TenantHostOptions();
+         if (!string.IsNullOrWhiteSpace(tenancy.CookieDomain))
+         {
+             opts.Cookie.Domain = tenancy.CookieDomain;
+         }
+     });
 
         services.AddHttpContextAccessor();
         services.AddScoped<IUserContext, UserContext>();
