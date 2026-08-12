@@ -2,6 +2,8 @@ using Application.Abstractions.Messaging;
 using Application.Common.Models;
 using Application.Employees;
 using Application.Employees.GetSalaryPayments;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
@@ -9,6 +11,7 @@ using SharedKernel.Result;
 namespace WebUI.Controllers;
 
 [Authorize]
+[RequireFeature(Features.Hr)]
 public class SalaryPaymentsController(
     IQueryHandler<GetSalaryPaymentsQuery, PaginatedList<SalaryPaymentResponse>> getSalaryPaymentsHandler) : Controller
 {

@@ -4,6 +4,8 @@ using Application.Categories.Create;
 using Application.Categories.GetAll;
 using Application.Categories.ToggleActive;
 using Application.Categories.Update;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
@@ -12,6 +14,7 @@ using WebUI.Models.Category;
 namespace WebUI.Controllers;
 
 [Authorize]
+[RequireFeature(Features.Catalog)]
 public class CategoriesController(
     IQueryHandler<GetCategoriesQuery, List<CategoryResponse>> getCategoriesHandler,
     ICommandHandler<CreateCategoryCommand, Guid> createCategoryHandler,

@@ -1,5 +1,6 @@
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Tenants;
+using Domain.Authorization;
 using Domain.Common;
 using Domain.Finance;
 using Domain.Tenants;
@@ -23,6 +24,8 @@ public class ApplicationDbContextInitializer(
     ICurrentTenantSetter currentTenantSetter,
     TimeProvider timeProvider)
 {
+    private const string StoreAdministratorRoleKey = "store_admin";
+
     private readonly ILogger<ApplicationDbContextInitializer> _logger = logger;
     private readonly ApplicationDbContext _context = context;
     private readonly IConfiguration _configuration = configuration;
@@ -71,10 +74,20 @@ public class ApplicationDbContextInitializer(
         // global tenant filter.
         _currentTenantSetter.Set(InitialTenant.Id, InitialTenant.Key);
 
+        // Global authorization reference data (plan Phase 4): permissions and role
+        // templates are shared by every tenant.
+        await SeedPermissionsAsync(cancellationToken);
+        await SeedStoreAdministratorRoleAsync(cancellationToken);
+
         await SeedInitialSubscriptionAsync(plan, cancellationToken);
         await SeedInitialSettingsAsync(cancellationToken);
         await SeedDefaultUserAsync(cancellationToken);
+        await SeedDefaultUserRoleAsync(cancellationToken);
+        await BackfillSecurityStampsAsync(cancellationToken);
         await SeedDefaultFinancialAccountsAsync(cancellationToken);
+
+        // Host administrator identity (plan Phase 4 item 6), independent of any tenant.
+        await SeedDefaultPlatformUserAsync(cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
     }
@@ -129,9 +142,93 @@ public class ApplicationDbContextInitializer(
         }
 
         Result<TenantSettings> settings = TenantSettings.Create(
-            InitialTenant.Id, InitialTenant.Name, logoUrl: null, timeZoneId: "Asia/Amman");
+            InitialTenant.Id, InitialTenant.Name, logoUrl: null, timeZoneId: "Asia/Amman",
+            enabledFeatures: [.. Features.All]);
 
         _context.TenantSettings.Add(settings.Value);
+    }
+
+    private async Task SeedPermissionsAsync(CancellationToken cancellationToken)
+    {
+        foreach ((string Key, string Name) in Permissions.All)
+        {
+            if (!await _context.Permissions.AnyAsync(p => p.Key == Key, cancellationToken))
+            {
+                Result<Permission> permission = Permission.Create(Key, Name);
+                _context.Permissions.Add(permission.Value);
+            }
+        }
+    }
+
+    private async Task SeedStoreAdministratorRoleAsync(CancellationToken cancellationToken)
+    {
+        Role? role = await _context.Roles.FirstOrDefaultAsync(r => r.Key == StoreAdministratorRoleKey, cancellationToken);
+
+        if (role is null)
+        {
+            Result<Role> created = Role.Create(StoreAdministratorRoleKey, "مدير المتجر");
+            role = created.Value;
+            _context.Roles.Add(role);
+        }
+
+        List<Guid> permissionIds = await _context.Permissions.Select(p => p.Id).ToListAsync(cancellationToken);
+        List<Guid> grantedIds = await _context.RolePermissions
+            .Where(rp => rp.RoleId == role.Id)
+            .Select(rp => rp.PermissionId)
+            .ToListAsync(cancellationToken);
+
+        foreach (Guid permissionId in permissionIds)
+        {
+            if (!grantedIds.Contains(permissionId))
+            {
+                role.AddPermission(permissionId);
+            }
+        }
+    }
+
+    private async Task SeedDefaultUserRoleAsync(CancellationToken cancellationToken)
+    {
+        User? admin = await _context.Users.FirstOrDefaultAsync(u => u.Email == "admin@goldstore", cancellationToken);
+        Role? role = await _context.Roles.FirstOrDefaultAsync(r => r.Key == StoreAdministratorRoleKey, cancellationToken);
+
+        if (admin is null || role is null)
+        {
+            return;
+        }
+
+        if (!await _context.UserRoles.AnyAsync(ur => ur.UserId == admin.Id && ur.RoleId == role.Id, cancellationToken))
+        {
+            Result<UserRole> userRole = UserRole.Create(admin.TenantId, admin.Id, role.Id);
+            _context.UserRoles.Add(userRole.Value);
+        }
+    }
+
+    private async Task BackfillSecurityStampsAsync(CancellationToken cancellationToken)
+    {
+        // Rows migrated before the SecurityStamp column share the migration default.
+        // Assign each a unique stamp so sessions can be revoked individually.
+        List<User> users = await _context.Users
+            .Where(u => string.IsNullOrEmpty(u.SecurityStamp))
+            .ToListAsync(cancellationToken);
+
+        foreach (User user in users)
+        {
+            user.RegenerateSecurityStamp();
+        }
+    }
+
+    private async Task SeedDefaultPlatformUserAsync(CancellationToken cancellationToken)
+    {
+        if (await _context.PlatformUsers.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        string defaultPassword = _configuration["DefaultPlatformUserPassword"] ?? _configuration["DefaultUserPassword"]!;
+        Result<PlatformUser> platformUser = PlatformUser.Create(
+            "platform@goldstore.app", "Platform", "Admin", _passwordHasher.Hash(defaultPassword));
+
+        _context.PlatformUsers.Add(platformUser.Value);
     }
 
     private async Task SeedDefaultUserAsync(CancellationToken cancellationToken)

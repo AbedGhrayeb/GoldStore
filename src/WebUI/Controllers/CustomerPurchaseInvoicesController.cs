@@ -2,15 +2,16 @@
 using Application.Common.Ledger;
 using Application.Features.CustomerPurchaseInvoices.Create;
 using Application.Features.CustomerPurchaseInvoices.GetNextNumber;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.CustomerPurchaseInvoice;
-
 namespace WebUI.Controllers;
-
 [Authorize]
+[RequireFeature(Features.Purchases)]
 public class CustomerPurchaseInvoicesController(
     IQueryHandler<GetNextCustomerPurchaseInvoiceNumberQuery, string> getNextNumberHandler,
     ICommandHandler<CreateCustomerPurchaseInvoiceCommand, Guid> createHandler) : BaseController

@@ -6,6 +6,8 @@ using Application.Users.Delete;
 using Application.Users.GetAllUsers;
 using Application.Users.GetById;
 using Application.Users.Update;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
@@ -14,6 +16,7 @@ using WebUI.Models.User;
 namespace WebUI.Controllers;
 
 [Authorize]
+[RequireFeature(Features.Settings)]
 public class UsersController(
     IQueryHandler<GetUsersQuery, List<UserResponse>> getUsersHandler,
     IQueryHandler<GetUserByIdQuery, UserResponse> getUserByIdHandler,

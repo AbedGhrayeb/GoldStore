@@ -1,4 +1,5 @@
-﻿using SharedKernel;
+﻿using System.Security.Cryptography;
+using SharedKernel;
 using SharedKernel.Result;
 
 namespace Domain.Users;
@@ -12,9 +13,20 @@ public sealed class User : Entity, ITenantEntity
     public string LastName { get; private set; }
     public string PasswordHash { get; private set; }
 
+    /// <summary>
+    /// Session/token version (plan Phase 4). Every issued cookie, access token, and
+    /// refresh token carries this value; changing it invalidates all previously
+    /// issued sessions. Regenerate on password change and on account disable.
+    /// </summary>
+    public string SecurityStamp { get; private set; }
+
     public User()
     {
-
+        Email = string.Empty;
+        FirstName = string.Empty;
+        LastName = string.Empty;
+        PasswordHash = string.Empty;
+        SecurityStamp = string.Empty;
     }
     public User(Guid id, Guid tenantId, string email, string firstName, string lastName, string passwordHash) : base(id)
     {
@@ -23,8 +35,14 @@ public sealed class User : Entity, ITenantEntity
         FirstName = firstName;
         LastName = lastName;
         PasswordHash = passwordHash;
+        SecurityStamp = NewSecurityStamp();
 
     }
+
+    /// <summary>Rotates the security stamp, invalidating previously issued sessions.</summary>
+    public void RegenerateSecurityStamp() => SecurityStamp = NewSecurityStamp();
+
+    private static string NewSecurityStamp() => Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
 
     public static Result<User> Create(Guid id, Guid tenantId, string email, string firstName, string lastName, string passwordHash)
     {

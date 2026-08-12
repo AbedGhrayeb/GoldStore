@@ -3,6 +3,8 @@ using Application.SupplierDeliveries.Create;
 using Application.Suppliers;
 using Application.Suppliers.GetAll;
 using Application.Suppliers.GetById;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel;
@@ -13,6 +15,7 @@ using WebUI.Models.SupplierDelivery;
 namespace WebUI.Controllers;
 
 [Authorize]
+[RequireFeature(Features.Suppliers)]
 public class SupplierDeliveriesController(
     IQueryHandler<GetSuppliersQuery, List<SupplierResponse>> getSuppliersHandler,
     IQueryHandler<GetSupplierByIdQuery, SupplierDetailResponse> getSupplierByIdHandler,

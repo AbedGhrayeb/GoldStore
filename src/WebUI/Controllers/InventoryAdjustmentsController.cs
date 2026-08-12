@@ -4,6 +4,8 @@ using Application.Features.Inventory.Adjustments;
 using Application.Features.Inventory.Adjustments.Create;
 using Application.Features.Inventory.Adjustments.GetKpis;
 using Application.Features.Inventory.Adjustments.GetPaged;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel;
@@ -14,6 +16,7 @@ using WebUI.Models.InventoryAdjustment;
 namespace WebUI.Controllers;
 
 [Authorize]
+[RequireFeature(Features.Inventory)]
 public class InventoryAdjustmentsController(
     IQueryHandler<GetInventoryAdjustmentsQuery, PaginatedList<InventoryAdjustmentResponse>> getPagedHandler,
     IQueryHandler<GetInventoryAdjustmentKpisQuery, InventoryAdjustmentKpiResponse> getKpisHandler,

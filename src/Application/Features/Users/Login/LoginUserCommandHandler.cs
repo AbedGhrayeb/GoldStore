@@ -36,6 +36,13 @@ internal sealed class LoginUserCommandHandler(
             return ApplicationErrors.LoginFailed;
         }
 
+        // The password check runs first so an unauthenticated caller cannot tell
+        // whether the account is disabled (plan Phase 4 item 2).
+        if (!user.IsActive)
+        {
+            return ApplicationErrors.UserDisabled;
+        }
+
         Tenant? tenant = await context.Tenants
             .AsNoTracking()
             .SingleOrDefaultAsync(t => t.Id == user.TenantId, cancellationToken);

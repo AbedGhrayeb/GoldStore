@@ -22,12 +22,16 @@ public interface ICurrentTenant
     /// <summary>The current tenant lifecycle status. Throws when <see cref="IsAvailable"/> is false.</summary>
     TenantStatus Status { get; }
 
-    /// <summary>
-    /// True when the current tenant may reach operational endpoints: the tenant is
+    /// <summary>True when the current tenant may reach operational endpoints: the tenant is
     /// <see cref="TenantStatus.Active"/>, a trial within its window, or a cancelled
     /// tenant inside its read-only grace period.
     /// </summary>
     bool IsOperational { get; }
+
+    /// <summary>True when the tenant is inside its cancellation read-only grace period and
+    /// write operations must be blocked (plan Phase 4 item 7).
+    /// </summary>
+    bool IsReadOnly { get; }
 
     /// <summary>The features enabled for the current tenant. Throws when <see cref="IsAvailable"/> is false.</summary>
     IReadOnlyList<string> EnabledFeatures { get; }

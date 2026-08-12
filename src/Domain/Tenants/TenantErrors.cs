@@ -23,4 +23,8 @@ public static class TenantErrors
     public static Error EmailRequired => Error.Validation("PlatformUsers.Email.Required", "Platform user email is required.");
 
     public static Error PasswordRequired => Error.Validation("PlatformUsers.Password.Required", "Platform user password is required.");
+
+    public static Error QuotaExceeded(string resource, int limit) => Error.Conflict(
+        "Tenants.Quota.Exceeded",
+        $"تم الوصول إلى الحد الأقصى المسموح لعدد {resource} ({limit}). يرجى التواصل مع الدعم لترقية الاشتراك.");
 }

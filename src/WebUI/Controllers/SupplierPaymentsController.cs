@@ -7,6 +7,8 @@ using Application.SupplierPayments.ScrapGold.Create;
 using Application.Suppliers;
 using Application.Suppliers.GetAll;
 using Application.Suppliers.GetById;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
@@ -17,6 +19,7 @@ using WebUI.Models.SupplierPayment;
 namespace WebUI.Controllers;
 
 [Authorize]
+[RequireFeature(Features.Suppliers)]
 public class SupplierPaymentsController(
     IQueryHandler<GetSuppliersQuery, List<SupplierResponse>> getSuppliersHandler,
     IQueryHandler<GetSupplierByIdQuery, SupplierDetailResponse> getSupplierByIdHandler,

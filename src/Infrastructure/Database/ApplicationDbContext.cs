@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using Application.Abstractions.Data;
 using Application.Abstractions.Tenants;
+using Domain.Authorization;
 using Domain.Catalog;
 using Domain.CustomerPurchases;
 using Domain.Debts;
@@ -76,6 +77,16 @@ public sealed class ApplicationDbContext(
     public DbSet<CustomerPurchaseInvoice> CustomerPurchaseInvoices { get; set; }
 
     public DbSet<CustomerPurchaseInvoiceItem> CustomerPurchaseInvoiceItems { get; set; }
+
+    public DbSet<Permission> Permissions { get; set; }
+
+    public DbSet<Role> Roles { get; set; }
+
+    public DbSet<RolePermission> RolePermissions { get; set; }
+
+    public DbSet<UserRole> UserRoles { get; set; }
+
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     public DbSet<Tenant> Tenants { get; set; }
 

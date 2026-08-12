@@ -65,6 +65,18 @@ public sealed class TenantResolutionMiddleware(
             return;
         }
 
+        // Central read-only subscription gate (plan Phase 4 item 7): a cancelled tenant
+        // inside its grace period may read but never write.
+        if (currentTenant.IsReadOnly && !HttpMethods.IsGet(context.Request.Method))
+        {
+            logger.LogWarning(
+                "Read-only tenant attempted a write operation. Path: {RequestPath}, Method: {Method}",
+                context.Request.Path,
+                context.Request.Method);
+            await TenantProblemDetails.WriteAsync(context, TenantProblemDetails.ReadOnly);
+            return;
+        }
+
         // Structured logging scope: correlate every downstream log entry with the tenant.
         using (LogContext.PushProperty("TenantId", currentTenant.TenantId))
         using (LogContext.PushProperty("TenantKey", currentTenant.TenantKey))

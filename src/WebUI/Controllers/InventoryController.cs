@@ -5,6 +5,8 @@ using Application.Features.Inventory.GoldLedger;
 using Application.Features.Inventory.GoldLedger.GetKpis;
 using Application.Features.Inventory.GoldLedger.GetPaged;
 using Application.Features.Inventory.GoldLedger.GetTrend;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
@@ -12,6 +14,7 @@ using SharedKernel.Result;
 namespace WebUI.Controllers;
 
 [Authorize]
+[RequireFeature(Features.Inventory)]
 public class InventoryController(
     IQueryHandler<GetGoldPricesQuery, GoldPricesResponse> getGoldPricesHandler,
     IQueryHandler<GetInventoryKpisQuery, InventoryKpiResponse> getKpisHandler,

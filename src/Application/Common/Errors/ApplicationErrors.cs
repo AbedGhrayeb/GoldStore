@@ -16,6 +16,14 @@ public static class ApplicationErrors
     Error.Failure(
            "ApplicationErrors.Tenants.AccessDenied",
            "هذا الحساب غير مفعّل حالياً. يرجى التواصل مع الدعم.");
+    public static Error UserDisabled =>
+    Error.Failure(
+           "ApplicationErrors.Users.Disabled",
+           "هذا الحساب معطّل حالياً.");
+    public static Error InvalidRefreshToken =>
+    Error.Unauthorized(
+           "ApplicationErrors.Users.InvalidRefreshToken",
+           "رمز التحديث غير صالح أو منتهي الصلاحية.");
     public static Error DatabaseError(Exception ex) => Error.Failure(
      "CustomerPurchaseInvoices.DatabaseError",
      $"حدث خطأ في قاعدة البيانات: {ex.Message}");

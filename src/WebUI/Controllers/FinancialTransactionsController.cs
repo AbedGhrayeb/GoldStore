@@ -3,14 +3,15 @@ using Application.Common.Models;
 using Application.Finance.Transactions;
 using Application.Finance.Transactions.GetPaged;
 using Domain.Common;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
 using WebUI.Models.Finance;
-
 namespace WebUI.Controllers;
-
 [Authorize]
+[RequireFeature(Features.Finance)]
 public class FinancialTransactionsController(
     IQueryHandler<GetPagedTransactionsQuery, PaginatedList<RecentTransactionResponse>> getPagedTransactionsHandler) : Controller
 {

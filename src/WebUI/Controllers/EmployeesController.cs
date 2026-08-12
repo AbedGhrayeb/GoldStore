@@ -11,15 +11,16 @@ using Application.Employees.Update;
 using Application.Finance.Accounts;
 using Application.Finance.Accounts.GetWithBalance;
 using Domain.Employees;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.Employee;
-
 namespace WebUI.Controllers;
-
 [Authorize]
+[RequireFeature(Features.Hr)]
 public class EmployeesController(
     IQueryHandler<GetEmployeesQuery, List<EmployeeResponse>> getEmployeesHandler,
     IQueryHandler<GetEmployeeByIdQuery, EmployeeResponse> getEmployeeByIdHandler,

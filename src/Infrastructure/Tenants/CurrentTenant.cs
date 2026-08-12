@@ -37,6 +37,8 @@ internal sealed class CurrentTenant(
 
     public bool IsOperational => IsAvailable && IsOperationalInternal();
 
+    public bool IsReadOnly => IsAvailable && Status == TenantStatus.Cancelled;
+
     public IReadOnlyList<string> EnabledFeatures => ResolveEnabledFeatures();
 
     public void Set(Guid tenantId, string tenantKey)

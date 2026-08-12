@@ -1,4 +1,5 @@
-﻿using Domain.Catalog;
+﻿using Domain.Authorization;
+using Domain.Catalog;
 using Domain.CustomerPurchases;
 using Domain.Debts;
 using Domain.Employees;
@@ -47,6 +48,16 @@ public interface IApplicationDbContext
     DbSet<CustomerPurchaseInvoice> CustomerPurchaseInvoices { get; }
 
     DbSet<CustomerPurchaseInvoiceItem> CustomerPurchaseInvoiceItems { get; }
+
+    DbSet<Permission> Permissions { get; }
+
+    DbSet<Role> Roles { get; }
+
+    DbSet<RolePermission> RolePermissions { get; }
+
+    DbSet<UserRole> UserRoles { get; }
+
+    DbSet<RefreshToken> RefreshTokens { get; }
 
     DbSet<Tenant> Tenants { get; }
 

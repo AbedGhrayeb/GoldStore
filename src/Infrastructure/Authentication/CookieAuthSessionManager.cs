@@ -3,6 +3,7 @@ using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Domain.Tenants;
 using Domain.Users;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
@@ -10,10 +11,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Authentication;
 
-internal sealed class CookieAuthSessionManager(IApplicationDbContext context, IHttpContextAccessor httpContextAccessor) : IAuthSessionManager
+internal sealed class CookieAuthSessionManager(
+    IApplicationDbContext context,
+    IHttpContextAccessor httpContextAccessor,
+    PermissionProvider permissionProvider) : IAuthSessionManager
 {
-
-
     public async Task SignInAsync(string username, bool rememberMe, CancellationToken cancellationToken)
     {
         // Sign-in runs before a tenant context exists, so the user lookup bypasses
@@ -28,7 +30,9 @@ internal sealed class CookieAuthSessionManager(IApplicationDbContext context, IH
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == user.TenantId, cancellationToken) ?? throw new NullReferenceException();
 
-        IEnumerable<Claim> claims = BuildClaims(user, tenant);
+        UserAuthorizationInfo authorization = await permissionProvider.GetForUserAsync(user.Id, user.TenantId, cancellationToken);
+
+        IEnumerable<Claim> claims = BuildClaims(user, tenant, authorization);
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
 
@@ -46,16 +50,23 @@ internal sealed class CookieAuthSessionManager(IApplicationDbContext context, IH
 
     public Task SignOutAsync() => httpContextAccessor.HttpContext!.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-    //clams
-    private static IEnumerable<Claim> BuildClaims(User user, Tenant tenant) =>
-    [
-        new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-        new(ClaimTypes.Name, user.Email),
-        new(ClaimTypes.Email, user.Email),
-        new(ClaimTypes.GivenName, user.FirstName),
-        new(ClaimTypes.Surname, user.LastName),
-        new(CustomClaims.TenantId, user.TenantId.ToString()),
-        new(CustomClaims.TenantKey, tenant.Key),
-    ];
+    private static IEnumerable<Claim> BuildClaims(User user, Tenant tenant, UserAuthorizationInfo authorization)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, user.Email),
+            new(ClaimTypes.Email, user.Email),
+            new(ClaimTypes.GivenName, user.FirstName),
+            new(ClaimTypes.Surname, user.LastName),
+            new(CustomClaims.TenantId, user.TenantId.ToString()),
+            new(CustomClaims.TenantKey, tenant.Key),
+            new(CustomClaims.SecurityStamp, user.SecurityStamp),
+        };
 
+        claims.AddRange(authorization.Roles.Select(role => new Claim(ClaimTypes.Role, role)));
+        claims.AddRange(authorization.Permissions.Select(permission => new Claim(CustomClaims.Permission, permission)));
+
+        return claims;
+    }
 }

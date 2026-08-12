@@ -25,6 +25,11 @@ internal static class TenantProblemDetails
         "Tenant access denied",
         "This tenant is not currently able to use the application.");
 
+    public static ProblemDetails ReadOnly => Create(
+        "tenant.read_only",
+        "Tenant is read-only",
+        "This tenant is in its cancellation grace period and cannot make changes.");
+
     public static ProblemDetails AccessViolation => Create(
         "tenant.access_violation",
         "Tenant access violation",

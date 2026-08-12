@@ -10,6 +10,8 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
     {
         builder.HasKey(u => u.Id);
 
+        builder.Property(u => u.SecurityStamp).HasMaxLength(128).IsRequired();
+
         builder.HasIndex(u => u.Email).IsUnique();
     }
 }

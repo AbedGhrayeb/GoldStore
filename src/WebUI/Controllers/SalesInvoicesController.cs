@@ -6,15 +6,16 @@ using Application.Features.SalesInvoices.Create;
 using Application.Features.SalesInvoices.GetKpis;
 using Application.Features.SalesInvoices.GetNextNumber;
 using Application.Features.SalesInvoices.GetPaged;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.SalesInvoice;
-
 namespace WebUI.Controllers;
-
 [Authorize]
+[RequireFeature(Features.Sales)]
 public class SalesInvoicesController(
     IQueryHandler<GetNextInvoiceNumberQuery, string> getNextNumberHandler,
     IQueryHandler<GetSalesInvoicesQuery, PaginatedList<SalesInvoiceResponse>> getPagedHandler,

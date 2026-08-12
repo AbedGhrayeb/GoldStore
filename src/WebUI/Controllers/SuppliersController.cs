@@ -5,6 +5,8 @@ using Application.Suppliers.GetAll;
 using Application.Suppliers.GetById;
 using Application.Suppliers.ToggleActive;
 using Application.Suppliers.Update;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
@@ -14,6 +16,7 @@ using WebUI.Models.Supplier;
 namespace WebUI.Controllers;
 
 [Authorize]
+[RequireFeature(Features.Suppliers)]
 public class SuppliersController(
     IQueryHandler<GetSuppliersQuery, List<SupplierResponse>> getSuppliersHandler,
     IQueryHandler<GetSupplierByIdQuery, SupplierDetailResponse> getSupplierByIdHandler,

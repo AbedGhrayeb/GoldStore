@@ -7,7 +7,11 @@ using SharedKernel.Result;
 
 namespace Application.Users.Update;
 
-internal sealed class UpdateUserCommandHandler(IApplicationDbContext context, IPasswordHasher passwordHasher, IUserContext userContext)
+internal sealed class UpdateUserCommandHandler(
+    IApplicationDbContext context,
+    IPasswordHasher passwordHasher,
+    IUserContext userContext,
+    IRefreshTokenService refreshTokenService)
     : ICommandHandler<UpdateUserCommand, bool>
 {
     public async Task<Result<bool>> Handle(UpdateUserCommand command, CancellationToken cancellationToken)
@@ -23,7 +27,19 @@ internal sealed class UpdateUserCommandHandler(IApplicationDbContext context, IP
         {
             return UserErrors.NotFound(command.Id);
         }
-        user.Update(command.FirstName, command.LastName, string.IsNullOrEmpty(command.Password) ? null : passwordHasher.Hash(command.Password));
+
+        bool passwordChanged = !string.IsNullOrWhiteSpace(command.Password);
+
+        user.Update(command.FirstName, command.LastName, passwordChanged ? passwordHasher.Hash(command.Password!) : null);
+
+        if (passwordChanged)
+        {
+            // A new password invalidates every previously issued session: rotate the
+            // security stamp and revoke all refresh tokens (plan Phase 4 items 3 and 5).
+            user.RegenerateSecurityStamp();
+            await refreshTokenService.RevokeAllForUserAsync(user.Id, cancellationToken);
+        }
+
         await context.SaveChangesAsync(cancellationToken);
 
         return true;

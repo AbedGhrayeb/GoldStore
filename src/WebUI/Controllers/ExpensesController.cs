@@ -11,15 +11,16 @@ using Application.Features.Expenses.Expenses.Delete;
 using Application.Features.Expenses.Expenses.GetKpis;
 using Application.Features.Expenses.Expenses.GetPaged;
 using Application.Features.Expenses.Expenses.Update;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.Expense;
-
 namespace WebUI.Controllers;
-
 [Authorize]
+[RequireFeature(Features.Expenses)]
 public class ExpensesController(
     IQueryHandler<GetExpensesQuery, PaginatedList<ExpenseResponse>> getExpensesHandler,
     IQueryHandler<GetExpenseKpisQuery, ExpenseKpiResponse> getKpisHandler,

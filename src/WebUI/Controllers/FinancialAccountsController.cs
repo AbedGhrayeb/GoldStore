@@ -7,15 +7,16 @@ using Application.Finance.Accounts.SetBalance;
 using Application.Finance.Transactions;
 using Application.Finance.Transactions.GetRecent;
 using Domain.Common;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.Finance;
-
 namespace WebUI.Controllers;
-
 [Authorize]
+[RequireFeature(Features.Finance)]
 public class FinancialAccountsController(
     IQueryHandler<GetAccountsWithBalancesQuery, List<AccountWithBalanceResponse>> getAccountsWithBalancesHandler,
     IQueryHandler<GetRecentTransactionsQuery, List<RecentTransactionResponse>> getRecentTransactionsHandler,

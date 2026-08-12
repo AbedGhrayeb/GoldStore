@@ -5,6 +5,8 @@ using Application.Features.StoreOperations.GetKpis;
 using Application.Features.StoreOperations.GetPaged;
 using Application.Features.StoreOperations.GetTodayEmployeeStats;
 using Application.Features.StoreOperations.Shared;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
@@ -12,6 +14,7 @@ using SharedKernel.Result;
 namespace WebUI.Controllers;
 
 [Authorize]
+[RequireFeature(Features.Reports)]
 public class StoreOperationsController(
     IQueryHandler<GetStoreOperationsQuery, PagedStoreOperationsResponse> getPagedHandler,
     IQueryHandler<GetStoreOperationsKpisQuery, StoreOperationsKpiResponse> getKpisHandler,

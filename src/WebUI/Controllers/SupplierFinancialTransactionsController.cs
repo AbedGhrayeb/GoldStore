@@ -7,6 +7,8 @@ using Application.Features.SupplierFinancialTransactions.GetPayments;
 using Application.Features.SupplierFinancialTransactions.Payments;
 using Application.Finance.Accounts;
 using Application.Finance.Accounts.GetAll;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
@@ -16,6 +18,7 @@ using WebUI.Models.SupplierFinancialTransaction;
 namespace WebUI.Controllers;
 
 [Authorize]
+[RequireFeature(Features.Suppliers)]
 public class SupplierFinancialTransactionsController(
     IQueryHandler<GetPagedSupplierFinancialTransactionsQuery, PagedSupplierFinancialTransactionResponse> getPagedHandler,
     IQueryHandler<GetSupplierFinancialKpisQuery, SupplierFinancialKpiResponse> getKpisHandler,

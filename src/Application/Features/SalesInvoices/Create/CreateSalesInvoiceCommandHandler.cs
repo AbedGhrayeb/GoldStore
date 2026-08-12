@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Subscriptions;
 using Application.Common.Errors;
 using Application.Common.Ledger;
 using Domain.Catalog;
@@ -15,11 +16,19 @@ using SharedKernel.Result;
 namespace Application.Features.SalesInvoices.Create;
 
 internal sealed class CreateSalesInvoiceCommandHandler(
-    IApplicationDbContext context)
+    IApplicationDbContext context,
+    ISubscriptionGate subscriptionGate)
     : ICommandHandler<CreateSalesInvoiceCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateSalesInvoiceCommand command, CancellationToken cancellationToken)
     {
+        // Central quota gate (plan Phase 4 item 7): posted-invoices-per-period plan limit.
+        Result<Success> quota = await subscriptionGate.EnsureCanPostInvoicesAsync(additionalInvoices: 1, cancellationToken);
+        if (quota.IsError)
+        {
+            return quota.Errors;
+        }
+
         if (command.Items.Count == 0)
         {
             return SalesInvoiceErrors.NoItems;

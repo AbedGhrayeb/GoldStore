@@ -6,15 +6,16 @@ using Application.Features.Finance.Debts.GetKpis;
 using Application.Features.Finance.Debts.GetPaged;
 using Application.Features.Finance.Debts.Payments;
 using Application.Features.Finance.Debts.Update;
+using Domain.Tenants;
+using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
 using WebUI.Models;
 using WebUI.Models.Debt;
-
 namespace WebUI.Controllers;
-
 [Authorize]
+[RequireFeature(Features.Finance)]
 public class DebtsController(
     IQueryHandler<GetDebtsQuery, PaginatedList<DebtResponse>> getPagedHandler,
     IQueryHandler<GetDebtKpisQuery, DebtKpiResponse> getKpisHandler,
