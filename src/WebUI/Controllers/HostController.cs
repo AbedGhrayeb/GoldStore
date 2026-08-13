@@ -3,6 +3,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.PlatformUsers.Login;
 using Application.Tenants.Provision;
+using Application.Tenants.Reconciliation;
 using Application.Tenants.UpdateStatus;
 using Domain.Tenants;
 using Microsoft.AspNetCore.Authorization;
@@ -26,6 +27,7 @@ public sealed class HostController(
     IPlatformAuthSessionManager sessionManager,
     ICommandHandler<ProvisionTenantCommand, Guid> provisionTenantCommandHandler,
     ICommandHandler<UpdateTenantStatusCommand, Guid> updateTenantStatusCommandHandler,
+    IQueryHandler<GetTenantReconciliationQuery, TenantReconciliationResponse> reconciliationQueryHandler,
     IApplicationDbContext context) : ControllerBase
 {
     [HttpPost("login")]
@@ -93,6 +95,16 @@ public sealed class HostController(
             new UpdateTenantStatusCommand(tenantId, request.NewStatus, request.TransitionAtUtc), cancellationToken);
 
         return result.IsSuccess ? Ok(new { tenantId = result.Value }) : BadRequest(new { message = result.TopError.Description });
+    }
+
+    [HttpGet("reconciliation")]
+    [Authorize]
+    public async Task<IActionResult> Reconciliation([FromQuery] Guid? tenantId, CancellationToken cancellationToken)
+    {
+        Result<TenantReconciliationResponse> result = await reconciliationQueryHandler.Handle(
+            new GetTenantReconciliationQuery(tenantId), cancellationToken);
+
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(new { message = result.TopError.Description });
     }
 }
 
