@@ -11,35 +11,41 @@ src/SharedKernel   (no dependencies — Result, Error, Entity, IDomainEvent)
 src/Domain         → SharedKernel
 src/Application    → Domain, SharedKernel
 src/Infrastructure → Application
-src/WebUI          → Infrastructure
-src/Client         (Angular 21, standalone, Tailwind CSS)
+src/WebUI          → Infrastructure   (MVC + Razor + jQuery — the production client)
 tests/ArchitectureTests
+tests/Application.UnitTests
+tests/Application.IntegrationTests
 ```
 
-- **Backend**: ASP.NET Core 10, C# (file-scoped namespaces), EF Core, SQL Server (moving to PostgreSQL), JWT auth, Serilog + Seq
-- **Frontend**: Angular 21 (standalone components, lazy-loaded routes), SCSS, Tailwind CSS v3, RtL layout, `IBM Plex Sans Arabic` font
+- **Backend**: ASP.NET Core 10, C# (file-scoped namespaces), EF Core, SQL Server (moving to PostgreSQL), JWT + cookie auth, Serilog + Seq
+- **Frontend (current)**: server-rendered MVC Razor views + jQuery/Bootstrap in `src/WebUI`, RTL layout, `IBM Plex Sans Arabic` font
+- **Frontend (planned)**: Angular 21 client under `src/Client` is **Phase 7b (deferred)** — not created yet; `npm`/`src/proxy.conf.json` references in the Build section are for that future client
 - **Clean Architecture** with CQRS: `ICommandHandler<>`, `IQueryHandler<,>`, `IDomainEventHandler<>`, validation via FluentValidation decorator, logging decorator
-- **Endpoints**: `IEndpoint` interface — each feature maps endpoints via `MapEndpoint()`, registered via `AddEndpoints(Assembly)` / `MapEndpoints()`
-- **Domain events**: dispatched after `SaveChangesAsync` (eventual consistency)
+- **Endpoints**: MVC controllers in `WebUI.Controllers` (the API layer with `IEndpoint` minimal endpoints is Phase 7a, deferred)
+- **Domain events**: dispatched after `SaveChangesAsync` (eventual consistency); events carry `TenantId` so handlers in fresh scopes stay tenant-aware
 
 ### Key Domain Modules (ERD-aligned)
 
 | Module | Domain Folder | Key Entities |
 |--------|-------------|--------------|
 | Identity | `Users/` | User, Role, Permission |
-| Configuration | `Catalog/` | Karat, Category (self-ref), GoldPrice |
-| Suppliers | `Suppliers/`, `SupplierOperations/` | Supplier, SupplierDelivery, SupplierPayment |
+| Configuration | `Catalog/` | Karat (global, read-only), Category (self-ref) — gold price is a **live external feed** (`IGoldPriceService`), not a tenant-owned entity |
+| Suppliers | `Suppliers/`, `SupplierOperations/` | Supplier, SupplierDelivery, SupplierScrapGoldPayment, SupplierManufacturingPayment, SupplierGoldLedgerEntry, SupplierManufacturingLedgerEntry |
 | Inventory | `Inventory/` | GoldLedgerEntry, InventoryAdjustment |
-| Finance | `Finance/` | FinancialAccount, FinancialTransaction |
-| Sales | (M4 — upcoming) | SalesInvoice, SalesInvoiceItem |
-| Purchases | (M4 — upcoming) | CustomerPurchaseInvoice |
-| HR | (M5 — upcoming) | Employee, SalaryPayment |
-| Expenses | (M5 — upcoming) | Expense, ExpenseCategory |
+| Finance | `Finance/` | FinancialAccount, FinancialTransaction, Debt, DebtLedgerEntry |
+| Sales | `Sales/` | SalesInvoice, SalesInvoiceItem |
+| Purchases | `CustomerPurchases/` | CustomerPurchaseInvoice, CustomerPurchaseInvoiceItem |
+| HR | `Employees/` | Employee, SalaryPayment |
+| Expenses | `Expenses/` | Expense, ExpenseCategory |
+| Tenancy | `Tenants/` | Tenant, TenantSettings, TenantSubscription, SubscriptionPlan, PlatformUser |
 
 ### Critical Business Rules
 
-- **Equivalent21Weight** = Weight × (Karat / 21) — always calculated server-side, never trusted from client
-- **Balances are never stored directly** — calculated from ledger entries (GoldLedgerEntry IN − OUT, FinancialLedgerEntry IN − OUT)
+- **Equivalent21Weight** — calculated server-side in `Domain.Common.GoldWeight.CalculateEquivalent21KWeight`, never trusted from client (pinned by `tests/Application.UnitTests`):
+  - 21K → Weight (unchanged)
+  - 24K → Weight × 1000 / 875 (= Weight × 24/21)
+  - 18K → Weight × 700 / 875 (= × 0.8) — **store convention**, deliberately NOT Weight × 18/21
+- **Balances are never stored directly** — calculated from ledger entries (GoldLedgerEntry IN − OUT, FinancialLedgerEntry IN − OUT, DebtLedgerEntry IN − OUT)
 - **Currencies**: JOD, USD, ILS
 - **Karat values**: 18K, 21K, 24K (seeded, read-only)
 
@@ -104,8 +110,9 @@ Migrations auto-apply in Development via `ApplyMigrations()` + `InitializeDataba
 ## Testing
 
 - **ArchitectureTests**: NetArchTest.Rules + Shouldly + xUnit — validates layer dependency rules
-- `InternalsVisibleTo`: `Application.UnitTests` from Application, `ArchitectureTests` from Infrastructure
-- Unit/integration test projects for Application layer are expected but not yet created
+- **Application.UnitTests**: xUnit — pure unit tests (currently pins the `Equivalent21KWeight` formula)
+- **Application.IntegrationTests**: xUnit + `WebApplicationFactory` — real SQL Server-backed tenant-isolation tests (throwaway DB per factory instance)
+- `InternalsVisibleTo`: `Application.UnitTests` from Application
 
 ## Style / Design System (from DESIGN.md)
 
@@ -120,8 +127,11 @@ Migrations auto-apply in Development via `ApplyMigrations()` + `InitializeDataba
 ## Current Progress (from docs/tasks.md)
 
 - **M1** (Foundation & Identity): ✓ complete
-- **M2** (Configuration — Karats, Categories, GoldPrices): ✓ complete
-- **M3** (Suppliers & Inventory): in progress — entities exist, CRUD not yet
+- **M2** (Configuration — Karats, Categories, Gold prices): ✓ complete (gold price is a live external feed, not a stored entity)
+- **M3** (Suppliers & Inventory): ✓ complete — suppliers, deliveries, scrap-gold & manufacturing payments, financial transactions, gold ledger
 - **M3.5** (Debts — Receivables/Payables): ✓ complete — dual-write ledger + financial transactions
 - **M4** (Sales Invoices): ✓ complete — Create with per-item gold entries, payment/debt
-- **M5–M7**: not started
+- **M4.5** (Customer Gold Purchases): ✓ complete — purchase invoices with gold IN + financial OUT
+- **M5** (Finance, Expenses & HR): ✓ complete — accounts, debts, transactions, expenses, employees, salary payments
+- **M6** (Dashboard & Reporting): partial — KPI pages exist (store operations, gold ledger, debts, expenses); report pages with PDF/Excel export **not started**
+- **M7** (Optimization & Production): not started

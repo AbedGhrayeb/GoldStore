@@ -93,6 +93,11 @@ This phase is the core protection. It must be completed before generating new CR
 
 ## Phase 5 — Make Application Features Tenant-Aware
 
+> **Complete** (audited 2026-08, held to the pragmatic bar: the EF query filter + write-guard interceptor remain the primary protection; explicit `ICurrentTenant` scoping is applied where handlers aggregate/validate/unique-check).
+> - Items 2 (no client `TenantId` in commands), 6 (domain events carry `TenantId`; no outbox/jobs/imports yet), 7 (provisioning/suspension workflows): verified pass.
+> - Items 1/3/4: pass under the pragmatic bar — all aggregation/KPI/balance/unique-check handlers inject `ICurrentTenant`; unique checks are tenant-scoped via the filtered context and backed by `(TenantId, …)` unique indexes.
+> - Item 5: `Equivalent21KWeight` is server-side only; the 18K → ×700/875 (0.8) store convention is intentional and pinned by `tests/Application.UnitTests`.
+
 Apply this pattern to every current module before exposing or expanding endpoints.
 
 1. Inject `ICurrentTenant` into commands, queries, domain-event handlers, and background-job entry points that operate on tenant data.
@@ -148,6 +153,8 @@ Perform this in a non-production copy first and take a verified backup before pr
 
 ## Phase 8 — Test Tenant Isolation and Operations
 
+> **Complete** (2026-08). Items 1–6 covered by `tests/Application.IntegrationTests` (23 tests: DbContext query-filter/write-guard/unique-constraint tests, HTTP direct-ID attack tests, login eligibility, read-only grace tenant, host-only separation) and `tests/ArchitectureTests` (4 layer rules). Item 7 (background jobs) and item 9 (operational checks) deferred until background work exists.
+
 Add integration tests before relying on the implementation in production.
 
 1. Seed at least two tenants with deliberately similar users, suppliers, invoices, ledger entries, and identifiers.
@@ -164,12 +171,14 @@ Add integration tests before relying on the implementation in production.
 
 ## Phase 9 — Production Rollout
 
-1. Ship the tenant foundation and migration before generating the remaining API endpoints.
-2. Onboard one internal/demo tenant first, then migrate the existing store as the initial production tenant.
-3. Create an internal host-admin runbook for provisioning, suspension, reactivation, plan changes, support access, and incident response.
-4. Monitor query performance by tenant and add indexes based on real tenant-scoped query patterns. Investigate unusually large tenants as potential noisy neighbors.
-5. Establish data retention, export, archive, and deletion policies per tenant before accepting paying customers.
-6. Reassess database-per-tenant only if a customer has contractual isolation, residency, dedicated-performance, or exceptional customization requirements. Keep the shared-schema model as the default.
+1. Ship the tenant foundation and migration before generating the remaining API endpoints. ✅ done
+2. Onboard one internal/demo tenant first, then migrate the existing store as the initial production tenant. — rollout steps documented in `docs/production-rollout-checklist.md` (baseline snapshot 2026-08-13: single `goldstore` tenant, 0 anomalies); demo-tenant onboarding walkthrough included.
+3. Create an internal host-admin runbook for provisioning, suspension, reactivation, plan changes, support access, and incident response. ✅ done — `docs/host-admin-runbook.md`.
+4. Monitor query performance by tenant and add indexes based on real tenant-scoped query patterns. Investigate unusually large tenants as potential noisy neighbors. ✅ guide — `docs/per-tenant-monitoring.md` (index inventory verified against live DB; missing-index workflow; alert triggers). Perf instrumentation/alerting wiring deferred to M7.
+5. Establish data retention, export, archive, and deletion policies per tenant before accepting paying customers. ✅ policy — `docs/data-retention-policy.md` (deletion is backup-first manual; self-serve export pending M6 reporting).
+6. Reassess database-per-tenant only if a customer has contractual isolation, residency, dedicated-performance, or exceptional customization requirements. Keep the shared-schema model as the default. ✅ decision — `docs/database-per-tenant-decision.md` (shared schema retained; reassessment triggers + cost documented).
+
+**Status (2026-08-13):** documentation deliverables + reconciliation baseline complete. Open operational items deferred to M7: production config/secret hygiene, `/health` endpoint, `ApplyMigrations()` wiring in production, alerting, trial/grace scheduled jobs, host-action audit trail, plan-change endpoint, self-serve password reset.
 
 ## Suggested Delivery Order
 
@@ -177,10 +186,10 @@ Add integration tests before relying on the implementation in production.
 2. Phase 3: EF Core filters, write guard, constraints, and migration design.
 3. Phase 4: login, JWT claims, subscription/feature authorization, and host administration.
 4. Phase 6: migrate existing data and reconcile ledgers.
-5. Phase 8: integration/isolation tests.
-6. Phase 5: generate the remaining business endpoints using the tenant-aware base.
+5. Phase 8: integration/isolation tests. ✅ done
+6. Phase 5: generate the remaining business endpoints using the tenant-aware base. ✅ done (audited; see Phase 5 notes)
 7. Complete the remaining MVC business features on the tenant-aware base (MVC remains the production client).
-8. Phase 9: production rollout for the multi-tenant MVC version.
+8. Phase 9: production rollout for the multi-tenant MVC version. ✅ docs + baseline; operational items → M7
 9. Phase 7a: implement the API layer against the same application logic.
 10. Phase 7b: build the Angular client and transition stores to it; keep the MVC app as a fallback.
 
