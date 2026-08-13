@@ -11,4 +11,8 @@
     <Project Path="src/SharedKernel/SharedKernel.csproj" />
     <Project Path="src/WebUI/WebUI.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Application.IntegrationTests/Application.IntegrationTests.csproj" />
+    <Project Path="tests/ArchitectureTests/ArchitectureTests.csproj" />
+  </Folder>
 </Solution>

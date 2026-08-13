@@ -120,7 +120,22 @@ Perform this in a non-production copy first and take a verified backup before pr
 
 **Exit criteria:** existing data belongs to exactly one initial tenant and all balances reconcile with the pre-migration state.
 
-## Phase 7 — Update the Angular Client
+## Phase 7 — Implement the API Layer and Angular Client (deferred)
+
+> **Deferred until the MVC version is complete.** The current production client is the ASP.NET MVC Razor app (`src/WebUI`). All multi-tenancy phases (0–6) and the remaining business features are completed on that MVC app first. After multi-tenancy is finished, the API layer is generated on the tenant-aware base, then the Angular client is built against it. The MVC app is kept as a fallback during and after the transition; it is not deleted.
+
+### Phase 7a — Implement the API Layer
+
+1. Expose every business module through minimal API endpoints using the `IEndpoint` contract and `AddEndpoints`/`MapEndpoints`, reusing the existing commands, queries, validators, and handlers from the MVC layer.
+2. Follow the non-negotiable tenancy rules on every endpoint: never accept `TenantId` in request bodies, route values, or query strings; resolve the tenant from `ICurrentTenant` only.
+3. Return RFC 9457 ProblemDetails consistently for validation, cross-tenant access, missing/unknown/disabled tenants, and suspended subscriptions.
+4. Add tenant-aware FluentValidation for unique checks (e.g., `(TenantId, NormalizedName)`, `(TenantId, Code)`) and cross-aggregate reference validation in handlers.
+5. Document the full API surface with OpenAPI metadata and keep host-only endpoints explicitly separated from tenant endpoints.
+6. Add integration tests against the API for direct-ID attacks, write stamping, and tenant-aware unique constraints.
+
+**Exit criteria:** every business operation is available as a tenant-isolated API, and the MVC and API layers share the same application logic and tenancy guarantees.
+
+### Phase 7b — Build the Angular Client
 
 1. Use `goldstore.app` for public login and onboarding. After receiving a valid token, redirect to the tenant key contained in its claims and load tenant-specific branding/configuration from that canonical subdomain.
 2. Do not use a tenant ID or tenant header to establish authorization in the client.
@@ -129,7 +144,7 @@ Perform this in a non-production copy first and take a verified backup before pr
 5. Render customization from `TenantSettings` and feature flags: name, logo, theme, invoice options, and enabled navigation items.
 6. Handle subscription status centrally: show clear renewal/suspension messaging and prevent navigation to disabled features without pretending client-side checks are security.
 
-**Exit criteria:** one frontend deployment serves all stores while each store sees only its authorized branding and features.
+**Exit criteria:** one frontend deployment serves all stores while each store sees only its authorized branding and features, and the MVC fallback continues to serve the same tenant-isolated data.
 
 ## Phase 8 — Test Tenant Isolation and Operations
 
@@ -164,7 +179,10 @@ Add integration tests before relying on the implementation in production.
 4. Phase 6: migrate existing data and reconcile ledgers.
 5. Phase 8: integration/isolation tests.
 6. Phase 5: generate the remaining business endpoints using the tenant-aware base.
-7. Phases 7 and 9: client branding/features and staged customer rollout.
+7. Complete the remaining MVC business features on the tenant-aware base (MVC remains the production client).
+8. Phase 9: production rollout for the multi-tenant MVC version.
+9. Phase 7a: implement the API layer against the same application logic.
+10. Phase 7b: build the Angular client and transition stores to it; keep the MVC app as a fallback.
 
 ## Definition of Done
 
