@@ -71,7 +71,11 @@ public sealed class User : Entity, ITenantEntity
             return UserErrors.LastNameRequired;
         }
 
-        return new User(id, tenantId, email, firstName, lastName, passwordHash);
+        var user = new User(id, tenantId, email, firstName, lastName, passwordHash);
+
+        user.Raise(new UserRegisteredDomainEvent(user.Id, user.TenantId));
+
+        return user;
     }
     public Result<Updated> Update(string firstName, string lastName, string? passwordHash)
     {

@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Application.Common.Models;
 using Domain.Common;
 using Domain.Finance;
@@ -8,7 +9,7 @@ using SharedKernel.Result;
 
 namespace Application.Finance.Transactions.GetPaged;
 
-internal sealed class GetPagedTransactionsQueryHandler(IApplicationDbContext context)
+internal sealed class GetPagedTransactionsQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetPagedTransactionsQuery, PaginatedList<RecentTransactionResponse>>
 {
     public async Task<Result<PaginatedList<RecentTransactionResponse>>> Handle(
@@ -16,14 +17,14 @@ internal sealed class GetPagedTransactionsQueryHandler(IApplicationDbContext con
         CancellationToken cancellationToken)
     {
 
-        IQueryable<FinancialTransaction> transactionsQuery = context.FinancialTransactions.OrderByDescending(f=>f.CreatedAtUtc).AsNoTracking();
+        IQueryable<FinancialTransaction> transactionsQuery = context.FinancialTransactions.OrderByDescending(f=>f.CreatedAtUtc).AsNoTracking().Where(t => t.TenantId == currentTenant.TenantId);
 
         if (!string.IsNullOrWhiteSpace(query.Currency)
             && Enum.TryParse<Currency>(query.Currency, ignoreCase: true, out Currency currency))
         {
             transactionsQuery = transactionsQuery.Where(t => t.Currency == currency);
         }
-        IQueryable<FinancialAccount> financialAccountsQuery = context.FinancialAccounts.AsNoTracking();
+        IQueryable<FinancialAccount> financialAccountsQuery = context.FinancialAccounts.AsNoTracking().Where(a => a.TenantId == currentTenant.TenantId);
         if (!string.IsNullOrWhiteSpace(query.AccountType)
             && Enum.TryParse<FinancialAccountType>(query.AccountType, ignoreCase: true, out FinancialAccountType accountType))
         {

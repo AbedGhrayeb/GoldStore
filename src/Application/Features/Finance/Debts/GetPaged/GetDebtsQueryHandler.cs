@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Application.Common.Models;
 using Domain.Debts;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ using SharedKernel.Result;
 
 namespace Application.Features.Finance.Debts.GetPaged;
 
-internal sealed class GetDebtsQueryHandler(IApplicationDbContext context)
+internal sealed class GetDebtsQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetDebtsQuery, PaginatedList<DebtResponse>>
 {
     private static string GetDirectionLabel(DebtDirection direction) => direction switch
@@ -19,7 +20,7 @@ internal sealed class GetDebtsQueryHandler(IApplicationDbContext context)
 
     public async Task<Result<PaginatedList<DebtResponse>>> Handle(GetDebtsQuery query, CancellationToken cancellationToken)
     {
-        IQueryable<Debt> debtsQuery = context.Debts.OrderByDescending(d=>d.CreatedAtUtc).AsNoTracking();
+        IQueryable<Debt> debtsQuery = context.Debts.OrderByDescending(d=>d.CreatedAtUtc).AsNoTracking().Where(d => d.TenantId == currentTenant.TenantId);
 
         if (!string.IsNullOrWhiteSpace(query.Direction) &&
             Enum.TryParse<DebtDirection>(query.Direction, out DebtDirection direction))
@@ -40,7 +41,7 @@ internal sealed class GetDebtsQueryHandler(IApplicationDbContext context)
 
         List<DebtLedgerEntry> allEntries = await context.DebtLedgerEntries
             .AsNoTracking()
-            .Where(e => debtIds.Contains(e.DebtId))
+            .Where(e => e.TenantId == currentTenant.TenantId && debtIds.Contains(e.DebtId))
             .ToListAsync(cancellationToken);
 
         var balances = allEntries

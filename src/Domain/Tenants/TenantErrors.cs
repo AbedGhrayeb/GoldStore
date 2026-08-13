@@ -27,4 +27,36 @@ public static class TenantErrors
     public static Error QuotaExceeded(string resource, int limit) => Error.Conflict(
         "Tenants.Quota.Exceeded",
         $"تم الوصول إلى الحد الأقصى المسموح لعدد {resource} ({limit}). يرجى التواصل مع الدعم لترقية الاشتراك.");
+
+    public static Error NotFound(Guid tenantId) => Error.NotFound(
+        "Tenants.NotFound",
+        $"المتجر بـ Id = '{tenantId}' غير موجود");
+
+    public static readonly Error KeyNotUnique = Error.Conflict(
+        "Tenants.Key.NotUnique",
+        "المعرف الخاص بالمتجر مستخدم بالفعل من متجر آخر");
+
+    public static Error PlanNotFound(Guid planId) => Error.NotFound(
+        "Tenants.Plan.NotFound",
+        $"خطة الاشتراك بـ Id = '{planId}' غير موجودة");
+
+    public static readonly Error StoreAdministratorRoleNotFound = Error.Failure(
+        "Tenants.StoreAdminRole.NotFound",
+        "دور مدير المتجر غير موجود. تأكد من تهيئة البيانات الأساسية قبل إنشاء المتجر.");
+
+    public static readonly Error AdminEmailRequired = Error.Validation(
+        "Tenants.AdminEmail.Required",
+        "البريد الإلكتروني لمسؤول المتجر مطلوب");
+
+    public static readonly Error AdminPasswordRequired = Error.Validation(
+        "Tenants.AdminPassword.Required",
+        "كلمة مرور مسؤول المتجر مطلوبة");
+
+    public static Error InvalidTransition(TenantStatus from, TenantStatus to) => Error.Validation(
+        "Tenants.Status.InvalidTransition",
+        $"لا يمكن تحويل المتجر من الحالة {from} إلى الحالة {to}");
+
+    public static Error TransitionDateRequired(TenantStatus target) => Error.Validation(
+        "Tenants.Status.TransitionDate.Required",
+        $"يجب تحديد تاريخ الانتقال لحالة {target}");
 }

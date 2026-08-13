@@ -1,11 +1,12 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Result;
 
 namespace Application.Features.Expenses.ExpenseCategories.GetAll;
 
-internal sealed class GetExpenseCategoriesQueryHandler(IApplicationDbContext context)
+internal sealed class GetExpenseCategoriesQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetExpenseCategoriesQuery, List<ExpenseCategoryResponse>>
 {
     public async Task<Result<List<ExpenseCategoryResponse>>> Handle(
@@ -14,6 +15,7 @@ internal sealed class GetExpenseCategoriesQueryHandler(IApplicationDbContext con
     {
         List<ExpenseCategoryResponse> categories = await context.ExpenseCategories
             .AsNoTracking()
+            .Where(c => c.TenantId == currentTenant.TenantId)
             .Where(c => query.ActiveOnly ? c.IsActive : true)
             .OrderByDescending(c => c)
             .Select(c => new ExpenseCategoryResponse

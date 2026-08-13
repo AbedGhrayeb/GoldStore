@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Common;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,8 @@ namespace Application.Features.StoreOperations.GetKpis;
 
 internal sealed class GetStoreOperationsKpisQueryHandler(
     IApplicationDbContext context,
-    IDateTimeProvider dateTimeProvider)
+    IDateTimeProvider dateTimeProvider,
+    ICurrentTenant currentTenant)
     : IQueryHandler<GetStoreOperationsKpisQuery, StoreOperationsKpiResponse>
 {
 
@@ -23,12 +25,14 @@ internal sealed class GetStoreOperationsKpisQueryHandler(
 
         var sales = await context.SalesInvoices
             .AsNoTracking()
+            .Where(s => s.TenantId == currentTenant.TenantId)
             .Where(s => s.Date >= todayStart && s.Status != SalesInvoiceStatus.Cancelled)
             .Select(s => new { s.Currency, s.TotalAmount })
             .ToListAsync(cancellationToken);
 
         var purchases = await context.CustomerPurchaseInvoices
             .AsNoTracking()
+            .Where(p => p.TenantId == currentTenant.TenantId)
             .Where(p => p.Date >= todayStart)
             .Select(p => new { p.Currency, p.TotalAmount })
             .ToListAsync(cancellationToken);

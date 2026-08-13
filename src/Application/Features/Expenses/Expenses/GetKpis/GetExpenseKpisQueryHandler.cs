@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Common;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -7,7 +8,7 @@ using SharedKernel.Result;
 
 namespace Application.Features.Expenses.Expenses.GetKpis;
 
-internal sealed class GetExpenseKpisQueryHandler(IApplicationDbContext context, IDateTimeProvider dateTimeProvider)
+internal sealed class GetExpenseKpisQueryHandler(IApplicationDbContext context, IDateTimeProvider dateTimeProvider, ICurrentTenant currentTenant)
     : IQueryHandler<GetExpenseKpisQuery, ExpenseKpiResponse>
 {
     public async Task<Result<ExpenseKpiResponse>> Handle(GetExpenseKpisQuery query, CancellationToken cancellationToken)
@@ -17,10 +18,12 @@ internal sealed class GetExpenseKpisQueryHandler(IApplicationDbContext context, 
 
         Dictionary<Guid, Currency> accountCurrencies = await context.FinancialAccounts
             .AsNoTracking()
+            .Where(a => a.TenantId == currentTenant.TenantId)
             .ToDictionaryAsync(a => a.Id, a => a.Currency, cancellationToken);
 
         var expenses = await context.Expenses
             .AsNoTracking()
+            .Where(e => e.TenantId == currentTenant.TenantId)
             .Where(e => e.ExpenseDate >= monthStart && e.AccountId.HasValue && e.ExpenseCategoryId.HasValue)
             .Select(e => new { e.Id, e.ExpenseDate, e.Amount, e.AccountId, e.ExpenseCategoryId })
             .ToListAsync(cancellationToken);
@@ -68,6 +71,7 @@ internal sealed class GetExpenseKpisQueryHandler(IApplicationDbContext context, 
         {
             topCategoryName = await context.ExpenseCategories
                 .AsNoTracking()
+                .Where(c => c.TenantId == currentTenant.TenantId)
                 .Where(c => c.Id == topCategoryId.Value)
                 .Select(c => c.Name)
                 .FirstOrDefaultAsync(cancellationToken) ?? "—";

@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Common;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,8 @@ using SharedKernel.Result;
 namespace Application.Features.SupplierFinancialTransactions.GetKpis;
 
 internal sealed class GetSupplierFinancialKpisQueryHandler(
-    IApplicationDbContext context)
+    IApplicationDbContext context,
+    ICurrentTenant currentTenant)
     : IQueryHandler<GetSupplierFinancialKpisQuery, SupplierFinancialKpiResponse>
 {
 
@@ -17,12 +19,14 @@ internal sealed class GetSupplierFinancialKpisQueryHandler(
     {
         List<SupplierFinancialTransaction> transactions = await context.SupplierFinancialTransactions
             .AsNoTracking()
+            .Where(t => t.TenantId == currentTenant.TenantId)
             .ToListAsync(cancellationToken);
 
         var transactionIds = transactions.Select(t => t.Id).ToList();
 
         List<SupplierFinancialLedgerEntry> allEntries = await context.SupplierFinancialLedgerEntries
             .AsNoTracking()
+            .Where(e => e.TenantId == currentTenant.TenantId)
             .Where(e => transactionIds.Contains(e.SupplierFinancialTransactionId))
             .ToListAsync(cancellationToken);
 

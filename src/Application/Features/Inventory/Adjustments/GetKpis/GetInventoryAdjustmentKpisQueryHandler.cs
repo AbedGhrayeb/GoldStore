@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Inventory;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -9,7 +10,8 @@ namespace Application.Features.Inventory.Adjustments.GetKpis;
 
 internal sealed class GetInventoryAdjustmentKpisQueryHandler(
     IApplicationDbContext context,
-    IDateTimeProvider dateTimeProvider)
+    IDateTimeProvider dateTimeProvider,
+    ICurrentTenant currentTenant)
     : IQueryHandler<GetInventoryAdjustmentKpisQuery, InventoryAdjustmentKpiResponse>
 {
     public async Task<Result<InventoryAdjustmentKpiResponse>> Handle(GetInventoryAdjustmentKpisQuery query, CancellationToken cancellationToken)
@@ -18,7 +20,7 @@ internal sealed class GetInventoryAdjustmentKpisQueryHandler(
 
         List<InventoryAdjustment> todayAdjustments = await context.InventoryAdjustments
             .AsNoTracking()
-            .Where(a => a.CreatedAtUtc >= todayStart)
+            .Where(a => a.TenantId == currentTenant.TenantId && a.CreatedAtUtc >= todayStart)
             .ToListAsync(cancellationToken);
 
         int count = todayAdjustments.Count;

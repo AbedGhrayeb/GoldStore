@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -9,7 +10,8 @@ namespace Application.Features.SalesInvoices.GetKpis;
 
 internal sealed class GetSalesInvoiceKpisQueryHandler(
     IApplicationDbContext context,
-    IDateTimeProvider dateTimeProvider)
+    IDateTimeProvider dateTimeProvider,
+    ICurrentTenant currentTenant)
     : IQueryHandler<GetSalesInvoiceKpisQuery, SalesInvoiceKpiResponse>
 {
     public async Task<Result<SalesInvoiceKpiResponse>> Handle(GetSalesInvoiceKpisQuery query, CancellationToken cancellationToken)
@@ -18,7 +20,7 @@ internal sealed class GetSalesInvoiceKpisQueryHandler(
 
         List<SalesInvoice> todayInvoices = await context.SalesInvoices
             .AsNoTracking()
-            .Where(i => i.Date >= todayStart && i.Status != SalesInvoiceStatus.Cancelled)
+            .Where(i => i.TenantId == currentTenant.TenantId && i.Date >= todayStart && i.Status != SalesInvoiceStatus.Cancelled)
             .ToListAsync(cancellationToken);
 
         int count = todayInvoices.Count;

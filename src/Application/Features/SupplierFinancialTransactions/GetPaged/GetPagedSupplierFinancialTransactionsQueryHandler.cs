@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Result;
@@ -7,14 +8,16 @@ using SharedKernel.Result;
 namespace Application.Features.SupplierFinancialTransactions.GetPaged;
 
 internal sealed class GetPagedSupplierFinancialTransactionsQueryHandler(
-    IApplicationDbContext context)
+    IApplicationDbContext context,
+    ICurrentTenant currentTenant)
     : IQueryHandler<GetPagedSupplierFinancialTransactionsQuery, PagedSupplierFinancialTransactionResponse>
 {
     public async Task<Result<PagedSupplierFinancialTransactionResponse>> Handle(
         GetPagedSupplierFinancialTransactionsQuery query, CancellationToken cancellationToken)
     {
         IQueryable<SupplierFinancialTransaction> transactionsQuery = context.SupplierFinancialTransactions
-            .AsNoTracking();
+            .AsNoTracking()
+            .Where(t => t.TenantId == currentTenant.TenantId);
 
         if (query.SupplierId.HasValue)
         { transactionsQuery = transactionsQuery.Where(t => t.SupplierId == query.SupplierId.Value); }
@@ -26,7 +29,7 @@ internal sealed class GetPagedSupplierFinancialTransactionsQueryHandler(
         {
             string search = query.Search.Trim();
             transactionsQuery = transactionsQuery.Where(t =>
-                context.Suppliers.Any(s => s.Id == t.SupplierId && s.Name.Contains(search)));
+                context.Suppliers.Any(s => s.Id == t.SupplierId && s.TenantId == currentTenant.TenantId && s.Name.Contains(search)));
         }
 
         int totalCount = await transactionsQuery.CountAsync(cancellationToken);
@@ -43,11 +46,13 @@ internal sealed class GetPagedSupplierFinancialTransactionsQueryHandler(
         var transactionIds = pagedData.Select(t => t.Id).ToList();
 
         Dictionary<Guid, string> supplierNames = await context.Suppliers
+            .Where(s => s.TenantId == currentTenant.TenantId)
             .Where(s => pagedData.Select(t => t.SupplierId).Contains(s.Id))
             .ToDictionaryAsync(s => s.Id, s => s.Name, cancellationToken);
 
         List<SupplierFinancialLedgerEntry> allEntries = await context.SupplierFinancialLedgerEntries
             .AsNoTracking()
+            .Where(e => e.TenantId == currentTenant.TenantId)
             .Where(e => transactionIds.Contains(e.SupplierFinancialTransactionId))
             .ToListAsync(cancellationToken);
 

@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Application.Common.Models;
 using Domain.Common;
 using Domain.Inventory;
@@ -8,12 +9,12 @@ using SharedKernel.Result;
 
 namespace Application.Features.Inventory.GoldLedger.GetPaged;
 
-internal sealed class GetGoldLedgerQueryHandler(IApplicationDbContext context)
+internal sealed class GetGoldLedgerQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetGoldLedgerQuery, PaginatedList<GoldLedgerEntryResponse>>
 {
     public async Task<Result<PaginatedList<GoldLedgerEntryResponse>>> Handle(GetGoldLedgerQuery query, CancellationToken cancellationToken)
     {
-        IQueryable<GoldLedgerEntry> entries = context.GoldLedgerEntries.OrderByDescending(c=>c.CreatedAtUtc).AsNoTracking();
+        IQueryable<GoldLedgerEntry> entries = context.GoldLedgerEntries.OrderByDescending(c=>c.CreatedAtUtc).AsNoTracking().Where(e => e.TenantId == currentTenant.TenantId);
 
         if (query.Karat.HasValue)
         {
@@ -46,7 +47,7 @@ internal sealed class GetGoldLedgerQueryHandler(IApplicationDbContext context)
 
         Dictionary<Guid, string> userNames = await context.Users
             .AsNoTracking()
-            .Where(u => userIds.Contains(u.Id))
+            .Where(u => u.TenantId == currentTenant.TenantId && userIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => $"{u.FirstName} {u.LastName}", cancellationToken);
 
         IQueryable<GoldLedgerEntryResponse> items = entries.Select(e => new GoldLedgerEntryResponse

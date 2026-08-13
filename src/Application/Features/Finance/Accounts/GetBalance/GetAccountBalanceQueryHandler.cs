@@ -1,12 +1,13 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Result;
 
 namespace Application.Finance.Accounts.GetBalance;
 
-internal sealed class GetAccountBalanceQueryHandler(IApplicationDbContext context)
+internal sealed class GetAccountBalanceQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetAccountBalanceQuery, AccountBalanceResponse>
 {
     public async Task<Result<AccountBalanceResponse>> Handle(
@@ -15,7 +16,7 @@ internal sealed class GetAccountBalanceQueryHandler(IApplicationDbContext contex
     {
         FinancialAccount? account = await context.FinancialAccounts
             .AsNoTracking()
-            .FirstOrDefaultAsync(a => a.Id == query.AccountId, cancellationToken);
+            .FirstOrDefaultAsync(a => a.TenantId == currentTenant.TenantId && a.Id == query.AccountId, cancellationToken);
 
         if (account is null)
         {
@@ -24,7 +25,7 @@ internal sealed class GetAccountBalanceQueryHandler(IApplicationDbContext contex
 
         decimal currentBalance = await context.FinancialTransactions
             .AsNoTracking()
-            .Where(t => t.AccountId == account.Id)
+            .Where(t => t.TenantId == currentTenant.TenantId && t.AccountId == account.Id)
             .SumAsync(t => t.TransactionType == FinancialTransactionType.Inflow ? t.Amount : -t.Amount, cancellationToken);
 
         return new AccountBalanceResponse

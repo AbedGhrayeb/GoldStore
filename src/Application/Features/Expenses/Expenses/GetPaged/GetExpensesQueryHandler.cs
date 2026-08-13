@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Application.Common.Models;
 using Domain.Expenses;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ using SharedKernel.Result;
 
 namespace Application.Features.Expenses.Expenses.GetPaged;
 
-internal sealed class GetExpensesQueryHandler(IApplicationDbContext context)
+internal sealed class GetExpensesQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetExpensesQuery, PaginatedList<ExpenseResponse>>
 {
     private static string GetCurrencySymbol(string currency) => currency switch
@@ -20,7 +21,8 @@ internal sealed class GetExpensesQueryHandler(IApplicationDbContext context)
 
     public async Task<Result<PaginatedList<ExpenseResponse>>> Handle(GetExpensesQuery query, CancellationToken cancellationToken)
     {
-        IQueryable<Expense> expenses = context.Expenses.AsNoTracking();
+        IQueryable<Expense> expenses = context.Expenses.AsNoTracking()
+            .Where(e => e.TenantId == currentTenant.TenantId);
 
         if (query.CategoryId.HasValue)
         {
@@ -43,6 +45,7 @@ internal sealed class GetExpensesQueryHandler(IApplicationDbContext context)
         {
             List<Guid> matchingAccountIds = await context.FinancialAccounts
                 .AsNoTracking()
+                .Where(a => a.TenantId == currentTenant.TenantId)
                 .Where(a => a.Name.Contains(query.AccountName))
                 .Select(a => a.Id)
                 .ToListAsync(cancellationToken);
@@ -74,16 +77,19 @@ internal sealed class GetExpensesQueryHandler(IApplicationDbContext context)
 
         Dictionary<Guid, string> accountNames = await context.FinancialAccounts
             .AsNoTracking()
+            .Where(a => a.TenantId == currentTenant.TenantId)
             .Where(a => accountIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id, a => a.Name, cancellationToken);
 
         Dictionary<Guid, string> accountCurrencies = await context.FinancialAccounts
             .AsNoTracking()
+            .Where(a => a.TenantId == currentTenant.TenantId)
             .Where(a => accountIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id, a => a.Currency.ToString(), cancellationToken);
 
         Dictionary<Guid, string> categoryNames = await context.ExpenseCategories
             .AsNoTracking()
+            .Where(c => c.TenantId == currentTenant.TenantId)
             .Where(c => categoryGuids.Contains(c.Id))
             .ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
 

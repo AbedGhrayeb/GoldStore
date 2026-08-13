@@ -1,16 +1,18 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Result;
 
 namespace Application.Categories.GetAll;
 
-internal sealed class GetCategoriesQueryHandler(IApplicationDbContext context)
+internal sealed class GetCategoriesQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetCategoriesQuery, List<CategoryResponse>>
 {
     public async Task<Result<List<CategoryResponse>>> Handle(GetCategoriesQuery query, CancellationToken cancellationToken)
     {
         List<CategoryResponse> categories = await context.Categories.AsNoTracking()
+            .Where(c => c.TenantId == currentTenant.TenantId)
             .OrderByDescending(c => c)
             .Select(c => new CategoryResponse
             {
@@ -32,6 +34,7 @@ internal sealed class GetCategoriesQueryHandler(IApplicationDbContext context)
         if (parentIds.Count > 0)
         {
             Dictionary<Guid, string> parentNames = await context.Categories
+                .Where(c => c.TenantId == currentTenant.TenantId)
                 .Where(c => parentIds.Contains(c.Id))
                 .ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
 

@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Common;
 using Domain.Employees;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ using SharedKernel.Result;
 
 namespace Application.Employees.GetById;
 
-internal sealed class GetEmployeeByIdQueryHandler(IApplicationDbContext context)
+internal sealed class GetEmployeeByIdQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetEmployeeByIdQuery, EmployeeResponse>
 {
     public async Task<Result<EmployeeResponse>> Handle(
@@ -16,6 +17,7 @@ internal sealed class GetEmployeeByIdQueryHandler(IApplicationDbContext context)
     {
         EmployeeResponse? employee = await context.Employees
             .AsNoTracking()
+            .Where(e => e.TenantId == currentTenant.TenantId)
             .Where(e => e.Id == query.Id)
             .Select(e => new EmployeeResponse
             {

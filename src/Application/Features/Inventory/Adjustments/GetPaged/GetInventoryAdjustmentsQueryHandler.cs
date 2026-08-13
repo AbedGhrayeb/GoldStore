@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Application.Common.Models;
 using Domain.Common;
 using Domain.Inventory;
@@ -8,7 +9,7 @@ using SharedKernel.Result;
 
 namespace Application.Features.Inventory.Adjustments.GetPaged;
 
-internal sealed class GetInventoryAdjustmentsQueryHandler(IApplicationDbContext context)
+internal sealed class GetInventoryAdjustmentsQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetInventoryAdjustmentsQuery, PaginatedList<InventoryAdjustmentResponse>>
 {
     private static bool IsIncreaseType(InventoryAdjustmentType type) =>
@@ -16,7 +17,7 @@ internal sealed class GetInventoryAdjustmentsQueryHandler(IApplicationDbContext 
 
     public async Task<Result<PaginatedList<InventoryAdjustmentResponse>>> Handle(GetInventoryAdjustmentsQuery query, CancellationToken cancellationToken)
     {
-        IQueryable<InventoryAdjustment> adjustments = context.InventoryAdjustments.AsNoTracking();
+        IQueryable<InventoryAdjustment> adjustments = context.InventoryAdjustments.AsNoTracking().Where(a => a.TenantId == currentTenant.TenantId);
 
         if (query.FromDate.HasValue)
         {
@@ -51,7 +52,7 @@ internal sealed class GetInventoryAdjustmentsQueryHandler(IApplicationDbContext 
 
         Dictionary<Guid, string> userNames = await context.Users
             .AsNoTracking()
-            .Where(u => userIds.Contains(u.Id))
+            .Where(u => u.TenantId == currentTenant.TenantId && userIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => $"{u.FirstName} {u.LastName}", cancellationToken);
 
         IQueryable<InventoryAdjustmentResponse> items = adjustments.Select(a => new InventoryAdjustmentResponse

@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Application.Features.StoreOperations.Shared;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ using SharedKernel.Result;
 
 namespace Application.Features.StoreOperations.GetDetail;
 
-internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext context)
+internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetStoreOperationDetailQuery, StoreOperationDetailResponse>
 {
 
@@ -44,6 +45,7 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
         Domain.Sales.SalesInvoice? invoice = await context.SalesInvoices.Include(i => i.SaleInvoiceItems)
             .ThenInclude(ii => ii.Category).Include(i => i.FinancialAccount)
             .AsNoTracking()
+            .Where(s => s.TenantId == currentTenant.TenantId)
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
         if (invoice is null)
@@ -65,6 +67,7 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
 
         string? employeeName = await context.Employees
             .AsNoTracking()
+            .Where(e => e.TenantId == currentTenant.TenantId)
             .Where(e => e.Id == invoice.EmployeeId)
             .Select(e => e.FullName)
             .FirstOrDefaultAsync(cancellationToken);
@@ -119,6 +122,7 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
             .Include(p => p.Items).ThenInclude(i => i.Category)
             .Include(p => p.FinancialAccount)
             .AsNoTracking()
+            .Where(p => p.TenantId == currentTenant.TenantId)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
         if (invoice is null)
@@ -133,6 +137,7 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
 
         string? employeeName = await context.Employees
             .AsNoTracking()
+            .Where(e => e.TenantId == currentTenant.TenantId)
             .Where(e => e.Id == invoice.EmployeeId)
             .Select(e => e.FullName)
             .FirstOrDefaultAsync(cancellationToken);

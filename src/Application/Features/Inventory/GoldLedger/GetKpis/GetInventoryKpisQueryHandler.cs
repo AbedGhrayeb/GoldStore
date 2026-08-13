@@ -1,6 +1,7 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Services;
+using Application.Abstractions.Tenants;
 using Domain.Common;
 using Domain.Inventory;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,8 @@ namespace Application.Features.Inventory.GoldLedger.GetKpis;
 
 internal sealed class GetInventoryKpisQueryHandler(
     IApplicationDbContext context,
-    IGoldPriceService goldPriceService)
+    IGoldPriceService goldPriceService,
+    ICurrentTenant currentTenant)
     : IQueryHandler<GetInventoryKpisQuery, InventoryKpiResponse>
 {
     private static string FormatWeight(decimal grams) => $"{grams:F3}";
@@ -29,6 +31,7 @@ internal sealed class GetInventoryKpisQueryHandler(
     {
         var karatAggregates = await context.GoldLedgerEntries
             .AsNoTracking()
+            .Where(e => e.TenantId == currentTenant.TenantId)
             .GroupBy(e => e.Karat)
             .Select(g => new
             {

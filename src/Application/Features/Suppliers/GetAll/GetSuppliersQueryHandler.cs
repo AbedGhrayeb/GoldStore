@@ -1,12 +1,13 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Result;
 
 namespace Application.Suppliers.GetAll;
 
-internal sealed class GetSuppliersQueryHandler(IApplicationDbContext context)
+internal sealed class GetSuppliersQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetSuppliersQuery, List<SupplierResponse>>
 {
     public async Task<Result<List<SupplierResponse>>> Handle(GetSuppliersQuery query, CancellationToken cancellationToken)
@@ -16,6 +17,7 @@ internal sealed class GetSuppliersQueryHandler(IApplicationDbContext context)
             .Include(s => s.SupplierManufacturingLedgerEntries)
             .Include(s => s.SupplierFinancialTransactions)
             .AsNoTracking().AsNoTracking()
+            .Where(s => s.TenantId == currentTenant.TenantId)
             .OrderByDescending(s => s.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 

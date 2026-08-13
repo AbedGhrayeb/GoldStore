@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Common;
 using Domain.Debts;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,8 @@ using SharedKernel.Result;
 namespace Application.Features.Finance.Debts.GetKpis;
 
 internal sealed class GetDebtKpisQueryHandler(
-    IApplicationDbContext context)
+    IApplicationDbContext context,
+    ICurrentTenant currentTenant)
     : IQueryHandler<GetDebtKpisQuery, DebtKpiResponse>
 {
     private static readonly Dictionary<Currency, (string Code, string Symbol)> CurrencyLabels = new()
@@ -20,13 +22,13 @@ internal sealed class GetDebtKpisQueryHandler(
 
     public async Task<Result<DebtKpiResponse>> Handle(GetDebtKpisQuery query, CancellationToken cancellationToken)
     {
-        List<Debt> allDebts = await context.Debts.AsNoTracking().ToListAsync(cancellationToken);
+        List<Debt> allDebts = await context.Debts.AsNoTracking().Where(d => d.TenantId == currentTenant.TenantId).ToListAsync(cancellationToken);
 
         var debtIds = allDebts.Select(d => d.Id).ToList();
 
         List<DebtLedgerEntry> allEntries = await context.DebtLedgerEntries
             .AsNoTracking()
-            .Where(e => debtIds.Contains(e.DebtId))
+            .Where(e => e.TenantId == currentTenant.TenantId && debtIds.Contains(e.DebtId))
             .ToListAsync(cancellationToken);
 
         var balances = allEntries
