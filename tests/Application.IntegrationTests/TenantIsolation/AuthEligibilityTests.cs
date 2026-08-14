@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -32,7 +32,7 @@ public sealed class AuthEligibilityTests : IClassFixture<MultiTenantWebApplicati
     {
         HttpClient client = _factory.CreateClient();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/login",
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/v1/auth/login",
             new { email = TenantAAdmin, password = TenantAAdminPassword });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -48,7 +48,7 @@ public sealed class AuthEligibilityTests : IClassFixture<MultiTenantWebApplicati
     {
         HttpClient client = _factory.CreateClient();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/login",
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/v1/auth/login",
             new { email, password = MultiTenantWebApplicationFactory.TestPassword });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -59,7 +59,7 @@ public sealed class AuthEligibilityTests : IClassFixture<MultiTenantWebApplicati
     {
         HttpClient client = _factory.CreateClient();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/auth/login",
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/v1/auth/login",
             new { email = TenantAAdmin, password = "wrong-password" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -89,19 +89,35 @@ public sealed class AuthEligibilityTests : IClassFixture<MultiTenantWebApplicati
     [Fact]
     public async Task TenantUser_CannotReachHostAdministration()
     {
-        HttpClient client = await _factory.CreateAuthenticatedClientAsync(TenantAAdmin, TenantAAdminPassword);
+        // No auto-redirect: the challenge itself must be inspected, not the landing page.
+        HttpClient client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        // Sign in to the store as a tenant admin through the real MVC login flow.
+        string? token = await TestAuth.GetAntiforgeryTokenAsync(client, "/Account/Login");
+        Assert.NotNull(token);
+        using FormUrlEncodedContent form = new(new Dictionary<string, string>
+        {
+            ["Username"] = TenantAAdmin,
+            ["Password"] = TenantAAdminPassword,
+            ["__RequestVerificationToken"] = token!,
+        });
+        HttpResponseMessage login = await client.PostAsync("/Account/Login", form);
+        Assert.Equal(HttpStatusCode.Redirect, login.StatusCode);
+
         // Simulate a browser navigation so the cookie challenge redirects instead of
         // returning 401 (the cookie handler treats header-less requests as API calls).
         client.DefaultRequestHeaders.Accept.ParseAdd("text/html");
 
-        HttpResponseMessage response = await client.GetAsync("/host/tenants");
+        HttpResponseMessage response = await client.GetAsync("/host/api/v1/tenants");
 
         // Host administration is protected by the dedicated host cookie; a store user is
         // not authenticated for that scheme. The cookie challenge redirects browsers to
         // the host login, and returns 401 with the host login location for API clients.
-        Assert.True(
-            response.StatusCode is HttpStatusCode.Redirect or HttpStatusCode.Unauthorized,
-            $"Expected a host-login challenge, got {(int)response.StatusCode}.");
-        Assert.Contains("/host/login", response.Headers.Location?.ToString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/host/api/v1/auth/login", response.Headers.Location?.ToString(), StringComparison.OrdinalIgnoreCase);
+
+        // The redirect target renders the host sign-in page (GET works, unlike the POST API).
+        HttpResponseMessage loginPage = await client.GetAsync(response.Headers.Location!);
+        Assert.Equal(HttpStatusCode.OK, loginPage.StatusCode);
     }
 }

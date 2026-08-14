@@ -41,21 +41,21 @@ never appear and `Anomalies` must stay empty.
 - [ ] Migrations applied explicitly:
       `dotnet ef database update --project src/Infrastructure --startup-project src/WebUI`
       (`ApplyMigrations()` is not wired outside Development).
-- [ ] `GET /host/reconciliation` → 1 tenant, `Anomalies` empty; compare with the §0 baseline.
+- [ ] `GET /host/api/v1/reconciliation` → 1 tenant, `Anomalies` empty; compare with the §0 baseline.
 
 ## 2. Demo-tenant validation (every new store onboarding)
 
-1. Sign in as a platform admin: `POST /host/login` (`admin@goldstore` / the configured
+1. Sign in as a platform admin: `POST /host/api/v1/auth/login` (`admin@goldstore` / the configured
    `DefaultPlatformUserPassword`).
-2. Provision: `POST /host/tenants` with a distinct key (see runbook §1). Confirm `tenantId`
+2. Provision: `POST /host/api/v1/tenants` with a distinct key (see runbook §1). Confirm `tenantId`
    is returned.
-3. List: `GET /host/tenants` shows the new tenant as `Active`.
+3. List: `GET /host/api/v1/tenants` shows the new tenant as `Active`.
 4. Sign in as the store admin on the tenant; confirm the seeded roles and JOD/USD/ILS cash
    accounts; exercise one KPI + one create flow (e.g. an expense) so gold/financial ledgers
    move.
 5. Confirm isolation on the spot: a store user cannot reach `/host/*` (401/redirect), and a
    cross-tenant edit is rejected (403 `tenant.access_violation`).
-6. Run `GET /host/reconciliation` → two tenants, both `Anomalies` empty.
+6. Run `GET /host/api/v1/reconciliation` → two tenants, both `Anomalies` empty.
 7. Hand over admin credentials; the store changes the password.
 
 ## 3. Existing store as the initial production tenant
@@ -80,7 +80,7 @@ never appear and `Anomalies` must stay empty.
 
 ## 5. Post-go-live
 
-- [ ] Daily: `GET /host/reconciliation` snapshot; compare to baseline.
+- [ ] Daily: `GET /host/api/v1/reconciliation` snapshot; compare to baseline.
 - [ ] Watch the alert triggers in `docs/per-tenant-monitoring.md` §4.
 - [ ] Keep every tenant's row counts and balances traceable back to a baseline snapshot for
       at least the current billing period.

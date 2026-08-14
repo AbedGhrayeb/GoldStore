@@ -88,7 +88,7 @@ global query filters must be deployed in the **same release** that applies these
 
 ## 7. Reconcile before and after
 
-The host-only endpoint **`GET /host/reconciliation`** (host cookie auth) returns, per tenant:
+The host-only endpoint **`GET /host/api/v1/reconciliation`** (host cookie auth) returns, per tenant:
 - row counts for every tenant-owned table,
 - ownership anomalies (empty or unknown `TenantId`),
 - gold stock per karat and total 21K-equivalent weight recomputed from `GoldLedgerEntries`,
@@ -97,7 +97,7 @@ The host-only endpoint **`GET /host/reconciliation`** (host cookie auth) returns
 - supplier gold and manufacturing balances from their ledger entries.
 
 Procedure:
-1. Before migration: snapshot `GET /host/reconciliation` (all tenants).
+1. Before migration: snapshot `GET /host/api/v1/reconciliation` (all tenants).
 2. After migration: run it again on the migrated copy.
 3. Compare `RowCounts` and every recomputed balance — they must be identical.
 4. `Anomalies` must be empty.

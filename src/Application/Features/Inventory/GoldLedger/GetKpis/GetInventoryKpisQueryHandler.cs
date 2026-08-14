@@ -1,3 +1,4 @@
+using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Services;
@@ -12,7 +13,8 @@ namespace Application.Features.Inventory.GoldLedger.GetKpis;
 internal sealed class GetInventoryKpisQueryHandler(
     IApplicationDbContext context,
     IGoldPriceService goldPriceService,
-    ICurrentTenant currentTenant)
+    ICurrentTenant currentTenant,
+    ICacheService cache)
     : IQueryHandler<GetInventoryKpisQuery, InventoryKpiResponse>
 {
     private static string FormatWeight(decimal grams) => $"{grams:F3}";
@@ -29,9 +31,32 @@ internal sealed class GetInventoryKpisQueryHandler(
 
     public async Task<Result<InventoryKpiResponse>> Handle(GetInventoryKpisQuery query, CancellationToken cancellationToken)
     {
+        if (!currentTenant.IsAvailable)
+        {
+            return await BuildAsync(cancellationToken);
+        }
+
+        Guid tenantId = currentTenant.TenantId;
+        if (currentTenant is ICurrentTenantSetter setter)
+        {
+            setter.Set(tenantId, currentTenant.TenantKey);
+        }
+
+        string cacheKey = CacheKeys.Kpi(tenantId, "inventory");
+        InventoryKpiResponse response = await cache.GetOrCreateAsync(
+            cacheKey,
+            [CacheKeys.KpiTenant(tenantId)],
+            (ct) => BuildAsync(ct),
+            CacheKeys.KpiExpiration,
+            cancellationToken);
+
+        return response;
+    }
+
+    private async Task<InventoryKpiResponse> BuildAsync(CancellationToken cancellationToken)
+    {
         var karatAggregates = await context.GoldLedgerEntries
             .AsNoTracking()
-            .Where(e => e.TenantId == currentTenant.TenantId)
             .GroupBy(e => e.Karat)
             .Select(g => new
             {

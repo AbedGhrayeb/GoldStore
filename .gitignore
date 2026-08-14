@@ -182,6 +182,9 @@ publish/
 # Publish Web Output
 *.[Pp]ublish.xml
 *.azurePubxml
+# Deployment credentials (user + password) — never commit
+*.publishSettings
+*.PublishSettings
 # Note: Comment the next line if you want to checkin your web deploy settings,
 # but database connection strings (with potential passwords) will be unencrypted
 *.pubxml

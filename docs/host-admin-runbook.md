@@ -7,7 +7,7 @@ and incident response.
 
 ## Access model
 
-- **Platform admins** authenticate through `POST /host/login` (host cookie scheme). Only
+- **Platform admins** authenticate through `POST /host/api/v1/auth/login` (host cookie scheme). Only
   `PlatformUser` records can log in; customer (`User`) credentials are rejected.
 - All `/host/*` endpoints carry the `[HostOnly]` attribute and are **exempt from tenant
   resolution**. A customer role can never reach them (pinned by
@@ -20,16 +20,17 @@ and incident response.
 
 | Endpoint | Method | Purpose |
 | --- | --- | --- |
-| `/host/login` | POST | Platform admin login; sets the host cookie. |
-| `/host/logout` | POST | Clears the host cookie. |
-| `/host/tenants` | GET | List all tenants (id, key, name, status). |
-| `/host/tenants` | POST | Provision a new tenant (body: `ProvisionTenantRequest`). |
-| `/host/tenants/{tenantId}/status` | PATCH | Change tenant status (body: `UpdateTenantStatusRequest`). |
-| `/host/reconciliation` | GET | Per-tenant data-health report; optional `?tenantId=` filter. |
+| `/host/api/v1/auth/login` | GET | Renders the host sign-in page (browser redirect target). |
+| `/host/api/v1/auth/login` | POST | Platform admin login; sets the host cookie. |
+| `/host/api/v1/auth/logout` | POST | Clears the host cookie. |
+| `/host/api/v1/tenants` | GET | List all tenants (id, key, name, status). |
+| `/host/api/v1/tenants` | POST | Provision a new tenant (body: `ProvisionTenantRequest`). |
+| `/host/api/v1/tenants/{tenantId}/status` | PATCH | Change tenant status (body: `UpdateTenantStatusRequest`). |
+| `/host/api/v1/reconciliation` | GET | Per-tenant data-health report; optional `?tenantId=` filter. |
 
 ## 1. Provisioning a new tenant
 
-`POST /host/tenants` with:
+`POST /host/api/v1/tenants` with:
 
 ```json
 {
@@ -69,7 +70,7 @@ in the store or escalated per incident response below.
 
 ## 2. Suspension and reactivation
 
-`PATCH /host/tenants/{tenantId}/status` with:
+`PATCH /host/api/v1/tenants/{tenantId}/status` with:
 
 ```json
 { "newStatus": "Cancelled", "transitionAtUtc": "2026-09-12T00:00:00Z" }
@@ -106,8 +107,8 @@ There is **no dedicated plan-change endpoint yet** (open item, M7). Today:
 
 ## 4. Support access
 
-- Sign in as a `PlatformUser` at `/host/login` (never reuse a customer `User`).
-- Use `/host/tenants` to find the tenant, and `/host/reconciliation?tenantId=...` to inspect a
+- Sign in as a `PlatformUser` at `/host/api/v1/auth/login` (never reuse a customer `User`).
+- Use `/host/api/v1/tenants` to find the tenant, and `/host/api/v1/reconciliation?tenantId=...` to inspect a
   store's data health before/after support operations.
 - **Audit-trail recording for host actions is not yet implemented** (open item, M7). Today host
   activity is captured by request logging only (Serilog scopes `TenantId`/`UserId`). Do not
@@ -121,7 +122,7 @@ There is **no dedicated plan-change endpoint yet** (open item, M7). Today:
 | Cross-tenant write rejected | `TenantAccessViolationException` → `403 tenant.access_violation` | A store user attempted to touch another tenant's aggregate. Check the `TenantId` scopes in logs; no data action needed — the write was blocked before commit. |
 | Read-only grace gate | `403 tenant.read_only` | Tenant is in the cancellation grace window. Expected; confirm `TransitionAtUtc` is correct. |
 | Insufficient stock / balance errors | Business-error toast (`status: 0`), reconciliation | Recompute from ledgers; gold/financial balances are never stored, only derived. |
-| Suspected data corruption | `GET /host/reconciliation` | `Anomalies` must be empty and per-tenant row counts must match the rollout baseline (see `docs/production-rollout-checklist.md`). Any mismatch → stop writes, restore from the last verified backup (see `docs/multi-tenancy-migration-runbook.md` §8). |
+| Suspected data corruption | `GET /host/api/v1/reconciliation` | `Anomalies` must be empty and per-tenant row counts must match the rollout baseline (see `docs/production-rollout-checklist.md`). Any mismatch → stop writes, restore from the last verified backup (see `docs/multi-tenancy-migration-runbook.md` §8). |
 | Forgotten admin password | — | No self-serve reset (M7). Reset the password hash in the DB after taking a backup, or re-provision in a scratch copy. |
 
 General rule: **the migration is forward-only in place** — rollback is always "restore the
@@ -140,7 +141,7 @@ verified backup + roll back the release", never a partial reverse of tenant IDs.
   `Program.cs` is commented out outside Development). Apply migrations explicitly with
   `dotnet ef database update --project src/Infrastructure --startup-project src/WebUI`.
 - Health-check endpoint (`/health`) is **not enabled yet** (open item, M7) — rely on
-  `/host/reconciliation` and Seq for data-health monitoring until then.
+  `/host/api/v1/reconciliation` and Seq for data-health monitoring until then.
 - Committed `appsettings.json` holds the dev connection string, the goldapi.io key, and a
   placeholder JWT secret; and `sarhangold.runasp.net-WebDeploy.publishSettings` contains
   deployment credentials. **Move all secrets to environment variables / secrets store before

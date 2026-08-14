@@ -1,8 +1,13 @@
 using Application;
+using HealthChecks.UI.Client;
 using Infrastructure;
 using Infrastructure.Data;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
+using Scalar.AspNetCore;
 using Serilog;
 using WebUI;
+using WebUI.Endpoints;
 using WebUI.Extensions;
 
 namespace WebUI
@@ -18,7 +23,8 @@ namespace WebUI
             builder.Services
                 .AddApplication()
                 .AddPresentation(builder.Configuration)
-                .AddInfrastructure(builder.Configuration);
+                .AddInfrastructure(builder.Configuration)
+                .AddEndpoints();
 
             builder.Services.AddResponseCompression(options =>
             {
@@ -41,26 +47,52 @@ namespace WebUI
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnet-hsts.
                 app.UseHsts();
-                //app.ApplyMigrations();
             }
 
             // Route exceptions through the registered IExceptionHandler
             // (GlobalExceptionHandler) so tenant failures return consistent ProblemDetails.
             app.UseExceptionHandler();
 
+            // Trust only the deployment reverse proxy (nginx on loopback, see
+            // deploy/nginx/nginx.conf) for X-Forwarded-* so IP-partitioned rate limiting
+            // sees the real client address and HSTS/HTTPS redirect honor the proxy scheme.
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+                KnownProxies = { System.Net.IPAddress.Loopback }
+            });
+
             app.UseHttpsRedirection();
 
-            if (app.Environment.IsDevelopment())
+            // Migrate + seed on startup. Always in Development; in other environments only
+            // when explicitly enabled via App:MigrateOnStartup (or the App__MigrateOnStartup
+            // environment variable) so operators control when production DDL runs. Seeding is
+            // idempotent, so the first boot after a fresh deploy is a safe no-op on re-runs.
+            bool migrateOnStartup = app.Environment.IsDevelopment() ||
+                app.Configuration.GetValue<bool>("App:MigrateOnStartup");
+
+            if (migrateOnStartup)
             {
                 await app.InitializeDatabaseAsync();
             }
 
-            //app.MapHealthChecks("health", new HealthCheckOptions
-            //{
-            //    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-            //});
+            // Health probes: /health (all checks), /health/ready (database), /health/live
+            // (process liveness — always healthy). These paths are exempt from tenant
+            // resolution via Tenancy:ExemptPaths.
+            app.MapHealthChecks("health", new HealthCheckOptions
+            {
+                ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+            });
+            app.MapHealthChecks("health/ready", new HealthCheckOptions
+            {
+                Predicate = check => check.Tags.Contains("ready")
+            });
+            app.MapHealthChecks("health/live", new HealthCheckOptions
+            {
+                Predicate = _ => false
+            });
 
             app.UseRequestContextLogging();
 
@@ -73,6 +105,11 @@ namespace WebUI
             app.UseCors("AllowAngularApp");
 
             app.UseRouting();
+
+            // Rate limiting applies only to endpoints opted in via [EnableRateLimiting]
+            // (login/refresh); health probes and static assets are never throttled.
+            app.UseRateLimiter();
+
             app.MapStaticAssets();
             app.UseAuthentication();
 
@@ -84,6 +121,18 @@ namespace WebUI
 
             // REMARK: If you want to use Controllers, you'll need this.
             app.MapControllers();
+
+            // Auto-discovered minimal API endpoint groups (plan Phase 7a). Tenant
+            // endpoints live under /api/v1 (JWT), host endpoints under /host/api/v1
+            // (host cookie). Adding a new group never changes this file.
+            app.MapEndpoints();
+
+            // Built-in OpenAPI document + Scalar API reference UI (plan Phase 7a).
+            if (app.Environment.IsDevelopment())
+            {
+                app.MapOpenApi();
+                app.MapScalarApiReference();
+            }
 
             app.MapControllerRoute(
                 name: "default",

@@ -20,6 +20,16 @@ public sealed class User : Entity, ITenantEntity
     /// </summary>
     public string SecurityStamp { get; private set; }
 
+    /// <summary>Consecutive failed sign-in attempts since the last success (M7 lockout).</summary>
+    public int FailedLoginAttempts { get; private set; }
+
+    /// <summary>Instant until which the account is locked out (M7 lockout). Null = not locked.</summary>
+    public DateTimeOffset? LockedUntilUtc { get; private set; }
+
+    public const int MaxFailedLoginAttempts = 5;
+
+    public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+
     public User()
     {
         Email = string.Empty;
@@ -37,6 +47,37 @@ public sealed class User : Entity, ITenantEntity
         PasswordHash = passwordHash;
         SecurityStamp = NewSecurityStamp();
 
+    }
+
+    public bool IsLockedOut(DateTimeOffset utcNow) => LockedUntilUtc is not null && LockedUntilUtc > utcNow;
+
+    /// <summary>
+    /// Records a failed sign-in. After <paramref name="maxAttempts"/> consecutive failures
+    /// the account is locked until <c>utcNow + <paramref name="lockoutDuration"/></c> and the
+    /// counter is reset so a further run of failures starts a fresh lockout window.
+    /// </summary>
+    public void RecordFailedLoginAttempt(int maxAttempts, TimeSpan lockoutDuration, DateTimeOffset utcNow)
+    {
+        if (IsLockedOut(utcNow))
+        {
+            return;
+        }
+
+        FailedLoginAttempts++;
+
+        if (FailedLoginAttempts < maxAttempts)
+        {
+            return;
+        }
+
+        FailedLoginAttempts = 0;
+        LockedUntilUtc = utcNow + lockoutDuration;
+    }
+
+    public void ResetLoginAttempts()
+    {
+        FailedLoginAttempts = 0;
+        LockedUntilUtc = null;
     }
 
     /// <summary>Rotates the security stamp, invalidating previously issued sessions.</summary>

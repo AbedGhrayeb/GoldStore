@@ -20,6 +20,10 @@ public static class ApplicationErrors
     Error.Failure(
            "ApplicationErrors.Users.Disabled",
            "هذا الحساب معطّل حالياً.");
+    public static Error AccountLocked =>
+    Error.Failure(
+           "ApplicationErrors.Users.AccountLocked",
+           "تم قفل الحساب مؤقتاً بسبب محاولات تسجيل دخول فاشلة متكررة. حاول مرة أخرى لاحقاً.");
     public static Error InvalidRefreshToken =>
     Error.Unauthorized(
            "ApplicationErrors.Users.InvalidRefreshToken",

@@ -50,7 +50,7 @@ sqlcmd -S . -d GoldStoreDb -Q "BACKUP DATABASE GoldStoreDb TO DISK = 'NUL'"  # v
 ```
 
 Data-health exports (per-tenant row counts + balances) are available at any time via
-`GET /host/reconciliation` — use this for audit snapshots.
+`GET /host/api/v1/reconciliation` — use this for audit snapshots.
 
 ## 3. Archive
 
@@ -68,7 +68,7 @@ tenant removal (approved by the store owner in writing):
 3. Delete in **FK order**: child/granular rows before their parents —
    ledger entries and invoice items before invoices; invoice/ledger parents before
    suppliers/accounts; users/roles last; then `TenantSubscription`, `TenantSettings`, `Tenant`.
-4. Run `GET /host/reconciliation` → confirm the tenant no longer appears and every other
+4. Run `GET /host/api/v1/reconciliation` → confirm the tenant no longer appears and every other
    tenant shows 0 anomalies.
 5. If any step fails, **restore the backup** (never attempt a partial deletion).
 

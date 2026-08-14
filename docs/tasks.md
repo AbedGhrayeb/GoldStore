@@ -67,7 +67,7 @@
 - [ ] Password reset flow
 - [ ] Rate limiting on auth endpoints
 - [ ] Dockerfile (SDK container publish) + docker-compose production
-- [ ] Nginx: HTTPS termination, reverse proxy, static files
+- [ ] Nginx: HTTPS termination, reverse proxy, static files (deferred by owner)
 - [ ] Health checks: DB connectivity
 - [ ] pg_dump backup strategy
 - [ ] Frontend: error handling, loading states, RTL QA pass

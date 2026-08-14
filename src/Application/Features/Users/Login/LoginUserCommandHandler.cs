@@ -18,10 +18,10 @@ internal sealed class LoginUserCommandHandler(
     {
         // Login runs before any tenant context exists. Email addresses are unique
         // system-wide, so the lookup deliberately bypasses the tenant query filter;
-        // the user's own TenantId establishes the tenant for the session.
+        // the user's own TenantId establishes the tenant for the session. The row is
+        // tracked so failed-attempt and lockout state can be persisted.
         User? user = await context.Users
             .IgnoreQueryFilters()
-            .AsNoTracking()
             .SingleOrDefaultAsync(u => u.Email == command.Email, cancellationToken);
 
         if (user is null)
@@ -29,12 +29,25 @@ internal sealed class LoginUserCommandHandler(
             return ApplicationErrors.LoginFailed;
         }
 
+        DateTimeOffset utcNow = timeProvider.GetUtcNow();
+
+        if (user.IsLockedOut(utcNow))
+        {
+            return ApplicationErrors.AccountLocked;
+        }
+
         bool verified = passwordHasher.Verify(command.Password, user.PasswordHash);
 
         if (!verified)
         {
+            user.RecordFailedLoginAttempt(User.MaxFailedLoginAttempts, User.LockoutDuration, utcNow);
+            await context.SaveChangesAsync(cancellationToken);
+
             return ApplicationErrors.LoginFailed;
         }
+
+        user.ResetLoginAttempts();
+        await context.SaveChangesAsync(cancellationToken);
 
         // The password check runs first so an unauthenticated caller cannot tell
         // whether the account is disabled (plan Phase 4 item 2).
@@ -52,7 +65,7 @@ internal sealed class LoginUserCommandHandler(
             return ApplicationErrors.LoginFailed;
         }
 
-        return IsSignInAllowed(tenant, timeProvider.GetUtcNow())
+        return IsSignInAllowed(tenant, utcNow)
             ? user.Id
             : ApplicationErrors.TenantAccessDenied;
     }

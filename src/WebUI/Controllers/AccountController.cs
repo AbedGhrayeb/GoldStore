@@ -4,6 +4,7 @@ using Application.Users.Login;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SharedKernel.Result;
 using WebUI.Models.Account;
 
@@ -27,6 +28,7 @@ public class AccountController(ICommandHandler<LoginUserCommand, Guid> loginComm
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("LoginLimiter")]
     public async Task<IActionResult> Login(LoginModel model, CancellationToken cancellationToken)
     {
         ViewData["ReturnUrl"] = model.ReturnUrl;

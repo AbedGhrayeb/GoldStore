@@ -1,3 +1,4 @@
+using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -10,23 +11,46 @@ namespace Application.Features.SupplierFinancialTransactions.GetKpis;
 
 internal sealed class GetSupplierFinancialKpisQueryHandler(
     IApplicationDbContext context,
-    ICurrentTenant currentTenant)
+    ICurrentTenant currentTenant,
+    ICacheService cache)
     : IQueryHandler<GetSupplierFinancialKpisQuery, SupplierFinancialKpiResponse>
 {
 
     public async Task<Result<SupplierFinancialKpiResponse>> Handle(
         GetSupplierFinancialKpisQuery query, CancellationToken cancellationToken)
     {
+        if (!currentTenant.IsAvailable)
+        {
+            return await BuildAsync(cancellationToken);
+        }
+
+        Guid tenantId = currentTenant.TenantId;
+        if (currentTenant is ICurrentTenantSetter setter)
+        {
+            setter.Set(tenantId, currentTenant.TenantKey);
+        }
+
+        string cacheKey = CacheKeys.Kpi(tenantId, "supplier-financial");
+        SupplierFinancialKpiResponse response = await cache.GetOrCreateAsync(
+            cacheKey,
+            [CacheKeys.KpiTenant(tenantId)],
+            (ct) => BuildAsync(ct),
+            CacheKeys.KpiExpiration,
+            cancellationToken);
+
+        return response;
+    }
+
+    private async Task<SupplierFinancialKpiResponse> BuildAsync(CancellationToken cancellationToken)
+    {
         List<SupplierFinancialTransaction> transactions = await context.SupplierFinancialTransactions
             .AsNoTracking()
-            .Where(t => t.TenantId == currentTenant.TenantId)
             .ToListAsync(cancellationToken);
 
         var transactionIds = transactions.Select(t => t.Id).ToList();
 
         List<SupplierFinancialLedgerEntry> allEntries = await context.SupplierFinancialLedgerEntries
             .AsNoTracking()
-            .Where(e => e.TenantId == currentTenant.TenantId)
             .Where(e => transactionIds.Contains(e.SupplierFinancialTransactionId))
             .ToListAsync(cancellationToken);
 

@@ -1,16 +1,19 @@
 ﻿using System.Text;
 using Application.Abstractions.Authentication;
+using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Services;
 using Application.Abstractions.Subscriptions;
 using Application.Abstractions.Tenants;
 using Infrastructure.Authentication;
 using Infrastructure.Authorization;
+using Infrastructure.Caching;
 using Infrastructure.Data;
 using Infrastructure.Database;
 using Infrastructure.Database.Interceptors;
 using Infrastructure.DomainEvents;
 using Infrastructure.GoldPrices;
+using Infrastructure.HealthChecks;
 using Infrastructure.Subscriptions;
 using Infrastructure.Tenants;
 using Infrastructure.Tenancy;
@@ -25,6 +28,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using SharedKernel;
 
@@ -46,11 +50,19 @@ public static class DependencyInjection
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.AddSingleton(TimeProvider.System);
 
+        // HybridCache-backed tenant-scoped cache (M7-C1); entries are evicted by the
+        // KpiCacheInvalidationInterceptor on any tenant write.
+        services.AddSingleton<ICacheService, HybridCacheService>();
+
         services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
 
         services.Configure<GoldApiOptions>(configuration.GetSection("GoldApi"));
         services.Configure<TenantHostOptions>(configuration.GetSection(TenantHostOptions.SectionName));
-        services.AddMemoryCache();
+
+        // HybridCache (in-memory L1 only per M7 decision 3; no Redis L2). Registered
+        // per-tenant stampede protection for the gold price and any keyed caches.
+        services.AddHybridCache();
+
         services.AddHttpClient("GoldApi", client =>
         {
             client.BaseAddress = new Uri("https://www.goldapi.io");
@@ -70,6 +82,7 @@ public static class DependencyInjection
         // Order matters: the tenant write guard runs before the audit interceptor.
         services.AddScoped<ISaveChangesInterceptor, TenantEntityInterceptor>();
         services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
+        services.AddScoped<ISaveChangesInterceptor, KpiCacheInvalidationInterceptor>();
 
         return services;
     }
@@ -84,6 +97,11 @@ public static class DependencyInjection
              options.UseSqlServer(connectionString, sqlServerOptions =>
                               sqlServerOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName));
          });
+
+        // Readiness check pings the database through the app's own DbContext so the
+        // configured connection string is validated end to end (plan Phase 9 / M7 A3).
+        services.AddScoped<DatabaseHealthCheck>();
+        services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ApplicationDbContextInitializer>();
@@ -173,9 +191,9 @@ public static class DependencyInjection
             })
             .AddCookie(HostAuthDefaults.AuthenticationScheme, opts =>
             {
-                opts.LoginPath = "/host/login";
-                opts.LogoutPath = "/host/logout";
-                opts.AccessDeniedPath = "/host/login";
+                opts.LoginPath = "/host/api/v1/auth/login";
+                opts.LogoutPath = "/host/api/v1/auth/logout";
+                opts.AccessDeniedPath = "/host/api/v1/auth/login";
 
                 opts.SlidingExpiration = true;
                 opts.ExpireTimeSpan = TimeSpan.FromHours(8);

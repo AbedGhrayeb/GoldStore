@@ -29,7 +29,7 @@ namespace Application.IntegrationTests;
 /// eligibility fixtures (pending, grace, expired, disabled) with deliberately similar
 /// data so isolation failures are easy to detect.
 /// </summary>
-public sealed class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string TestPassword = "Test@Store#1234!";
     public const string StoreAdministratorRoleKey = "store_admin";
@@ -68,6 +68,10 @@ public sealed class MultiTenantWebApplicationFactory : WebApplicationFactory<Pro
                 ["Tenancy:RequireHostnameVerification"] = "false",
                 // Keep the log noise down and avoid Seq network attempts.
                 ["Serilog:MinimumLevel:Default"] = "Warning",
+                // Keep the strict login limiter out of the way of the general isolation
+                // suite (many of these tests sign in repeatedly); the dedicated
+                // AuthRateLimitingTests factory pins the 429 behaviour with a tiny limit.
+                ["RateLimiting:Login:PermitLimit"] = "100000",
             });
         });
 

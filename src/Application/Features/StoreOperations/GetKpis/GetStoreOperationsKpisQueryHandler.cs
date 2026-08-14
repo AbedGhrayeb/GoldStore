@@ -1,3 +1,4 @@
+using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -12,7 +13,8 @@ namespace Application.Features.StoreOperations.GetKpis;
 internal sealed class GetStoreOperationsKpisQueryHandler(
     IApplicationDbContext context,
     IDateTimeProvider dateTimeProvider,
-    ICurrentTenant currentTenant)
+    ICurrentTenant currentTenant,
+    ICacheService cache)
     : IQueryHandler<GetStoreOperationsKpisQuery, StoreOperationsKpiResponse>
 {
 
@@ -21,18 +23,40 @@ internal sealed class GetStoreOperationsKpisQueryHandler(
         GetStoreOperationsKpisQuery query,
         CancellationToken cancellationToken)
     {
+        if (!currentTenant.IsAvailable)
+        {
+            return await BuildAsync(cancellationToken);
+        }
+
+        Guid tenantId = currentTenant.TenantId;
+        if (currentTenant is ICurrentTenantSetter setter)
+        {
+            setter.Set(tenantId, currentTenant.TenantKey);
+        }
+
+        string cacheKey = CacheKeys.Kpi(tenantId, "store-operations");
+        StoreOperationsKpiResponse response = await cache.GetOrCreateAsync(
+            cacheKey,
+            [CacheKeys.KpiTenant(tenantId)],
+            (ct) => BuildAsync(ct),
+            CacheKeys.KpiExpiration,
+            cancellationToken);
+
+        return response;
+    }
+
+    private async Task<StoreOperationsKpiResponse> BuildAsync(CancellationToken cancellationToken)
+    {
         DateTime todayStart = dateTimeProvider.Now.Date;
 
         var sales = await context.SalesInvoices
             .AsNoTracking()
-            .Where(s => s.TenantId == currentTenant.TenantId)
             .Where(s => s.Date >= todayStart && s.Status != SalesInvoiceStatus.Cancelled)
             .Select(s => new { s.Currency, s.TotalAmount })
             .ToListAsync(cancellationToken);
 
         var purchases = await context.CustomerPurchaseInvoices
             .AsNoTracking()
-            .Where(p => p.TenantId == currentTenant.TenantId)
             .Where(p => p.Date >= todayStart)
             .Select(p => new { p.Currency, p.TotalAmount })
             .ToListAsync(cancellationToken);

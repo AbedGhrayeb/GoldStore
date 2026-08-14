@@ -15,7 +15,7 @@ carry a required `TenantId` with a `RESTRICT` FK to `Tenants`, a `TenantId`-firs
   databases multiply backup chains and connection management without proportional benefit.
 - Isolation is enforced in depth: global EF query filters on `IQueryable`, a write-guard
   interceptor that stamps and validates `TenantId` on save, tenant-scoped unique indexes,
-  a host-only `/host/reconciliation` data-health report, and 23 integration tests covering
+  a host-only `/host/api/v1/reconciliation` data-health report, and 23 integration tests covering
   cross-tenant read/write denial (Phase 8).
 - Ledger rules (balances always derived, never stored) are tenant-agnostic and cheaper to
   audit in one schema.
@@ -25,7 +25,7 @@ carry a required `TenantId` with a `RESTRICT` FK to `Tenants`, a `TenantId`-firs
 - Query filters + write guard → cross-tenant reads/writes are impossible by construction.
 - `(TenantId, ...)` unique indexes → tenant-scoped uniqueness (invoice numbers, supplier/category
   names, account names) without global collisions.
-- `GET /host/reconciliation` → ownership anomalies and per-tenant balance health on demand.
+- `GET /host/api/v1/reconciliation` → ownership anomalies and per-tenant balance health on demand.
 - Serilog request-context logging scopes `TenantId`/`UserId` → per-tenant observability in Seq.
 - Future: PostgreSQL RLS as defense-in-depth when the SQL Server → PostgreSQL migration lands
   (shared schema remains).

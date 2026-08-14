@@ -1,3 +1,4 @@
+using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -11,16 +12,41 @@ namespace Application.Features.SalesInvoices.GetKpis;
 internal sealed class GetSalesInvoiceKpisQueryHandler(
     IApplicationDbContext context,
     IDateTimeProvider dateTimeProvider,
-    ICurrentTenant currentTenant)
+    ICurrentTenant currentTenant,
+    ICacheService cache)
     : IQueryHandler<GetSalesInvoiceKpisQuery, SalesInvoiceKpiResponse>
 {
     public async Task<Result<SalesInvoiceKpiResponse>> Handle(GetSalesInvoiceKpisQuery query, CancellationToken cancellationToken)
+    {
+        if (!currentTenant.IsAvailable)
+        {
+            return await BuildAsync(cancellationToken);
+        }
+
+        Guid tenantId = currentTenant.TenantId;
+        if (currentTenant is ICurrentTenantSetter setter)
+        {
+            setter.Set(tenantId, currentTenant.TenantKey);
+        }
+
+        string cacheKey = CacheKeys.Kpi(tenantId, "sales-invoices");
+        SalesInvoiceKpiResponse response = await cache.GetOrCreateAsync(
+            cacheKey,
+            [CacheKeys.KpiTenant(tenantId)],
+            (ct) => BuildAsync(ct),
+            CacheKeys.KpiExpiration,
+            cancellationToken);
+
+        return response;
+    }
+
+    private async Task<SalesInvoiceKpiResponse> BuildAsync(CancellationToken cancellationToken)
     {
         DateTime todayStart = dateTimeProvider.UtcNow.Date;
 
         List<SalesInvoice> todayInvoices = await context.SalesInvoices
             .AsNoTracking()
-            .Where(i => i.TenantId == currentTenant.TenantId && i.Date >= todayStart && i.Status != SalesInvoiceStatus.Cancelled)
+            .Where(i => i.Date >= todayStart && i.Status != SalesInvoiceStatus.Cancelled)
             .ToListAsync(cancellationToken);
 
         int count = todayInvoices.Count;

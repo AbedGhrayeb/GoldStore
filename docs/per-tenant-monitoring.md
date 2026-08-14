@@ -40,7 +40,7 @@ ledger tables) intentionally have no unique index; `Employees` has none at all �
 - **List pages** — every GetPaged/List endpoint filters by `TenantId` before paginating.
 - **Invoice number generation** — next-number lookups do a tenant-scoped
   `CountAsync(... StartsWith ...)`; backed by `(TenantId, InvoiceNumber)` unique index.
-- **Reconciliation** — `GET /host/reconciliation` scans tenant-owned tables per tenant; safe at
+- **Reconciliation** — `GET /host/api/v1/reconciliation` scans tenant-owned tables per tenant; safe at
   current scale, re-check if row counts grow by orders of magnitude.
 
 ## 3. Missing-index workflow
@@ -68,9 +68,9 @@ and deployed via an EF Core migration, not ad-hoc DDL, so the schema stays repro
 | 400/404 on tenant-protected endpoints with no resolvable tenant | Seq, `TenantId` scope missing | Tenant resolution failure — check hostname/config; runbook §5. |
 | `403 tenant.access_violation` | Seq, error level | Cross-tenant write blocked by the guard interceptor — expected safety behaviour; no data action. |
 | `403 tenant.read_only` | Seq, error level | Cancelled tenant in grace window — verify `TransitionAtUtc` if unexpected. |
-| Insufficient stock / balance business errors | Seq + client toast | Ledger-level invariant violation — re-check with `/host/reconciliation` before any correction. |
-| `Anomalies` non-empty in `/host/reconciliation` | Host endpoint | Ownership corruption — stop writes, restore from verified backup. |
-| New tenant key appearing in row counts | `/host/reconciliation` | Only from deliberate provisioning (runbook §1); otherwise investigate. |
+| Insufficient stock / balance business errors | Seq + client toast | Ledger-level invariant violation — re-check with `/host/api/v1/reconciliation` before any correction. |
+| `Anomalies` non-empty in `/host/api/v1/reconciliation` | Host endpoint | Ownership corruption — stop writes, restore from verified backup. |
+| New tenant key appearing in row counts | `/host/api/v1/reconciliation` | Only from deliberate provisioning (runbook §1); otherwise investigate. |
 | High-duration queries per tenant | Seq request duration, `TenantId` scope | Hot query regression — run the missing-index workflow, check plan for TenantId seek. |
 
 ## 5. Seq queries (per tenant)

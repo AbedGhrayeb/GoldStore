@@ -1,3 +1,4 @@
+using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -10,7 +11,8 @@ namespace Application.Features.Finance.Debts.GetKpis;
 
 internal sealed class GetDebtKpisQueryHandler(
     IApplicationDbContext context,
-    ICurrentTenant currentTenant)
+    ICurrentTenant currentTenant,
+    ICacheService cache)
     : IQueryHandler<GetDebtKpisQuery, DebtKpiResponse>
 {
     private static readonly Dictionary<Currency, (string Code, string Symbol)> CurrencyLabels = new()
@@ -22,13 +24,37 @@ internal sealed class GetDebtKpisQueryHandler(
 
     public async Task<Result<DebtKpiResponse>> Handle(GetDebtKpisQuery query, CancellationToken cancellationToken)
     {
-        List<Debt> allDebts = await context.Debts.AsNoTracking().Where(d => d.TenantId == currentTenant.TenantId).ToListAsync(cancellationToken);
+        if (!currentTenant.IsAvailable)
+        {
+            return await BuildAsync(cancellationToken);
+        }
+
+        Guid tenantId = currentTenant.TenantId;
+        if (currentTenant is ICurrentTenantSetter setter)
+        {
+            setter.Set(tenantId, currentTenant.TenantKey);
+        }
+
+        string cacheKey = CacheKeys.Kpi(tenantId, "debts");
+        DebtKpiResponse response = await cache.GetOrCreateAsync(
+            cacheKey,
+            [CacheKeys.KpiTenant(tenantId)],
+            (ct) => BuildAsync(ct),
+            CacheKeys.KpiExpiration,
+            cancellationToken);
+
+        return response;
+    }
+
+    private async Task<DebtKpiResponse> BuildAsync(CancellationToken cancellationToken)
+    {
+        List<Debt> allDebts = await context.Debts.AsNoTracking().ToListAsync(cancellationToken);
 
         var debtIds = allDebts.Select(d => d.Id).ToList();
 
         List<DebtLedgerEntry> allEntries = await context.DebtLedgerEntries
             .AsNoTracking()
-            .Where(e => e.TenantId == currentTenant.TenantId && debtIds.Contains(e.DebtId))
+            .Where(e => debtIds.Contains(e.DebtId))
             .ToListAsync(cancellationToken);
 
         var balances = allEntries

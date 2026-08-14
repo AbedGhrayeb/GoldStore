@@ -13,6 +13,16 @@ public sealed class PlatformUser : Entity
 
     public string PasswordHash { get; private set; }
 
+    /// <summary>Consecutive failed sign-in attempts since the last success (M7 lockout).</summary>
+    public int FailedLoginAttempts { get; private set; }
+
+    /// <summary>Instant until which the account is locked out (M7 lockout). Null = not locked.</summary>
+    public DateTimeOffset? LockedUntilUtc { get; private set; }
+
+    public const int MaxFailedLoginAttempts = 5;
+
+    public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+
     private PlatformUser()
     {
         Email = string.Empty;
@@ -47,5 +57,31 @@ public sealed class PlatformUser : Entity
         }
 
         return new PlatformUser(Guid.CreateVersion7(), email.Trim().ToLowerInvariant(), firstName.Trim(), lastName.Trim(), passwordHash);
+    }
+
+    public bool IsLockedOut(DateTimeOffset utcNow) => LockedUntilUtc is not null && LockedUntilUtc > utcNow;
+
+    public void RecordFailedLoginAttempt(int maxAttempts, TimeSpan lockoutDuration, DateTimeOffset utcNow)
+    {
+        if (IsLockedOut(utcNow))
+        {
+            return;
+        }
+
+        FailedLoginAttempts++;
+
+        if (FailedLoginAttempts < maxAttempts)
+        {
+            return;
+        }
+
+        FailedLoginAttempts = 0;
+        LockedUntilUtc = utcNow + lockoutDuration;
+    }
+
+    public void ResetLoginAttempts()
+    {
+        FailedLoginAttempts = 0;
+        LockedUntilUtc = null;
     }
 }
