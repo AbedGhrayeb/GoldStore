@@ -16,6 +16,18 @@ and incident response.
   (`Tenancy:RequireHostnameVerification = false`); see "Deployment notes" for the subdomain
   trade-off.
 
+### Tenant API surface (Phase 7a complete)
+
+Store-facing integrations use the **tenant** API under `/api/v1` with JWT bearer tokens
+(`POST /api/v1/auth/login`), one endpoint group per module (`Users`, `Categories`,
+`GoldPrices`, `Reference`, `Suppliers`, `SupplierDeliveries`, `SupplierPayments`,
+`SupplierFinancialTransactions`, `Inventory`, `SalesInvoices`, `CustomerPurchaseInvoices`,
+`Finance`, `Expenses`, `Employees`, `Dashboard`). All tenant routes require a valid, operational
+current tenant and enforce feature gates; `TenantId` is never accepted from the client.
+OpenAPI document (Development): `/openapi/v1.json`; interactive reference: Scalar at
+`/scalar/v1`. Endpoint pattern: one `IEndpoint` class per group in `src/WebUI/Endpoints/*`,
+auto-discovered via `AddEndpoints()`/`MapEndpoints()` — adding a group never touches `Program.cs`.
+
 ### Endpoint inventory
 
 | Endpoint | Method | Purpose |
@@ -140,8 +152,10 @@ verified backup + roll back the release", never a partial reverse of tenant IDs.
 - `ApplyMigrations()` is **not** wired for production (`//app.ApplyMigrations();` in
   `Program.cs` is commented out outside Development). Apply migrations explicitly with
   `dotnet ef database update --project src/Infrastructure --startup-project src/WebUI`.
-- Health-check endpoint (`/health`) is **not enabled yet** (open item, M7) — rely on
-  `/host/api/v1/reconciliation` and Seq for data-health monitoring until then.
+- Health probes are enabled and tenant-exempt: `/health` (all checks, UI writer),
+  `/health/ready` (database connectivity via `DatabaseHealthCheck`), `/health/live`
+  (process liveness). Use them for operational monitoring alongside
+  `/host/api/v1/reconciliation` and Seq.
 - Committed `appsettings.json` holds the dev connection string, the goldapi.io key, and a
   placeholder JWT secret; and `sarhangold.runasp.net-WebDeploy.publishSettings` contains
   deployment credentials. **Move all secrets to environment variables / secrets store before

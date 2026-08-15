@@ -132,7 +132,7 @@ internal sealed class GetTenantReconciliationQueryHandler(
     {
         Guid tenantId = tenant.Id;
 
-        List<EntityRowCount> rowCounts = tableCounts
+        var rowCounts = tableCounts
             .OrderBy(pair => pair.Key)
             .Select(pair => new EntityRowCount(pair.Key, pair.Value.GetValueOrDefault(tenantId)))
             .ToList();
@@ -156,12 +156,14 @@ internal sealed class GetTenantReconciliationQueryHandler(
             .IgnoreQueryFilters()
             .Where(transaction => transaction.TenantId == tenantId)
             .GroupBy(transaction => transaction.Currency)
+            .OrderByDescending(group =>
+                group.Sum(transaction => transaction.TransactionType == FinancialTransactionType.Inflow ? transaction.Amount : 0m) -
+                group.Sum(transaction => transaction.TransactionType == FinancialTransactionType.Outflow ? transaction.Amount : 0m))
             .Select(group => new CurrencyTotals(
                 group.Key.ToString(),
                 group.Sum(transaction => transaction.TransactionType == FinancialTransactionType.Inflow ? transaction.Amount : 0m),
                 group.Sum(transaction => transaction.TransactionType == FinancialTransactionType.Outflow ? transaction.Amount : 0m),
                 group.Sum(transaction => transaction.TransactionType == FinancialTransactionType.Inflow ? transaction.Amount : -transaction.Amount)))
-            .OrderByDescending(totals => totals.Net)
             .ToListAsync(cancellationToken);
 
         Dictionary<Guid, decimal> accountBalances = await context.FinancialTransactions

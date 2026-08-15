@@ -57,12 +57,13 @@ internal sealed class UpdateExpenseCommandHandler(IApplicationDbContext context)
         }
 
         FinancialTransaction? existingTransaction = await context.FinancialTransactions
-       .AsNoTracking()
-       .FirstOrDefaultAsync(t => t.ReferenceType == FinancialReferenceType.Expense && t.ReferenceId == expense.Id, cancellationToken);
+            .FirstOrDefaultAsync(
+                t => t.ReferenceType == FinancialReferenceType.Expense && t.ReferenceId == expense.Id,
+                cancellationToken);
 
         if (existingTransaction is not null)
         {
-            Result<Updated> financialTransactionsUpdateResult = existingTransaction.Update(command.Id, command.AccountId, account.Currency, command.Amount, FinancialTransactionType.Outflow,
+            Result<Updated> financialTransactionsUpdateResult = existingTransaction.Update(existingTransaction.Id, command.AccountId, account.Currency, command.Amount, FinancialTransactionType.Outflow,
             FinancialReferenceType.Expense, expense.Id, command.Description);
             if (financialTransactionsUpdateResult.IsError)
             {

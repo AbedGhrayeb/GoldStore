@@ -1,7 +1,14 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Tenants;
 using Domain.Authorization;
 using Domain.Catalog;
+using Domain.Common;
+using Domain.Employees;
+using Domain.Finance;
+using Domain.Inventory;
 using Domain.Suppliers;
 using Domain.Tenants;
 using Domain.Users;
@@ -37,6 +44,33 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
     public const string TenantAKey = InitialTenant.Key;
     public const string TenantBKey = "second-store";
 
+    /// <summary>Admin of a fully-provisioned tenant that has the <c>catalog</c> feature disabled.</summary>
+    public const string NoCatalogAdmin = "admin@no-catalog.goldstore.test";
+
+    /// <summary>Admin of a tenant that has the supplier feature disabled.</summary>
+    public const string NoSuppliersAdmin = "admin@no-suppliers.goldstore.test";
+
+    /// <summary>Admin of a tenant that has the inventory feature disabled.</summary>
+    public const string NoInventoryAdmin = "admin@no-inventory.goldstore.test";
+
+    /// <summary>Admin of a tenant that has the sales feature disabled.</summary>
+    public const string NoSalesAdmin = "admin@no-sales.goldstore.test";
+
+    /// <summary>Admin of a tenant that has the purchases feature disabled.</summary>
+    public const string NoPurchasesAdmin = "admin@no-purchases.goldstore.test";
+
+    /// <summary>Admin of a tenant that has the finance feature disabled.</summary>
+    public const string NoFinanceAdmin = "admin@no-finance.goldstore.test";
+
+    /// <summary>Admin of a tenant that has the expenses feature disabled.</summary>
+    public const string NoExpensesAdmin = "admin@no-expenses.goldstore.test";
+
+    /// <summary>Admin of a tenant that has the HR feature disabled.</summary>
+    public const string NoHrAdmin = "admin@no-hr.goldstore.test";
+
+    /// <summary>Email of the user seeded with the pinned test identity (see <see cref="TestUserContext.Id"/>).</summary>
+    public const string ProfileUserEmail = "me@goldstore.test";
+
     public string DbName { get; } = $"GoldStoreDb_Tests_{Guid.NewGuid():N}";
 
     public Guid TenantBId { get; } = Guid.CreateVersion7();
@@ -48,6 +82,14 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
     public Category CategoryA { get; private set; } = null!;
 
     public Category CategoryB { get; private set; } = null!;
+
+    public Employee EmployeeA { get; private set; } = null!;
+
+    public Employee EmployeeB { get; private set; } = null!;
+
+    public FinancialAccount FinancialAccountA { get; private set; } = null!;
+
+    public FinancialAccount FinancialAccountB { get; private set; } = null!;
 
     public string ConnectionString { get; }
 
@@ -148,6 +190,25 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
         return client;
     }
 
+    /// <summary>
+    /// Signs in through the tenant JWT auth endpoint (<c>/api/v1/auth/login</c>) and returns a
+    /// client with the <c>Authorization: Bearer &lt;token&gt;</c> header pre-set. Mirrors
+    /// <see cref="CreateAuthenticatedClientAsync"/> for the tenant API surface (plan Phase 7a).
+    /// </summary>
+    public async Task<HttpClient> CreateJwtClientAsync(string email, string password)
+    {
+        HttpClient client = CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/v1/auth/login",
+            new { email, password });
+        Assert.True(response.IsSuccessStatusCode, $"JWT login failed for {email}.");
+
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        string accessToken = body.GetProperty("accessToken").GetString()!;
+
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        return client;
+    }
+
     // ─── Seeding ──────────────────────────────────────────────────────────────
 
     private async Task SeedTestDataAsync()
@@ -176,16 +237,39 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
         db.UserRoles.Add(UserRole.Create(TenantBId, userB.Id, storeAdmin.Id).Value);
         SupplierB = Supplier.Create("Gold House", "0791111111", secondaryPhone: null, bankAccountNumber: null, notes: "second store").Value;
         CategoryB = Category.Create(parentCategoryId: null, name: "خواتم", description: "rings").Value;
+        EmployeeB = Employee.Create(
+            "Second", "Seller", RoleEnum.Salesperson, 1000M, Currency.JOD, SalaryCycleEnum.Monthly, userId: null).Value;
+        FinancialAccountB = FinancialAccount.Create(
+            "API B3 JOD Cash", Currency.JOD, FinancialAccountType.Cash, "B3-JOD-B", notes: null).Value;
         db.Suppliers.Add(SupplierB);
         db.Categories.Add(CategoryB);
+        db.Employees.Add(EmployeeB);
+        db.FinancialAccounts.Add(FinancialAccountB);
+        db.GoldLedgerEntries.Add(GoldLedgerEntry.Create(
+            Karat.K21, 100M, GoldMovementType.Increase, GoldReferenceType.InventoryAdjustment,
+            Guid.CreateVersion7(), "API B3 opening stock").Value);
+        db.FinancialTransactions.Add(FinancialTransaction.Create(
+            FinancialAccountB.Id, Currency.JOD, 100000M, FinancialTransactionType.Inflow,
+            FinancialReferenceType.ManualAdjustment, Guid.CreateVersion7(), "API B3 opening balance").Value);
         await db.SaveChangesAsync(CancellationToken.None);
 
         // ── Tenant A: deliberately similar rows, saved under A's ambient tenant ──
         setter.Set(tenantAId, TenantAKey);
         SupplierA = Supplier.Create("Gold House", "0790000000", secondaryPhone: null, bankAccountNumber: null, notes: "initial store").Value;
         CategoryA = Category.Create(parentCategoryId: null, name: "خواتم", description: "rings").Value;
+        EmployeeA = Employee.Create(
+            "Initial", "Seller", RoleEnum.Salesperson, 1000M, Currency.JOD, SalaryCycleEnum.Monthly, userId: null).Value;
+        FinancialAccountA = await db.FinancialAccounts
+            .FirstAsync(account => account.Currency == Currency.JOD && account.AccountType == FinancialAccountType.Cash);
         db.Suppliers.Add(SupplierA);
         db.Categories.Add(CategoryA);
+        db.Employees.Add(EmployeeA);
+        db.GoldLedgerEntries.Add(GoldLedgerEntry.Create(
+            Karat.K21, 100M, GoldMovementType.Increase, GoldReferenceType.InventoryAdjustment,
+            Guid.CreateVersion7(), "API B3 opening stock").Value);
+        db.FinancialTransactions.Add(FinancialTransaction.Create(
+            FinancialAccountA.Id, Currency.JOD, 100000M, FinancialTransactionType.Inflow,
+            FinancialReferenceType.ManualAdjustment, Guid.CreateVersion7(), "API B3 opening balance").Value);
         await db.SaveChangesAsync(CancellationToken.None);
 
         // ── Eligibility fixtures (plan Phase 8 item 6) ──
@@ -198,6 +282,93 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
         User disabled = CreateUser(hasher, tenantAId, "disabled@goldstore.test", "Disabled");
         disabled.IsActive = false;
         db.Users.Add(disabled);
+
+        // The test host pins IUserContext.UserId to TestUserContext.Id for every scope;
+        // seed a matching user so identity-relative endpoints (GET /api/v1/users/me)
+        // resolve a real profile instead of a 404.
+        db.Users.Add(User.Create(
+            TestUserContext.Id, tenantAId, ProfileUserEmail, "Me", "Profile", hasher.Hash(TestPassword)).Value);
+
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        // ── Feature-gate fixtures ──
+        await SeedNoCatalogTenantAsync(db, setter, hasher, storeAdmin, plan, utcNow);
+        await SeedFeatureRestrictedTenantAsync(
+            db, setter, hasher, storeAdmin, plan, utcNow,
+            "no-suppliers-store", "No Suppliers Store", NoSuppliersAdmin, "NoSuppliers", Domain.Tenants.Features.Suppliers);
+        await SeedFeatureRestrictedTenantAsync(
+            db, setter, hasher, storeAdmin, plan, utcNow,
+            "no-inventory-store", "No Inventory Store", NoInventoryAdmin, "NoInventory", Domain.Tenants.Features.Inventory);
+        await SeedFeatureRestrictedTenantAsync(
+            db, setter, hasher, storeAdmin, plan, utcNow,
+            "no-sales-store", "No Sales Store", NoSalesAdmin, "NoSales", Domain.Tenants.Features.Sales);
+        await SeedFeatureRestrictedTenantAsync(
+            db, setter, hasher, storeAdmin, plan, utcNow,
+            "no-purchases-store", "No Purchases Store", NoPurchasesAdmin, "NoPurchases", Domain.Tenants.Features.Purchases);
+        await SeedFeatureRestrictedTenantAsync(
+            db, setter, hasher, storeAdmin, plan, utcNow,
+            "no-finance-store", "No Finance Store", NoFinanceAdmin, "NoFinance", Domain.Tenants.Features.Finance);
+        await SeedFeatureRestrictedTenantAsync(
+            db, setter, hasher, storeAdmin, plan, utcNow,
+            "no-expenses-store", "No Expenses Store", NoExpensesAdmin, "NoExpenses", Domain.Tenants.Features.Expenses);
+        await SeedFeatureRestrictedTenantAsync(
+            db, setter, hasher, storeAdmin, plan, utcNow,
+            "no-hr-store", "No HR Store", NoHrAdmin, "NoHr", Domain.Tenants.Features.Hr);
+    }
+
+    private async Task SeedNoCatalogTenantAsync(
+        ApplicationDbContext db,
+        ICurrentTenantSetter setter,
+        IPasswordHasher hasher,
+        Role storeAdmin,
+        SubscriptionPlan plan,
+        DateTimeOffset utcNow)
+    {
+        Guid tenantId = Guid.CreateVersion7();
+        setter.Set(tenantId, "no-catalog-store");
+
+        db.Tenants.Add(Tenant.Create(tenantId, "No Catalog Store", "no-catalog-store", TenantStatus.Active).Value);
+        db.TenantSubscriptions.Add(TenantSubscription
+            .Create(tenantId, plan.Id, SubscriptionBillingCycle.Annual, utcNow, utcNow.AddYears(1)).Value);
+        db.TenantSettings.Add(TenantSettings
+            .Create(tenantId, "No Catalog Store", logoUrl: null, timeZoneId: "Asia/Amman",
+                enabledFeatures: [.. Domain.Tenants.Features.All
+                    .Where(feature => feature != Domain.Tenants.Features.Catalog)]).Value);
+
+        User user = CreateUser(hasher, tenantId, NoCatalogAdmin, "NoCatalog");
+        db.Users.Add(user);
+        db.UserRoles.Add(UserRole.Create(tenantId, user.Id, storeAdmin.Id).Value);
+
+        await db.SaveChangesAsync(CancellationToken.None);
+    }
+
+    private async Task SeedFeatureRestrictedTenantAsync(
+        ApplicationDbContext db,
+        ICurrentTenantSetter setter,
+        IPasswordHasher hasher,
+        Role storeAdmin,
+        SubscriptionPlan plan,
+        DateTimeOffset utcNow,
+        string tenantKey,
+        string tenantName,
+        string adminEmail,
+        string userSuffix,
+        string disabledFeature)
+    {
+        Guid tenantId = Guid.CreateVersion7();
+        setter.Set(tenantId, tenantKey);
+
+        db.Tenants.Add(Tenant.Create(tenantId, tenantName, tenantKey, TenantStatus.Active).Value);
+        db.TenantSubscriptions.Add(TenantSubscription
+            .Create(tenantId, plan.Id, SubscriptionBillingCycle.Annual, utcNow, utcNow.AddYears(1)).Value);
+        db.TenantSettings.Add(TenantSettings
+            .Create(tenantId, tenantName, logoUrl: null, timeZoneId: "Asia/Amman",
+                enabledFeatures: [.. Domain.Tenants.Features.All.Where(feature => feature != disabledFeature)]).Value);
+
+        User user = CreateUser(hasher, tenantId, adminEmail, userSuffix);
+        db.Users.Add(user);
+        db.UserRoles.Add(UserRole.Create(tenantId, user.Id, storeAdmin.Id).Value);
+
         await db.SaveChangesAsync(CancellationToken.None);
     }
 
@@ -254,9 +425,11 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
     /// context that is absent during seeding and background flows.</summary>
     private sealed class TestUserContext : IUserContext
     {
+        internal static readonly Guid Id = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
         public bool IsAvailable => true;
 
-        public Guid UserId { get; } = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        public Guid UserId => Id;
     }
 
     private static void SetCancellationGrace(Tenant tenant, DateTimeOffset graceUntilUtc)

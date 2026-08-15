@@ -32,7 +32,6 @@ internal sealed class CreateDebtCommandHandler(
             return DebtErrors.AccountCurrencyMismatch;
         }
 
-        var debtId = Guid.CreateVersion7();
         Result<Debt> debtResult = Debt.Create(command.Name, command.Phone, direction, currency, command.AccountId, command.Notes);
         if (debtResult.IsError)
         {
@@ -70,7 +69,7 @@ internal sealed class CreateDebtCommandHandler(
         }
 
         Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(command.AccountId, currency, command.Amount,
-            financialTransactionType, FinancialReferenceType.DebtCreation, debtId, $"إنشاء {GetDirectionLabel(direction)}: {command.Name}");
+            financialTransactionType, FinancialReferenceType.DebtCreation, debtResult.Value.Id, $"إنشاء {GetDirectionLabel(direction)}: {command.Name}");
 
 
         if (financialTransactionResult.IsError)
@@ -82,7 +81,7 @@ internal sealed class CreateDebtCommandHandler(
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return debtId;
+        return debtResult.Value.Id;
     }
 
     private static string GetDirectionLabel(DebtDirection direction) => direction switch

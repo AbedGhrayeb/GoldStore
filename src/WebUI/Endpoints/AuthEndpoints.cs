@@ -3,7 +3,6 @@ using Application.Abstractions.Authentication;
 using Application.Abstractions.Messaging;
 using Application.Users.Login;
 using Infrastructure.Authentication;
-using Microsoft.AspNetCore.Builder;
 using SharedKernel.Result;
 using WebUI.Extensions;
 
@@ -21,7 +20,8 @@ public sealed class AuthEndpoints : IEndpoint
     public void Map(IEndpointRouteBuilder app)
     {
         RouteGroupBuilder group = app.MapGroup($"/{ApiRoutes.Tenant}/auth")
-            .WithTags("Authentication");
+            .WithTags("Authentication")
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         group.MapPost("/login", Login)
             .AllowAnonymous()
@@ -44,7 +44,8 @@ public sealed class AuthEndpoints : IEndpoint
 
         group.MapGet("/me", Me)
             .RequireAuthorization()
-            .WithSummary("Return the claims carried by the current bearer token.");
+            .WithSummary("Return the claims carried by the current bearer token.")
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
     }
 
     private static async Task<IResult> Login(

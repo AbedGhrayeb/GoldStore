@@ -14,6 +14,7 @@ using Infrastructure.Database.Interceptors;
 using Infrastructure.DomainEvents;
 using Infrastructure.GoldPrices;
 using Infrastructure.HealthChecks;
+using Infrastructure.Invoices;
 using Infrastructure.Subscriptions;
 using Infrastructure.Tenants;
 using Infrastructure.Tenancy;
@@ -72,6 +73,7 @@ public static class DependencyInjection
 
         // Central subscription quota gate (plan Phase 4 item 7).
         services.AddScoped<ISubscriptionGate, SubscriptionGate>();
+        services.AddScoped<IInvoiceNumberService, InvoiceNumberService>();
 
         // Ambient tenant for the current scope (claims-based on HTTP requests,
         // explicitly selected for host/background flows).

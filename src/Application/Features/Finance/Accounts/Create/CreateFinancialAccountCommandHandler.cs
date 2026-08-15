@@ -35,7 +35,7 @@ internal sealed class CreateFinancialAccountCommandHandler(IApplicationDbContext
         }
         context.FinancialAccounts.Add(accountResult.Value);
 
-        if (command.OpeningBalance >= 0m)
+        if (command.OpeningBalance > 0m)
         {
             Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(accountResult.Value.Id, currency, command.OpeningBalance,
                 FinancialTransactionType.Inflow, FinancialReferenceType.ManualAdjustment, accountResult.Value.Id,

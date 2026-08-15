@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Services;
 using Application.Abstractions.Subscriptions;
 using Application.Common.Errors;
 using Application.Common.Ledger;
@@ -11,13 +12,16 @@ using Domain.Finance;
 using Domain.Inventory;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SharedKernel.Result;
 
 namespace Application.Features.SalesInvoices.Create;
 
 internal sealed class CreateSalesInvoiceCommandHandler(
     IApplicationDbContext context,
-    ISubscriptionGate subscriptionGate)
+    ISubscriptionGate subscriptionGate,
+    IInvoiceNumberService invoiceNumberService,
+    ILogger<CreateSalesInvoiceCommandHandler> logger)
     : ICommandHandler<CreateSalesInvoiceCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateSalesInvoiceCommand command, CancellationToken cancellationToken)
@@ -66,7 +70,8 @@ internal sealed class CreateSalesInvoiceCommandHandler(
 
         }
 
-        string invoiceNumber = await GenerateInvoiceNumberAsync(cancellationToken);
+        string invoiceNumber = await invoiceNumberService.AllocateAsync(
+            InvoiceDocumentType.Sales, cancellationToken);
 
         decimal amountPaid;
         Guid accountId;
@@ -216,17 +221,9 @@ internal sealed class CreateSalesInvoiceCommandHandler(
         }
         catch (Exception ex)
         {
-            return ApplicationErrors.DatabaseError(ex);
+            logger.LogError(ex, "Failed to create sales invoice {InvoiceId}", invoiceId);
+            return ApplicationErrors.DatabaseError;
         }
     }
 
-    private async Task<string> GenerateInvoiceNumberAsync(CancellationToken cancellationToken)
-    {
-        string yearMonth = DateTime.UtcNow.ToString("yyyy-MM");
-
-        int count = await context.SalesInvoices
-            .CountAsync(i => i.InvoiceNumber.StartsWith($"INV-{yearMonth}"), cancellationToken);
-
-        return $"INV-{yearMonth}-{count + 1:D4}";
-    }
 }

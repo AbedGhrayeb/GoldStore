@@ -28,7 +28,7 @@ public static class ApplicationErrors
     Error.Unauthorized(
            "ApplicationErrors.Users.InvalidRefreshToken",
            "رمز التحديث غير صالح أو منتهي الصلاحية.");
-    public static Error DatabaseError(Exception ex) => Error.Failure(
-     "CustomerPurchaseInvoices.DatabaseError",
-     $"حدث خطأ في قاعدة البيانات: {ex.Message}");
+    public static readonly Error DatabaseError = Error.Failure(
+        "Application.DatabaseError",
+        "حدث خطأ غير متوقع أثناء حفظ البيانات");
 }

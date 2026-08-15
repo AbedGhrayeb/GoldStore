@@ -40,6 +40,12 @@ public sealed class SupplierFinancialTransaction : AuditableEntity, ITenantEntit
     public static SupplierFinancialTransaction Create(Guid supplierId, SupplierFinancialTransactionDirection direction,
         decimal amount, Currency currency, Guid accountId, string? notes)
     {
-        return new SupplierFinancialTransaction(Guid.CreateVersion7(), supplierId, direction, amount, currency, accountId, notes);
+        return Create(Guid.CreateVersion7(), supplierId, direction, amount, currency, accountId, notes);
+    }
+
+    public static SupplierFinancialTransaction Create(Guid id, Guid supplierId, SupplierFinancialTransactionDirection direction,
+        decimal amount, Currency currency, Guid accountId, string? notes)
+    {
+        return new SupplierFinancialTransaction(id, supplierId, direction, amount, currency, accountId, notes);
     }
 }

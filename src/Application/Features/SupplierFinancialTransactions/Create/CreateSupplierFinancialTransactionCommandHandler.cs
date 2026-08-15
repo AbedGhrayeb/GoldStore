@@ -1,7 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Ledger;
-using Application.Users.Login;
 using Domain.Common;
 using Domain.Finance;
 using Domain.Suppliers;
@@ -32,7 +31,12 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
             return SupplierFinancialErrors.SupplierNotActive;
         }
 
-        Currency currency = Enum.Parse<Currency>(command.Currency);
+        if (!Enum.TryParse(command.Currency, ignoreCase: true, out Currency currency)
+            || !Enum.IsDefined(currency))
+        {
+            return Error.Validation("SupplierFinancial.InvalidCurrency", "العملة غير صالحة");
+        }
+
         var direction = (SupplierFinancialTransactionDirection)command.Direction;
 
         FinancialTransactionType financialTransactionType = direction switch
@@ -42,7 +46,7 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
             _ => FinancialTransactionType.Inflow
         };
 
-        var transactionId = Guid.CreateVersion7();
+        Guid transactionId = Guid.CreateVersion7();
 
         decimal amount;
         Guid accountId;
@@ -96,7 +100,14 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
             }
         }
 
-        var supplierFinancialTransaction = SupplierFinancialTransaction.Create(command.SupplierId, direction, amount, currency, accountId, command.Notes);
+        SupplierFinancialTransaction supplierFinancialTransaction = SupplierFinancialTransaction.Create(
+            transactionId,
+            command.SupplierId,
+            direction,
+            amount,
+            currency,
+            accountId,
+            command.Notes);
 
         context.SupplierFinancialTransactions.Add(supplierFinancialTransaction);
         var supplierFinancialLedgerEntry = SupplierFinancialLedgerEntry.Create(supplierFinancialTransaction.Id, amount, SupplierBalanceMovementType.Increase, command.Notes);
@@ -118,7 +129,7 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return transactionId;
+        return supplierFinancialTransaction.Id;
     }
 
 }

@@ -19,6 +19,9 @@ public static class ApiResults
     public static IResult Created<TValue>(string uri, Result<TValue> result)
         => result.IsSuccess ? TypedResults.Created(uri, result.Value) : ToProblem(result.Errors);
 
+    public static IResult Created<TValue>(Result<TValue> result)
+        => result.IsSuccess ? TypedResults.Created(uri: (string?)null, result.Value) : ToProblem(result.Errors);
+
     public static IResult From<TValue>(Result<TValue> result)
         => result.IsSuccess ? TypedResults.Ok(result.Value) : ToProblem(result.Errors);
 
@@ -84,14 +87,7 @@ public static class ApiResults
         foreach (Error error in errors)
         {
             string key = string.IsNullOrWhiteSpace(error.Code) ? string.Empty : error.Code;
-            if (modelState.TryGetValue(key, out string[]? existing))
-            {
-                modelState[key] = [.. existing, error.Description];
-            }
-            else
-            {
-                modelState[key] = [error.Description];
-            }
+            modelState[key] = modelState.TryGetValue(key, out string[]? existing) ? [.. existing, error.Description] : [error.Description];
         }
 
         return modelState;

@@ -1,5 +1,6 @@
 ﻿using Domain.Authorization;
 using Domain.Catalog;
+using Domain.Common;
 using Domain.CustomerPurchases;
 using Domain.Debts;
 using Domain.Employees;
@@ -23,6 +24,7 @@ public interface IApplicationDbContext
     DbSet<FinancialTransaction> FinancialTransactions { get; }
     DbSet<FinancialAccount> FinancialAccounts { get; }
     DbSet<Category> Categories { get; }
+    DbSet<InvoiceNumberSequence> InvoiceNumberSequences { get; }
     DbSet<GoldLedgerEntry> GoldLedgerEntries { get; }
     DbSet<InventoryAdjustment> InventoryAdjustments { get; }
     DbSet<Supplier> Suppliers { get; }

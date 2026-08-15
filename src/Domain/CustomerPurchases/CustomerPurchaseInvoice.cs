@@ -68,7 +68,7 @@ public sealed class CustomerPurchaseInvoice : AuditableEntity, ITenantEntity
         Notes = notes;
         _items = items ?? new List<CustomerPurchaseInvoiceItem>();
     }
-    public static Result<CustomerPurchaseInvoice> Create(string invoiceNumber, string sellerName, string? sellerIdNumber, string? sellerPhone,
+    public static Result<CustomerPurchaseInvoice> Create(Guid id, string invoiceNumber, string sellerName, string? sellerIdNumber, string? sellerPhone,
         int? sellerYearOfBirth, string? sellerAddress, Guid employeeId, DateTime? date, Currency currency, decimal totalAmount,
         decimal amountPaid, PaymentMethod paymentMethod, Guid accountId, string? sellerAccountNumber, string? notes, List<CustomerPurchaseInvoiceItem> items)
     {
@@ -93,7 +93,7 @@ public sealed class CustomerPurchaseInvoice : AuditableEntity, ITenantEntity
         {
             return CustomerPurchaseInvoiceErrors.NoItems;
         }
-        return new CustomerPurchaseInvoice(Guid.CreateVersion7(), invoiceNumber, sellerName, sellerIdNumber, sellerPhone, sellerYearOfBirth, sellerAddress, employeeId, date, currency, totalAmount, amountPaid, paymentMethod, accountId, sellerAccountNumber, notes, items);
+        return new CustomerPurchaseInvoice(id, invoiceNumber, sellerName, sellerIdNumber, sellerPhone, sellerYearOfBirth, sellerAddress, employeeId, date, currency, totalAmount, amountPaid, paymentMethod, accountId, sellerAccountNumber, notes, items);
     }
 
 }

@@ -3,6 +3,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Tenants;
 using Domain.Authorization;
 using Domain.Catalog;
+using Domain.Common;
 using Domain.CustomerPurchases;
 using Domain.Debts;
 using Domain.Expenses;
@@ -39,6 +40,8 @@ public sealed class ApplicationDbContext(
     public DbSet<FinancialAccount> FinancialAccounts { get; set; }
 
     public DbSet<Category> Categories { get; set; }
+
+    public DbSet<InvoiceNumberSequence> InvoiceNumberSequences { get; set; }
 
     public DbSet<GoldLedgerEntry> GoldLedgerEntries { get; set; }
 

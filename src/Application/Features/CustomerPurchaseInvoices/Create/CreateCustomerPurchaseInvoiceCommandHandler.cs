@@ -1,6 +1,7 @@
 ﻿using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Services;
 using Application.Common.Ledger;
 using Domain.Catalog;
 using Domain.Common;
@@ -8,15 +9,19 @@ using Domain.CustomerPurchases;
 using Domain.Debts;
 using Domain.Employees;
 using Domain.Finance;
+using Domain.Inventory;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SharedKernel.Result;
 
 namespace Application.Features.CustomerPurchaseInvoices.Create;
 
 internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
     IApplicationDbContext context,
-    IUserContext userContext)
+    IUserContext userContext,
+    IInvoiceNumberService invoiceNumberService,
+    ILogger<CreateCustomerPurchaseInvoiceCommandHandler> logger)
     : ICommandHandler<CreateCustomerPurchaseInvoiceCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateCustomerPurchaseInvoiceCommand command, CancellationToken cancellationToken)
@@ -36,7 +41,8 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
         try
         {
             Currency currency = Enum.Parse<Currency>(command.Currency);
-            string invoiceNumber = await GenerateInvoiceNumberAsync(cancellationToken);
+            string invoiceNumber = await invoiceNumberService.AllocateAsync(
+                InvoiceDocumentType.CustomerPurchase, cancellationToken);
 
             decimal amountPaid;
             Guid accountId;
@@ -117,6 +123,7 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
                 items.Add(itemResult.Value);
             }
             Result<CustomerPurchaseInvoice> invoiceResult = CustomerPurchaseInvoice.Create(
+                invoiceId,
                 invoiceNumber,
                 command.SellerName,
                 command.SellerIdNumber,
@@ -140,6 +147,24 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
                 return invoiceResult.Errors;
             }
             context.CustomerPurchaseInvoices.Add(invoiceResult.Value);
+
+            foreach (CustomerPurchaseInvoiceItem item in items)
+            {
+                Result<GoldLedgerEntry> goldLedgerEntryResult = GoldLedgerEntry.Create(
+                    item.Karat,
+                    item.WeightInGrams,
+                    GoldMovementType.Increase,
+                    GoldReferenceType.CustomerGoldPurchase,
+                    invoiceId,
+                    $"فاتورة شراء ذهب {invoiceNumber}");
+
+                if (goldLedgerEntryResult.IsError)
+                {
+                    return goldLedgerEntryResult.Errors;
+                }
+
+                context.GoldLedgerEntries.Add(goldLedgerEntryResult.Value);
+            }
 
             // Add financial transaction for the amount paid
             if (command.PaymentLegs is not { Count: > 0 } && amountPaid > 0)
@@ -173,10 +198,19 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
                 }
                 else
                 {
-                    Result<Debt> debtResult = Debt.Create(command.SellerName, command.SellerPhone, DebtDirection.Payable, currency, command.AccountId,
-                                          $"باقي فاتورة شراء ذهب {invoiceNumber} بتاريخ {command.Date:yyyy-MM-dd}");
+                    Result<Debt> debtResult = Debt.Create(
+                        command.SellerName,
+                        command.SellerPhone,
+                        DebtDirection.Payable,
+                        currency,
+                        accountId,
+                        $"باقي فاتورة شراء ذهب {invoiceNumber} بتاريخ {command.Date:yyyy-MM-dd}");
                     if (debtResult.IsError)
-                    { return debtResult.Errors; }
+                    {
+                        return debtResult.Errors;
+                    }
+
+                    debtId = debtResult.Value.Id;
                     context.Debts.Add(debtResult.Value);
                 }
 
@@ -196,19 +230,11 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
         }
         catch (Exception ex)
         {
-            return CustomerPurchaseInvoiceErrors.DatabaseError(ex);
+            logger.LogError(ex, "Failed to create customer purchase invoice {InvoiceId}", invoiceId);
+            return CustomerPurchaseInvoiceErrors.DatabaseError;
         }
 
         return invoiceId;
     }
 
-    private async Task<string> GenerateInvoiceNumberAsync(CancellationToken cancellationToken)
-    {
-        string yearMonth = DateTime.UtcNow.ToString("yyyy-MM");
-
-        int count = await context.CustomerPurchaseInvoices
-            .CountAsync(i => i.InvoiceNumber.StartsWith($"PUR-{yearMonth}"), cancellationToken);
-
-        return $"PUR-{yearMonth}-{count + 1:D4}";
-    }
 }

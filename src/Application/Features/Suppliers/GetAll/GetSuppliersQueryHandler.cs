@@ -36,13 +36,13 @@ internal sealed class GetSuppliersQueryHandler(IApplicationDbContext context, IC
             .ToDictionary(x => x.SupplierId, x => x.Balance);
 
         var lastTransactions = suppliers.SelectMany(s => s.SupplierGoldLedgerEntries)
-            .Where(e => supplierIds.Contains(e.SupplierId))
+            .Where(e => supplierIds.Contains(e.SupplierId) && e.CreatedAtUtc is not null)
             .GroupBy(e => e.SupplierId)
             .Select(g => new TransactionDate { SupplierId = g.Key, Date = g.Max(e => e.CreatedAtUtc!.Value.LocalDateTime) })
             .ToList();
 
         var lastMfgTransactions = suppliers.SelectMany(s => s.SupplierManufacturingLedgerEntries)
-            .Where(e => supplierIds.Contains(e.SupplierId))
+            .Where(e => supplierIds.Contains(e.SupplierId) && e.CreatedAtUtc is not null)
             .GroupBy(e => e.SupplierId)
             .Select(g => new TransactionDate { SupplierId = g.Key, Date = g.Max(e => e.CreatedAtUtc!.Value.LocalDateTime) })
             .ToList();
@@ -59,7 +59,7 @@ internal sealed class GetSuppliersQueryHandler(IApplicationDbContext context, IC
             PrimaryPhone = s.PrimaryPhone,
             SecondaryPhone = s.SecondaryPhone,
             BankAccountNumber = s.BankAccountNumber,
-            CreatedAt = s.CreatedAtUtc!.Value.LocalDateTime,
+            CreatedAt = s.CreatedAtUtc?.LocalDateTime ?? default,
             IsActive = s.IsActive,
             Notes = s.Notes,
             GoldBalance = goldBalances.TryGetValue(s.Id, out decimal goldBalance) ? goldBalance : 0,
