@@ -1,0 +1,3 @@
+#!/bin/sh
+cd src/Client
+npx lint-staged

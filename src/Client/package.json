@@ -1,0 +1,59 @@
+{
+  "name": "client",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "lint": "ng lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "gen:api": "openapi-typescript http://localhost:5999/openapi/v1.json -o src/app/shared/api/schema.d.ts",
+    "gen:api:check": "npm run gen:api && git diff --exit-code -- src/app/shared/api/schema.d.ts",
+    "prepare": "git config core.hooksPath src/Client/.husky"
+  },
+  "lint-staged": {
+    "*.{ts,mts}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{ts,mts,html,css,json,md}": "prettier --write"
+  },
+  "private": true,
+  "packageManager": "npm@11.18.0",
+  "dependencies": {
+    "@angular/common": "~22.1.0",
+    "@angular/compiler": "~22.1.0",
+    "@angular/core": "~22.1.0",
+    "@angular/forms": "~22.1.0",
+    "@angular/platform-browser": "~22.1.0",
+    "@angular/router": "~22.1.0",
+    "@angular/service-worker": "~22.1.0",
+    "lucide-angular": "^1.0.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "~22.1.0",
+    "@angular/cli": "~22.1.0",
+    "@angular/compiler-cli": "~22.1.0",
+    "@eslint/js": "^10.0.1",
+    "@fontsource/ibm-plex-sans-arabic": "^5.3.0",
+    "@playwright/test": "^1.62.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "angular-eslint": "22.1.0",
+    "eslint": "^10.6.0",
+    "husky": "^9.1.7",
+    "jsdom": "^28.0.0",
+    "lint-staged": "^17.3.0",
+    "msw": "^2.15.0",
+    "openapi-typescript": "^7.13.0",
+    "prettier": "^3.9.6",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "8.62.1",
+    "vitest": "^4.0.8"
+  }
+}

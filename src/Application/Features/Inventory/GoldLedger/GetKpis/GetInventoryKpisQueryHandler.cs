@@ -94,7 +94,7 @@ internal sealed class GetInventoryKpisQueryHandler(
         GoldPriceData? priceData = null;
         try
         {
-            priceData = await goldPriceService.GetCurrentPricesAsync(Currency.JOD, cancellationToken);
+            //priceData = await goldPriceService.GetCurrentPricesAsync(Currency.JOD, cancellationToken);
         }
         catch
         {
