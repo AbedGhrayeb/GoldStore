@@ -30,7 +30,7 @@ internal sealed class UpdateUserCommandHandler(
 
         bool passwordChanged = !string.IsNullOrWhiteSpace(command.Password);
 
-        user.Update(command.FirstName, command.LastName, passwordChanged ? passwordHasher.Hash(command.Password!) : null);
+        user.Update(command.FirstName, command.LastName, passwordChanged ? passwordHasher.Hash(command.Password!) : null, command.PhoneNumber, command.WhatsappNumber);
 
         if (passwordChanged)
         {

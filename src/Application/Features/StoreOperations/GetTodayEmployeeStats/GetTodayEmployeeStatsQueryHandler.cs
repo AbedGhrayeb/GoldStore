@@ -36,8 +36,8 @@ internal sealed class GetTodayEmployeeStatsQueryHandler(
             .Select(p => new { p.Id, p.EmployeeId, p.Currency, p.TotalAmount })
             .ToListAsync(cancellationToken);
 
-        List<Guid> salesInvoiceIds = salesHeaders.Select(s => s.Id).ToList();
-        List<Guid> purchaseInvoiceIds = purchaseHeaders.Select(p => p.Id).ToList();
+        var salesInvoiceIds = salesHeaders.Select(s => s.Id).ToList();
+        var purchaseInvoiceIds = purchaseHeaders.Select(p => p.Id).ToList();
 
         Dictionary<Guid, decimal> salesItemWeights = salesInvoiceIds.Count == 0
             ? []

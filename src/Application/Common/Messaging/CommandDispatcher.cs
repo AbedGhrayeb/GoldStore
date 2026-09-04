@@ -24,11 +24,7 @@ internal sealed class CommandDispatcher(IServiceProvider serviceProvider) : ICom
     {
         Type handlerType = typeof(ICommandHandler<,>).MakeGenericType(typeof(TCommand), typeof(TResult));
 
-        object? handler = serviceProvider.GetService(handlerType);
-        if (handler is null)
-        {
-            throw new InvalidOperationException($"No command handler registered for '{typeof(TCommand).Name}'.");
-        }
+        object? handler = serviceProvider.GetService(handlerType) ?? throw new InvalidOperationException($"No command handler registered for '{typeof(TCommand).Name}'.");
 
         return (ICommandHandler<TCommand, TResult>)handler;
     }

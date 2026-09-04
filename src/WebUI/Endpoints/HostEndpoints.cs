@@ -1,16 +1,29 @@
 ﻿using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Phone;
+using Application.Features.PlatformUsers.TwoFactor;
+using Application.Features.SubscriptionPlans;
+using Application.Features.SubscriptionPlans.Create;
+using Application.Features.SubscriptionPlans.GetSubscriptionPlans;
+using Application.Features.SubscriptionPlans.Update;
+using Application.Features.Subscriptions;
+using Application.Features.Subscriptions.GetTenantSubscription;
+using Application.Features.Subscriptions.Renew;
 using Application.PlatformUsers.Login;
 using Application.Tenants.Provision;
 using Application.Tenants.Reconciliation;
 using Application.Tenants.UpdateStatus;
 using Domain.Tenants;
+using Infrastructure.Phone;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SharedKernel.Result;
 using WebUI.Authorization;
 using WebUI.Extensions;
+using WebUI.Infrastructure.Authentication;
 
 namespace WebUI.Endpoints;
 
@@ -29,20 +42,22 @@ public sealed class HostEndpoints : IEndpoint
             .WithTags("Host Administration")
             .WithMetadata(new HostOnlyAttribute());
 
-        group.MapGet("/auth/login", LoginPage)
-            .AllowAnonymous()
-            .WithSummary("Render the host sign-in page (browser cookie-challenge redirect target).")
-            .Produces(StatusCodes.Status200OK);
-
         group.MapPost("/auth/login", Login)
             .AllowAnonymous()
             .RequireRateLimiting("LoginLimiter")
-            .WithSummary("Sign in a platform user through the host cookie scheme.")
+            .WithSummary("Sign in a platform user and set an HttpOnly host JWT cookie.")
             .Produces(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        group.MapGet("/auth/me", Me)
+            .RequireAuthorization()
+            .WithSummary("Return the active host administrator identity.")
+            .Produces<HostMeResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         group.MapPost("/auth/logout", Logout)
             .RequireAuthorization()
+            .AddEndpointFilter<AntiforgeryEndpointFilter>()
             .WithSummary("Sign out the current platform user.")
             .Produces(StatusCodes.Status204NoContent);
 
@@ -53,12 +68,14 @@ public sealed class HostEndpoints : IEndpoint
 
         group.MapPost("/tenants", ProvisionTenant)
             .RequireAuthorization()
+            .AddEndpointFilter<AntiforgeryEndpointFilter>()
             .WithSummary("Provision a new tenant with settings, subscription, and admin.")
             .Produces(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         group.MapPatch("/tenants/{tenantId:guid}/status", UpdateTenantStatus)
             .RequireAuthorization()
+            .AddEndpointFilter<AntiforgeryEndpointFilter>()
             .WithSummary("Move a tenant between trial, active, and cancelled.")
             .Produces(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest);
@@ -68,85 +85,82 @@ public sealed class HostEndpoints : IEndpoint
             .WithSummary("Reconcile tenant-owned rows across the database.")
             .Produces<TenantReconciliationResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest);
-    }
 
-    private static IResult LoginPage(HttpRequest request)
-    {
-        string returnUrl = request.Query["ReturnUrl"].FirstOrDefault() ?? "/host";
-        string html = $$"""
-            <!doctype html>
-            <html lang="ar" dir="rtl">
-            <head>
-              <meta charset="utf-8" />
-              <meta name="viewport" content="width=device-width, initial-scale=1" />
-              <title>دخول الإدارة العامة — GoldStore</title>
-              <style>
-                :root { --gold:#D4AF37; --gold-soft:#FFE088; --bg:#FCFAFA; --text:#1F2937; --error:#EF4444; }
-                * { box-sizing:border-box; }
-                body { margin:0; font-family:"IBM Plex Sans Arabic","Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--text); display:flex; align-items:center; justify-content:center; min-height:100vh; }
-                .card { background:#FFF; border-radius:8px; box-shadow:0 4px 24px rgba(0,0,0,.08); padding:24px; width:100%; max-width:360px; border-top:4px solid var(--gold); }
-                h1 { font-size:1.25rem; margin:0 0 4px; }
-                p { color:#6B7280; margin:0 0 20px; font-size:.9rem; }
-                label { display:block; font-size:.85rem; margin:0 0 6px; }
-                input { width:100%; padding:10px 12px; border:1px solid #D1D5DB; border-radius:4px; font:inherit; margin-bottom:16px; }
-                input:focus { outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(212,175,55,.25); }
-                button { width:100%; background:var(--gold); color:#1F2937; font:inherit; font-weight:600; padding:11px; border:0; border-radius:4px; cursor:pointer; }
-                button:disabled { opacity:.6; cursor:wait; }
-                .error { display:none; background:#FEF2F2; color:var(--error); border:1px solid #FECACA; border-radius:4px; padding:10px 12px; font-size:.85rem; margin-bottom:16px; }
-              </style>
-            </head>
-            <body>
-              <div class="card">
-                <h1>دخول الإدارة العامة</h1>
-                <p>منصة GoldStore — إدارة المتاجر والاشتراكات</p>
-                <div class="error" id="error"></div>
-                <form id="login">
-                  <label for="email">البريد الإلكتروني</label>
-                  <input id="email" name="email" type="email" required autocomplete="username" />
-                  <label for="password">كلمة المرور</label>
-                  <input id="password" name="password" type="password" required autocomplete="current-password" />
-                  <button type="submit">تسجيل الدخول</button>
-                </form>
-              </div>
-              <script>
-                const returnUrl = new URLSearchParams(location.search).get('ReturnUrl') || '/host';
-                document.getElementById('login').addEventListener('submit', async (event) => {
-                  event.preventDefault();
-                  const errorBox = document.getElementById('error');
-                  const button = event.target.querySelector('button');
-                  button.disabled = true;
-                  errorBox.style.display = 'none';
-                  try {
-                    const response = await fetch('/host/api/v1/auth/login', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        email: document.getElementById('email').value,
-                        password: document.getElementById('password').value,
-                      }),
-                    });
-                    if (response.ok) {
-                      window.location.assign(returnUrl);
-                      return;
-                    }
-                    const payload = await response.json().catch(() => null);
-                    errorBox.textContent = payload?.detail ?? 'تعذّر تسجيل الدخول. تحقّق من البيانات وحاول مجدداً.';
-                  } finally {
-                    button.disabled = false;
-                  }
-                  errorBox.style.display = 'block';
-                });
-              </script>
-            </body>
-            </html>
-            """;
-        return Results.Content(html, "text/html; charset=utf-8");
+        RouteGroupBuilder plansGroup = group.MapGroup("/subscription-plans");
+        plansGroup.MapGet("/", GetSubscriptionPlans)
+            .RequireAuthorization()
+            .WithSummary("List all subscription plans.")
+            .Produces<IReadOnlyList<SubscriptionPlanResponse>>(StatusCodes.Status200OK);
+        plansGroup.MapPost("/", CreateSubscriptionPlan)
+            .RequireAuthorization()
+            .AddEndpointFilter<AntiforgeryEndpointFilter>()
+            .WithSummary("Create a new subscription plan.")
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+        plansGroup.MapPut("/{id:guid}", UpdateSubscriptionPlan)
+            .RequireAuthorization()
+            .AddEndpointFilter<AntiforgeryEndpointFilter>()
+            .WithSummary("Update an existing subscription plan.")
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        group.MapGet("/tenants/{tenantId:guid}/subscription", GetTenantSubscription)
+            .RequireAuthorization()
+            .WithSummary("Get the current subscription for a tenant.")
+            .Produces<TenantSubscriptionResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapPost("/tenants/{tenantId:guid}/subscription/renew", RenewTenantSubscription)
+            .RequireAuthorization()
+            .AddEndpointFilter<AntiforgeryEndpointFilter>()
+            .WithSummary("Renew or change a tenant subscription.")
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        // Host Firebase config + mandatory phone 2FA
+        group.MapGet("/auth/config/firebase", HostFirebaseConfig)
+            .AllowAnonymous()
+            .WithSummary("Return Firebase web config for host phone auth.")
+            .Produces<FirebaseConfigResponse>(StatusCodes.Status200OK);
+
+        group.MapPost("/auth/2fa/phone/setup", HostSetupPhone2fa)
+            .AllowAnonymous()
+            .RequireRateLimiting("LoginLimiter")
+            .WithSummary("Host: verify phone idToken and enable mandatory 2FA.")
+            .Produces<SetupPhone2faResponse>(StatusCodes.Status200OK);
+
+        group.MapPost("/auth/2fa/phone/verify", HostVerifyPhone2fa)
+            .AllowAnonymous()
+            .RequireRateLimiting("LoginLimiter")
+            .WithSummary("Host: second factor verify.")
+            .Produces(StatusCodes.Status200OK);
+
+        group.MapPost("/auth/2fa/phone/verify-recovery", HostVerifyRecovery)
+            .AllowAnonymous()
+            .RequireRateLimiting("LoginLimiter")
+            .WithSummary("Host: second factor via recovery code.");
+
+        group.MapPost("/auth/forgot-password/phone", HostForgotPasswordPhone)
+            .AllowAnonymous()
+            .RequireRateLimiting("LoginLimiter")
+            .WithSummary("Host: reset password via phone idToken.")
+            .Produces(StatusCodes.Status200OK);
     }
 
     private static async Task<IResult> Login(
         LoginRequest request,
         ICommandDispatcher dispatcher,
-        IPlatformAuthSessionManager sessionManager,
+        IPlatformTokenProvider tokenProvider,
+        JwtCookieManager cookieManager,
+        IAntiforgery antiforgery,
+        IApplicationDbContext dbContext,
+        ITwoFactorTicketService ticketService,
+        IOptions<TwoFactorOptions> twoFactorOptions,
+        HttpContext context,
         CancellationToken cancellationToken)
     {
         Result<Guid> result = await dispatcher.DispatchAsync<LoginPlatformUserCommand, Guid>(
@@ -157,14 +171,75 @@ public sealed class HostEndpoints : IEndpoint
             return ApiResults.UnauthorizedFrom(result);
         }
 
-        await sessionManager.SignInAsync(request.Email, rememberMe: false, cancellationToken);
+        if (twoFactorOptions.Value.Mandatory)
+        {
+            PlatformUser? pu = await dbContext.PlatformUsers.AsNoTracking().SingleOrDefaultAsync(u => u.Id == result.Value, cancellationToken);
+            if (pu is not null)
+            {
+                bool needsEnroll = !pu.TwoFactorEnabled;
+                bool needsVerify = pu.TwoFactorEnabled;
+                if (needsEnroll || needsVerify)
+                {
+                    string tempTicket = ticketService.CreateTicket(pu.Id, null, pu.Email, isHost: true);
+                    string? masked = null;
+                    if (!string.IsNullOrWhiteSpace(pu.PhoneNumber) && pu.PhoneNumber.Length > 4)
+                    {
+                        masked = string.Concat("***", pu.PhoneNumber[^4..]);
+                    }
+
+                    if (needsEnroll)
+                    {
+                        return TypedResults.Json(new Login2faRequiredResponse(true, false, masked, tempTicket), statusCode: StatusCodes.Status202Accepted);
+                    }
+                    else
+                    {
+                        return TypedResults.Json(new Login2faRequiredResponse(false, true, masked, tempTicket), statusCode: StatusCodes.Status202Accepted);
+                    }
+                }
+            }
+        }
+
+        PlatformAccessTokenResponse accessToken = await tokenProvider.CreateAccessTokenAsync(result.Value, cancellationToken);
+        cookieManager.SetHostToken(context, accessToken);
+        // Antiforgery tokens are tied to the current user identity. The login request itself is
+        // anonymous, so we must project the just-authenticated host identity into HttpContext.User
+        // before generating tokens; otherwise the token's embedded username (empty) will mismatch
+        // the host principal (PlatformUser email/name) on subsequent PUT/PATCH validations and
+        // produce "was meant for a different claims-based user".
+        Domain.Tenants.PlatformUser? platformUser = await dbContext.PlatformUsers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == result.Value, cancellationToken);
+        if (platformUser is not null)
+        {
+            System.Security.Claims.ClaimsIdentity hostIdentity = new(
+            [
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, $"{platformUser.FirstName} {platformUser.LastName}".Trim()),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, platformUser.Id.ToString()),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, platformUser.Email),
+            ], "Host");
+            context.User = new System.Security.Claims.ClaimsPrincipal(hostIdentity);
+        }
+        AntiforgeryTokenSet tokens = antiforgery.GetAndStoreTokens(context);
+        context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions
+        {
+            HttpOnly = false,
+            SameSite = SameSiteMode.Strict,
+            Secure = context.Request.IsHttps,
+            IsEssential = true,
+            Path = "/"
+        });
 
         return TypedResults.Ok(new { message = "Signed in" });
     }
 
-    private static async Task<IResult> Logout(IPlatformAuthSessionManager sessionManager)
+    private static IResult Me(HttpContext context) =>
+        TypedResults.Ok(new HostMeResponse(
+            context.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? string.Empty));
+
+    private static IResult Logout(JwtCookieManager cookieManager, HttpContext context)
     {
-        await sessionManager.SignOutAsync();
+        cookieManager.DeleteHostToken(context);
+        context.Response.Cookies.Delete("XSRF-TOKEN", new CookieOptions { Path = "/" });
         return TypedResults.NoContent();
     }
 
@@ -193,6 +268,8 @@ public sealed class HostEndpoints : IEndpoint
                 request.AdminLastName,
                 request.AdminEmail,
                 request.AdminPassword,
+                request.AdminPhoneNumber,
+                request.AdminWhatsappNumber,
                 request.SubscriptionPlanId,
                 request.BillingCycle,
                 request.StartsAtUtc,
@@ -231,9 +308,215 @@ public sealed class HostEndpoints : IEndpoint
             ? TypedResults.Ok(result.Value)
             : ApiResults.From(result);
     }
+
+    private static async Task<IResult> GetSubscriptionPlans(
+        IQueryDispatcher dispatcher,
+        CancellationToken cancellationToken)
+    {
+        Result<IReadOnlyList<SubscriptionPlanResponse>> result = await dispatcher.DispatchAsync<GetSubscriptionPlansQuery, IReadOnlyList<SubscriptionPlanResponse>>(
+            new GetSubscriptionPlansQuery(), cancellationToken);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : ApiResults.From(result);
+    }
+
+    private static async Task<IResult> CreateSubscriptionPlan(
+        CreateSubscriptionPlanRequest request,
+        ICommandDispatcher dispatcher,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> result = await dispatcher.DispatchAsync<CreateSubscriptionPlanCommand, Guid>(
+            new CreateSubscriptionPlanCommand(
+                request.Name,
+                request.Key,
+                request.MaximumActiveUsers,
+                request.MaximumPostedInvoicesPerPeriod,
+                request.MaximumActiveBranches,
+                request.MaximumStorageBytes,
+                request.IsTrial,
+                request.DurationInMonths,
+                request.Price,
+                request.DiscountPercent),
+            cancellationToken);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(new { planId = result.Value })
+            : ApiResults.From(result);
+    }
+
+    private static async Task<IResult> UpdateSubscriptionPlan(
+        Guid id,
+        UpdateSubscriptionPlanRequest request,
+        ICommandDispatcher dispatcher,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> result = await dispatcher.DispatchAsync<UpdateSubscriptionPlanCommand, Guid>(
+            new UpdateSubscriptionPlanCommand(
+                id,
+                request.Name,
+                request.Key,
+                request.MaximumActiveUsers,
+                request.MaximumPostedInvoicesPerPeriod,
+                request.MaximumActiveBranches,
+                request.MaximumStorageBytes,
+                request.IsTrial,
+                request.DurationInMonths,
+                request.Price,
+                request.DiscountPercent,
+                request.IsActive),
+            cancellationToken);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(new { planId = result.Value })
+            : ApiResults.From(result);
+    }
+
+    private static async Task<IResult> GetTenantSubscription(
+        Guid tenantId,
+        IQueryDispatcher dispatcher,
+        CancellationToken cancellationToken)
+    {
+        Result<TenantSubscriptionResponse> result = await dispatcher.DispatchAsync<GetTenantSubscriptionQuery, TenantSubscriptionResponse>(
+            new GetTenantSubscriptionQuery(tenantId), cancellationToken);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : ApiResults.From(result);
+    }
+
+    private static async Task<IResult> RenewTenantSubscription(
+        Guid tenantId,
+        RenewSubscriptionRequest request,
+        ICommandDispatcher dispatcher,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> result = await dispatcher.DispatchAsync<RenewTenantSubscriptionCommand, Guid>(
+            new RenewTenantSubscriptionCommand(
+                tenantId,
+                request.NewPlanId,
+                request.BillingCycle,
+                request.StartsAtUtc,
+                request.EndsAtUtc),
+            cancellationToken);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(new { subscriptionId = result.Value })
+            : ApiResults.From(result);
+    }
+
+    private static IResult HostFirebaseConfig(IOptions<FirebaseOptions> options)
+    {
+        FirebaseOptions o = options.Value;
+        return TypedResults.Ok(new FirebaseConfigResponse(o.ProjectId, o.WebApiKey, o.AuthDomain, o.AppId));
+    }
+
+    private static async Task<IResult> HostSetupPhone2fa(
+        SetupPhone2faRequest request,
+        ICommandDispatcher dispatcher,
+        ITwoFactorTicketService ticketService,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.TempTicket) || string.IsNullOrWhiteSpace(request.IdToken))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        if (!ticketService.TryValidateTicket(request.TempTicket, out Guid userId, out _, out bool isHost) || !isHost)
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        Result<SetupPlatformPhoneTwoFactorResult> result = await dispatcher.DispatchAsync<SetupPlatformPhoneTwoFactorCommand, SetupPlatformPhoneTwoFactorResult>(
+            new SetupPlatformPhoneTwoFactorCommand(userId, request.IdToken), cancellationToken);
+        return result.IsSuccess
+            ? TypedResults.Ok(new SetupPhone2faResponse(result.Value.PhoneNumber, result.Value.RecoveryCodes))
+            : ApiResults.From(result);
+    }
+
+    private static async Task<IResult> HostVerifyPhone2fa(
+        VerifyPhone2faRequest request,
+        ICommandDispatcher dispatcher,
+        IPlatformTokenProvider tokenProvider,
+        JwtCookieManager cookieManager,
+        IAntiforgery antiforgery,
+        IApplicationDbContext dbContext,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> result = await dispatcher.DispatchAsync<VerifyPlatformPhoneTwoFactorCommand, Guid>(
+            new VerifyPlatformPhoneTwoFactorCommand(request.TempTicket, request.IdToken), cancellationToken);
+        if (!result.IsSuccess)
+        {
+            return ApiResults.UnauthorizedFrom(result);
+        }
+
+        PlatformAccessTokenResponse token = await tokenProvider.CreateAccessTokenAsync(result.Value, cancellationToken);
+        cookieManager.SetHostToken(context, token);
+
+        PlatformUser? pu = await dbContext.PlatformUsers.AsNoTracking().SingleOrDefaultAsync(u => u.Id == result.Value, cancellationToken);
+        if (pu is not null)
+        {
+            var id = new System.Security.Claims.ClaimsIdentity([
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, $"{pu.FirstName} {pu.LastName}".Trim()),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, pu.Id.ToString()),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, pu.Email),
+            ], "Host");
+            context.User = new System.Security.Claims.ClaimsPrincipal(id);
+        }
+        AntiforgeryTokenSet tokens = antiforgery.GetAndStoreTokens(context);
+        context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions { HttpOnly = false, SameSite = SameSiteMode.Strict, Secure = context.Request.IsHttps, IsEssential = true, Path = "/" });
+        return TypedResults.Ok(new { message = "Signed in" });
+    }
+
+    private static async Task<IResult> HostVerifyRecovery(
+        VerifyRecoveryRequest request,
+        ICommandDispatcher dispatcher,
+        IPlatformTokenProvider tokenProvider,
+        JwtCookieManager cookieManager,
+        IAntiforgery antiforgery,
+        IApplicationDbContext dbContext,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> result = await dispatcher.DispatchAsync<VerifyPlatformWithRecoveryCodeCommand, Guid>(
+            new VerifyPlatformWithRecoveryCodeCommand(request.TempTicket, request.RecoveryCode), cancellationToken);
+        if (!result.IsSuccess)
+        {
+            return ApiResults.UnauthorizedFrom(result);
+        }
+
+        PlatformAccessTokenResponse token = await tokenProvider.CreateAccessTokenAsync(result.Value, cancellationToken);
+        cookieManager.SetHostToken(context, token);
+        PlatformUser? pu = await dbContext.PlatformUsers.AsNoTracking().SingleOrDefaultAsync(u => u.Id == result.Value, cancellationToken);
+        if (pu is not null)
+        {
+            var id = new System.Security.Claims.ClaimsIdentity([
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, $"{pu.FirstName} {pu.LastName}".Trim()),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, pu.Id.ToString()),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, pu.Email),
+            ], "Host");
+            context.User = new System.Security.Claims.ClaimsPrincipal(id);
+        }
+        AntiforgeryTokenSet tokens = antiforgery.GetAndStoreTokens(context);
+        context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions { HttpOnly = false, SameSite = SameSiteMode.Strict, Secure = context.Request.IsHttps, IsEssential = true, Path = "/" });
+        return TypedResults.Ok(new { message = "Signed in" });
+    }
+
+    private static async Task<IResult> HostForgotPasswordPhone(
+        ForgotPasswordPhoneRequest request,
+        ICommandDispatcher dispatcher,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> result = await dispatcher.DispatchAsync<ResetPlatformPasswordWithPhoneCommand, Guid>(
+            new ResetPlatformPasswordWithPhoneCommand(request.EmailOrPhone, request.IdToken, request.NewPassword), cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(new { message = "Password reset successful" }) : ApiResults.From(result);
+    }
 }
 
 public sealed record TenantSummaryResponse(Guid Id, string Key, string Name, string Status);
+
+public sealed record HostMeResponse(string Email);
 
 public sealed record ProvisionTenantRequest(
     string Name,
@@ -243,9 +526,42 @@ public sealed record ProvisionTenantRequest(
     string AdminLastName,
     string AdminEmail,
     string AdminPassword,
+    string? AdminPhoneNumber,
+    string? AdminWhatsappNumber,
     Guid SubscriptionPlanId,
     SubscriptionBillingCycle BillingCycle,
     DateTimeOffset StartsAtUtc,
     DateTimeOffset EndsAtUtc);
 
 public sealed record UpdateTenantStatusRequest(TenantStatus NewStatus, DateTimeOffset? TransitionAtUtc);
+
+public sealed record CreateSubscriptionPlanRequest(
+    string Name,
+    string? Key,
+    int? MaximumActiveUsers,
+    int? MaximumPostedInvoicesPerPeriod,
+    int? MaximumActiveBranches,
+    long? MaximumStorageBytes,
+    bool IsTrial,
+    int DurationInMonths,
+    decimal Price,
+    decimal? DiscountPercent);
+
+public sealed record UpdateSubscriptionPlanRequest(
+    string Name,
+    string? Key,
+    int? MaximumActiveUsers,
+    int? MaximumPostedInvoicesPerPeriod,
+    int? MaximumActiveBranches,
+    long? MaximumStorageBytes,
+    bool IsTrial,
+    int DurationInMonths,
+    decimal Price,
+    decimal? DiscountPercent,
+    bool IsActive);
+
+public sealed record RenewSubscriptionRequest(
+    Guid? NewPlanId,
+    SubscriptionBillingCycle BillingCycle,
+    DateTimeOffset StartsAtUtc,
+    DateTimeOffset EndsAtUtc);

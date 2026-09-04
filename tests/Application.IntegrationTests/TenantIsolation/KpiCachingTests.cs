@@ -34,7 +34,7 @@ public sealed class KpiCachingTests : IClassFixture<MultiTenantWebApplicationFac
 
         decimal before = await GetInventoryTotalAsync(client);
 
-        var (scope, _) = await _factory.OpenTenantContextAsync(InitialTenant.Id, InitialTenant.Key);
+        (IServiceScope? scope, Infrastructure.Database.ApplicationDbContext _) = await _factory.OpenTenantContextAsync(InitialTenant.Id, InitialTenant.Key);
         using (scope)
         {
             ICommandHandler<CreateInventoryAdjustmentCommand, Guid> handler =
@@ -62,7 +62,7 @@ public sealed class KpiCachingTests : IClassFixture<MultiTenantWebApplicationFac
     {
         HttpResponseMessage response = await client.GetAsync("/Inventory/GetKpis");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         return doc.RootElement.GetProperty("totalEquivalent21KGrams").GetDecimal();
     }
 }

@@ -82,8 +82,13 @@ internal sealed class ProvisionTenantCommandHandler(
 
         context.TenantSettings.Add(settingsResult.Value);
 
+        // Auto-calculate billing cycle and end date from plan duration; start defaults to provided StartsAtUtc (frontend defaults to today)
+        DateTimeOffset startsAt = command.StartsAtUtc == default ? DateTimeOffset.UtcNow : command.StartsAtUtc;
+        DateTimeOffset endsAt = startsAt.AddMonths(plan.DurationInMonths);
+        SubscriptionBillingCycle billingCycle = plan.DurationInMonths >= 12 ? SubscriptionBillingCycle.Annual : SubscriptionBillingCycle.Monthly;
+
         Result<TenantSubscription> subscriptionResult = TenantSubscription.Create(
-            tenant.Id, plan.Id, command.BillingCycle, command.StartsAtUtc, command.EndsAtUtc);
+            tenant.Id, plan.Id, billingCycle, startsAt, endsAt);
         if (subscriptionResult.IsError)
         {
             return subscriptionResult.Errors;
@@ -93,7 +98,7 @@ internal sealed class ProvisionTenantCommandHandler(
 
         Result<User> userResult = User.Create(
             Guid.CreateVersion7(), tenant.Id, command.AdminEmail, command.AdminFirstName,
-            command.AdminLastName, passwordHasher.Hash(command.AdminPassword));
+            command.AdminLastName, passwordHasher.Hash(command.AdminPassword), command.AdminPhoneNumber, command.AdminWhatsappNumber);
         if (userResult.IsError)
         {
             return userResult.Errors;

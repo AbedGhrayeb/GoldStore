@@ -5,8 +5,9 @@ const XSRF_COOKIE = 'XSRF-TOKEN';
 const XSRF_HEADER = 'X-XSRF-TOKEN';
 
 /**
- * Adds the XSRF header to host (cookie-authenticated) requests. Tenant requests are bearer
- * authenticated and have no CSRF surface.
+ * Adds the XSRF header to host (cookie-authenticated) requests. The server sets a readable
+ * XSRF-TOKEN cookie on host login and validates the header on host mutations. Tenant requests
+ * are protected by SameSite=Strict HttpOnly cookies and need no header.
  */
 export const xsrfInterceptor: HttpInterceptorFn = (req, next) => {
   if (!isHostRequest(req.url)) {

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, TemplateRef, viewChild } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { Table, type SortState, type TableColumn } from './table';
@@ -42,6 +42,49 @@ class HostComponent {
   ];
   rows: SampleRow[] = ROWS;
   initialSort: SortState | null = null;
+  lastSort: SortState | null = null;
+
+  onSortChange(sort: SortState | null): void {
+    this.lastSort = sort;
+  }
+}
+
+/** Host for the cellTemplate feature: the template column activates once the ref resolves. */
+@Component({
+  imports: [Table],
+  template: `
+    <app-table [columns]="columns()" [rows]="rows" (sortChange)="onSortChange($event)" />
+    <ng-template #nameCell let-row>
+      <span class="font-bold">{{ row.name }} ★</span>
+    </ng-template>
+  `,
+})
+class TemplateHostComponent {
+  readonly nameCell = viewChild<TemplateRef<{ $implicit: SampleRow }>>('nameCell');
+
+  readonly columns = () =>
+    [
+      { key: 'id', header: 'الرقم', cell: (row) => row.id, numeric: true, sortable: true },
+      {
+        key: 'name',
+        header: 'الاسم',
+        cell: (row) => row.name,
+        cellTemplate: this.nameCell(),
+        sortable: true,
+        sortValue: (row) => row.name,
+      },
+      {
+        key: 'weight',
+        header: 'الوزن',
+        cell: (row) => row.weight,
+        numeric: true,
+        sortable: true,
+        sortValue: (row) => row.weight,
+      },
+      { key: 'note', header: 'ملاحظة', cell: () => '—' },
+    ] satisfies TableColumn<SampleRow>[];
+
+  rows: SampleRow[] = ROWS;
   lastSort: SortState | null = null;
 
   onSortChange(sort: SortState | null): void {
@@ -121,5 +164,21 @@ describe('Table sorting', () => {
     clickHeader(fixture, 3);
     expect(bodyIds(fixture)).toEqual(['1', '2', '3']);
     expect(fixture.componentInstance.lastSort).toBeNull();
+  });
+
+  it('renders a cell template when the column provides one, keeping sortable numeric value', () => {
+    const fixture = TestBed.createComponent(TemplateHostComponent);
+    fixture.detectChanges();
+    fixture.detectChanges();
+    const cells = [...fixture.nativeElement.querySelectorAll('tbody tr td:nth-child(2)')];
+    expect(cells.map((cell: HTMLElement) => cell.textContent?.trim())).toEqual([
+      'زبدة ★',
+      'ذهب ★',
+      'فضة ★',
+    ]);
+    const button = fixture.nativeElement.querySelectorAll('thead th button')[1] as HTMLElement;
+    button.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.lastSort).toEqual({ key: 'name', direction: 'asc' });
   });
 });

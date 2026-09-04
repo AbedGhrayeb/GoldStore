@@ -5708,6 +5708,62 @@ export interface components {
       /** Format: double */
       pricePerGram: number | string;
     };
+    CustomerPurchaseInvoiceItemResponse: {
+      /** Format: uuid */
+      id?: string;
+      /** Format: uuid */
+      categoryId?: null | string;
+      /** Format: int32 */
+      karat?: number | string;
+      /** Format: double */
+      weightInGrams?: number | string;
+      /** Format: double */
+      equivalent21KWeightInGrams?: number | string;
+      /** Format: double */
+      pricePerGram?: number | string;
+      /** Format: double */
+      goldAmount?: number | string;
+    };
+    CustomerPurchaseInvoiceKpiResponse: {
+      /** Format: int32 */
+      todayCount?: number | string;
+      /** Format: double */
+      totalPurchases?: number | string;
+      totalPurchasesDisplay?: string;
+      /** Format: double */
+      totalPaid?: number | string;
+      totalPaidDisplay?: string;
+      /** Format: double */
+      totalRemaining?: number | string;
+      totalRemainingDisplay?: string;
+    };
+    CustomerPurchaseInvoiceResponse: {
+      /** Format: uuid */
+      id?: string;
+      invoiceNumber?: string;
+      sellerName?: string;
+      sellerPhone?: null | string;
+      sellerIdNumber?: null | string;
+      /** Format: int32 */
+      sellerYearOfBirth?: null | number | string;
+      sellerAddress?: null | string;
+      employeeName?: string;
+      /** Format: date-time */
+      date?: null | string;
+      currency?: string;
+      /** Format: double */
+      totalAmount?: number | string;
+      /** Format: double */
+      amountPaid?: number | string;
+      /** Format: double */
+      remainingBalance?: number | string;
+      paymentMethod?: string;
+      sellerAccountNumber?: null | string;
+      notes?: null | string;
+      /** Format: date-time */
+      createdAt?: string;
+      items?: components['schemas']['CustomerPurchaseInvoiceItemResponse'][];
+    };
     DebtKpiResponse: {
       /** Format: double */
       totalReceivables?: number | string;
@@ -6106,6 +6162,19 @@ export interface components {
       /** Format: int32 */
       totalCount?: number | string;
       items: null | components['schemas']['SalaryPaymentResponse'][];
+      hasPreviousPage?: boolean;
+      hasNextPage?: boolean;
+    };
+    PaginatedListOfCustomerPurchaseInvoiceResponse: {
+      /** Format: int32 */
+      pageNumber: number | string;
+      /** Format: int32 */
+      pageSize: number | string;
+      /** Format: int32 */
+      totalPages?: number | string;
+      /** Format: int32 */
+      totalCount?: number | string;
+      items: null | components['schemas']['CustomerPurchaseInvoiceResponse'][];
       hasPreviousPage?: boolean;
       hasNextPage?: boolean;
     };

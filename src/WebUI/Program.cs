@@ -107,20 +107,19 @@ namespace WebUI
             app.UseRouting();
 
             // Rate limiting applies only to endpoints opted in via [EnableRateLimiting]
-            // (login/refresh); health probes and static assets are never throttled.
+            // (login/refresh); health probes are never throttled.
             app.UseRateLimiter();
 
-            app.MapStaticAssets();
             app.UseAuthentication();
 
             // Resolve and enforce the ambient tenant before authorization and
-            // controllers run (plan Phase 2). Exemptions are explicit.
+            // endpoints run (plan Phase 2). Exemptions are explicit.
             app.UseTenantResolution();
 
-            app.UseAuthorization();
+            // Enforce mandatory phone 2FA after authentication (Firebase Phone Auth)
+            app.UseTwoFactorEnforcement();
 
-            // REMARK: If you want to use Controllers, you'll need this.
-            app.MapControllers();
+            app.UseAuthorization();
 
             // Auto-discovered minimal API endpoint groups (plan Phase 7a). Tenant
             // endpoints live under /api/v1 (JWT), host endpoints under /host/api/v1
@@ -133,11 +132,6 @@ namespace WebUI
                 app.MapOpenApi();
                 app.MapScalarApiReference();
             }
-
-            app.MapControllerRoute(
-                name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}")
-                .WithStaticAssets();
 
             await app.RunAsync();
         }

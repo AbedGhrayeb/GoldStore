@@ -1,6 +1,7 @@
 export { Badge, type BadgeSize, type BadgeVariant } from './badge';
 export { Button, type ButtonSize, type ButtonVariant } from './button';
 export { Card } from './card';
+export { CurrencyTotals } from './currency-totals';
 export { Dialog } from './dialog';
 export { EmptyState } from './empty-state';
 export { ICONS, resolveIcon } from './icon-registry';

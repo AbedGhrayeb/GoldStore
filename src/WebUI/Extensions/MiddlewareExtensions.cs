@@ -17,4 +17,10 @@ public static class MiddlewareExtensions
 
         return app;
     }
+
+    public static IApplicationBuilder UseTwoFactorEnforcement(this IApplicationBuilder app)
+    {
+        app.UseMiddleware<TwoFactorEnforcementMiddleware>();
+        return app;
+    }
 }

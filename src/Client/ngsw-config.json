@@ -9,11 +9,12 @@
       "resources": {
         "files": [
           "/index.html",
-          "/main.*.js",
-          "/polyfills.*.js",
-          "/styles.*.css",
+          "/manifest.webmanifest",
+          "/*.css",
+          "/*.js",
+          "/assets/**/*",
           "/*.woff2",
-          "/assets/*"
+          "/icons/*.png"
         ]
       }
     },
@@ -28,14 +29,49 @@
   ],
   "dataGroups": [
     {
-      "name": "api-cache",
-      "urls": ["/api/**"],
+      "name": "gold-prices",
+      "urls": ["/api/v1/gold-prices/**"],
       "cacheConfig": {
-        "strategy": "Performance",
-        "maxSize": 200,
-        "maxAge": "1d",
+        "strategy": "performance",
+        "maxSize": 4,
+        "maxAge": "5m",
+        "timeout": "2s"
+      }
+    },
+    {
+      "name": "reference",
+      "urls": ["/api/v1/reference/**"],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 8,
+        "maxAge": "24h",
+        "timeout": "3s"
+      }
+    },
+    {
+      "name": "kpis",
+      "urls": [
+        "/api/v1/*/kpis",
+        "/api/v1/*/*/kpis",
+        "/api/v1/dashboard/**",
+        "/api/v1/inventory/**",
+        "/api/v1/finance/**/kpis",
+        "/api/v1/expenses/kpis"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 50,
+        "maxAge": "10m",
         "timeout": "5s"
       }
     }
+  ],
+  "navigationUrls": [
+    "/**",
+    "!/**/*.*",
+    "!/**/*__*",
+    "!/**/*__*/**",
+    "!/api/**",
+    "!/host/**"
   ]
 }

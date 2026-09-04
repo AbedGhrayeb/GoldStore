@@ -25,4 +25,8 @@ public static class CategoryErrors
     public static readonly Error CircularReference = Error.Conflict(
         "Categories.CircularReference",
         "لا يمكن أن تكون الفئة والمصدر نفسه.");
+
+    public static readonly Error HasReferences = Error.Conflict(
+        "Categories.HasReferences",
+        "لا يمكن حذف فئة مستخدمة في فواتير البيع أو الشراء");
 }

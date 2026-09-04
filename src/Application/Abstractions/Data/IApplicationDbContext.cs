@@ -59,7 +59,13 @@ public interface IApplicationDbContext
 
     DbSet<UserRole> UserRoles { get; }
 
+    DbSet<UserPermission> UserPermissions { get; }
+
     DbSet<RefreshToken> RefreshTokens { get; }
+
+    DbSet<UserRecoveryCode> UserRecoveryCodes { get; }
+
+    DbSet<PlatformRecoveryCode> PlatformRecoveryCodes { get; }
 
     DbSet<Tenant> Tenants { get; }
 

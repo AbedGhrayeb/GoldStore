@@ -21,12 +21,16 @@ from 5 bullet points into a full engineering plan. Findings that shape this plan
    Application records returned as-is; requests are thin DTOs. **No request ever carries
    `TenantId`** — the client must never send it. Client types must be generated from
    `/openapi/v1.json` to stay in sync.
-2. **Two audiences, two auth schemes.** Tenant users authenticate with `POST /api/v1/auth/login`
-   → `{ accessToken, refreshToken, refreshExpiresAt }` (bearer, token rotation on `/refresh`,
-   revocation on `/logout`). Platform admins authenticate on `/host/api/v1/auth/login` which sets a
-   **cookie** (server-rendered GET login page exists in MVC, but the POST is SPA-callable with
-   `credentials: 'include'` + XSRF header). The Angular app needs **two auth contexts**: tenant
-   (primary) and host admin (secondary surface).
+2. **Two audiences, two auth schemes — both JWT-in-cookie.** Tenant users authenticate with
+   `POST /api/v1/auth/login`, which returns `{ accessToken, refreshToken, refreshExpiresAt }`
+   **and** sets `GoldStore.AccessToken` + `GoldStore.RefreshToken` HttpOnly cookies (path-scoped,
+   `SameSite=Strict`). Platform admins authenticate on `POST /host/api/v1/auth/login`, which sets
+   a `GoldStore.HostAccessToken` HttpOnly cookie and the `XSRF-TOKEN` request-token cookie; host
+   mutations additionally validate the `X-XSRF-TOKEN` header. **The Angular client never touches a
+   token** — it logs in via the API, lets the browser hold the HttpOnly cookies, and reads claims
+   from `/auth/me`. Bearer-header credentials still work for external API clients (the handler
+   prefers the Authorization header). The Angular app has **two auth contexts**: tenant (primary)
+   and host admin (secondary surface), both cookie-backed.
 3. **Claims drive the UI.** `GET /api/v1/auth/me` returns `{ userId, email, tenantId, tenantKey,
    roles[], permissions[] }`. Feature availability maps 1:1 to the permission claims
    (`permission` claim, `CustomClaims.Permission`) that back the server's
@@ -50,9 +54,12 @@ from 5 bullet points into a full engineering plan. Findings that shape this plan
    `httpResource` for server state + **facade services** (typed, observable/signal-backed) that
    components consume. NgRx stays a documented fallback if cross-feature state explodes
    (reporting).
-8. **Auth token storage: memory only** (per tasks.md) + silent single-flight refresh rotation.
-   JWT never in `localStorage`/`sessionStorage` → kills the XSS-exfiltration vector. Host cookie
-   flow gets Angular's built-in XSRF interceptor (XSRF-TOKEN cookie + `X-XSRF-TOKEN` header).
+8. **Auth tokens: HttpOnly cookies only.** Both login APIs (`/api/v1/auth/login`,
+   `/host/api/v1/auth/login`) issue JWTs into hardened HttpOnly cookies; the client never stores
+   or attaches a token (kills the XSS-exfiltration vector) and restores sessions via `/auth/me`
+   on reload, with silent single-flight refresh-cookie rotation on 401. The host cookie flow
+   additionally validates Angular's `X-XSRF-TOKEN` header (server sets the `XSRF-TOKEN` cookie on
+   host login).
 9. **PWA is real here** — a store counter needs the app to survive flaky connections. `ng add
    @angular/pwa` + `ngsw-config.json` with three-tier data caching (live gold price STW, reference
    cache-first, KPI network-first), offline shell, manifest + icons. Native background-sync is
@@ -72,8 +79,8 @@ from 5 bullet points into a full engineering plan. Findings that shape this plan
 |---|----------|-----------|
 | ADR-1 | Angular 22.x, TypeScript 5.8+, standalone components, **Strict + AOT + esbuild** | matches installed CLI (22.0.1); esbuild is the Angular default since v17; strict/AOT are defaults and required by CSP/SRI hygiene |
 | ADR-2 | **Signals + `httpResource` + facade services**; no NgRx | moderate CRUD complexity; facades keep components dumb and testable; NgRx documented fallback |
-| ADR-3 | Tokens **in memory** only; refresh rotation via single-flight interceptor | XSS cannot read memory; rotation limits replay |
-| ADR-4 | **Two auth contexts** (tenant bearer, host cookie) behind one `AuthStore` | single auth service, two transport strategies; host is a thin admin surface |
+| ADR-3 | **JWTs live in HttpOnly cookies** (tenant access+refresh, host access); the client never receives or stores a token — memory included | cookie transport kills the XSS-exfiltration vector and the refresh-cookie rotation is silent + single-flight; bearer header still supported for API clients |
+| ADR-4 | **Two auth contexts** (tenant cookie, host cookie) behind one `AuthStore` | single auth service, two transport strategies; host is a thin admin surface with its own XSRF guard |
 | ADR-5 | Permission-driven nav from `/auth/me` claims | mirrors server `feature:*` policies; no hard-coded menu |
 | ADR-6 | **Vitest** (unit) + **Playwright** (e2e) + MSW (mocks) | repo convention overrides the generic Jest/Cypress brief |
 | ADR-7 | Types generated from `/openapi/v1.json` (`openapi-typescript`) | keeps the client in lockstep with Phase 7a contracts |
@@ -96,7 +103,7 @@ src/Client/
   src/
     app/
       core/                      # singletons, loaded once
-        auth/                    #   AuthStore, token storage, AuthApi
+        auth/                    #   AuthStore, AuthApi (cookie transport, never raw tokens)
         http/                    #   api client, interceptors (bearer, refresh, error, xsrf)
         guards/                  #   authGuard, featureGuard (permission claim)
         navigation/              #   NavItem model + factory from /me claims
@@ -161,9 +168,12 @@ src/Client/
   `readonly kpis = signal<Kpis | undefined>(undefined)`, `readonly loading = signal(false)`,
   `readonly error = signal<ApiError | null>(null)`, plus `loadKpis()`, `create(dto)`, `refresh()`.
   Components consume only these facades — never `HttpClient` directly.
-- **Auth store:** the only global store. Signals: `user = signal<MeResponse | null>(null)`,
+- **Auth store:** the only global store. Both login APIs issue JWTs into HttpOnly cookies; the
+  store never sees a token. Signals: `user = signal<MeResponse | null>(null)`,
   `permissions = computed(() => user()?.permissions ?? [])`,
-  `isAuthenticated`, `isHostAdmin`; actions `login()`, `silentRefresh()`, `logout()`.
+  `isAuthenticated`, `isHostAdmin`; actions `login()`, `hostLogin()`, `restoreSessions()`
+  (re-reads `/me` + `/host/me` on reload), `silentRefresh()` (single-flight refresh-cookie
+  rotation), `logout()`.
 - **Why not NgRx:** every screen is "fetch list/KPIs → CRUD → refetch". Typed actions/selectors/
   effects add indirection without payoff; they also slow the Vitest/Playwright loop. The facade +
   signal contract keeps the same testability (store = injectable seam, MSW mocks HTTP).
@@ -267,13 +277,16 @@ src/Client/
 - **XSS:** Angular's default sanitization everywhere; no `bypassSecurityTrust*` without a
   security review; no `innerHTML` with interpolated user data; escape supplier/customer names in
   reports. CSP `script-src 'self'` (no unsafe-inline/eval) blocks the top vector.
-- **CSRF:** JWT tenant flow is bearer — no CSRF surface. Host cookie flow uses Angular's built-in
-  `withXsrfConfiguration()` (`XSRF-TOKEN` cookie + `X-XSRF-TOKEN` header) against
-  `/host/api/v1/*`.
-- **Token storage:** access + refresh tokens live in a memory-only service (`AuthStore`); app
-  refresh (F5) uses `/refresh` with the in-memory token only while the tab lives — document that
-  a page reload requires re-login (or an optional session cookie flag if the product wants it).
-  Never `localStorage`/`sessionStorage`.
+- **CSRF:** tenant flow authenticates via HttpOnly `SameSite=Strict` cookies — no cross-site
+  requests can attach them, so no CSRF surface. Host flow (admin surface) adds defense in depth:
+  the server sets a readable `XSRF-TOKEN` cookie on host login and validates `X-XSRF-TOKEN` on
+  host mutations (`AntiforgeryEndpointFilter`); Angular's `xsrfInterceptor` attaches the header
+  automatically.
+- **Token storage:** JWTs live **only** in HttpOnly cookies (tenant access+refresh, host
+  access). The client never receives, stores, or attaches a raw token; app refresh (F5) calls
+  `/auth/me` (tenant) and `/host/auth/me` (host) to restore the session, and 401s rotate the
+  refresh cookie silently. Never `localStorage`/`sessionStorage`, and never a client-side token
+  variable.
 - **Variable isolation:** `environment.ts` (dev) vs `environment.production.ts` via
   `fileReplacements`; `API_BASE_URL`, `SENTRY_DSN`, `GA_ID`, `SITE_URL` only. Secrets never
   committed; deployment secrets via GitHub Actions secrets / environment variables.
@@ -359,17 +372,21 @@ src/Client/
       `SalesInvoiceResponse`, `PaginatedList`, etc.
 - [x] **P1.2** Core `ApiClient` + interceptors.
       **How:** `core/http/api-client.service.ts` wrapping `HttpClient` with base URL + JSON
-      defaults; `bearer.interceptor.ts` (attach in-memory access token); `refresh.interceptor.ts`
-      (single-flight `/api/v1/auth/refresh` on 401, retry original, logout on failure);
+      defaults (all requests `withCredentials: true` so HttpOnly cookies flow);
+      `refresh.interceptor.ts` (single-flight `/api/v1/auth/refresh` on tenant 401 — the browser
+      sends the refresh cookie automatically — retry original, logout on failure);
       `error.interceptor.ts` (map ProblemDetails → typed `ApiError { status, title, detail,
-      validation }` and emit to a global `ToastStore`); `xsrf.interceptor.ts` (host cookie
-      flows only). Register via `provideHttpClient(withInterceptors([...]))` in `app.config.ts`.
+      validation }` and emit to a global `ToastStore`); `xsrf.interceptor.ts` (host cookie flows
+      only: `XSRF-TOKEN` cookie → `X-XSRF-TOKEN` header, validated server-side). Register via
+      `provideHttpClient(withInterceptors([error, refresh, xsrf]))` in `app.config.ts`. There is
+      **no bearer interceptor** — no token ever exists in the client.
 - [x] **P1.3** `AuthStore` + `AuthApi`.
-      **How:** memory token holder; signals `user`, `permissions`, `isAuthenticated`,
-      `isHostAdmin`; `login(email, password)` → `/api/v1/auth/login` → store tokens in memory →
-      `GET /auth/me` → set claims; `hostLogin(...)` → `/host/api/v1/auth/login` (cookie, XSRF);
-      `logout()` → `/logout` + clear; `silentRefresh()` single-flight. **Never send
-      `tenantId`.** Verify: unit test token lifecycle with MSW.
+      **How:** cookie transport only; signals `user`, `permissions`, `isAuthenticated`,
+      `isHostAdmin`; `login(email, password)` → `/api/v1/auth/login` (server sets HttpOnly JWT
+      cookies) → `GET /auth/me` → set claims; `hostLogin(...)` → `/host/api/v1/auth/login`
+      (JWT cookie + XSRF token cookie); `restoreSessions()` re-reads `/me` + `/host/me`;
+      `logout()` → `/logout` + clear; `silentRefresh()` single-flight (refresh cookie rotates).
+      **Never send `tenantId`.** Verify: unit test the cookie lifecycle with MSW.
 - [x] **P1.4** Guards.
       **How:** `authGuard` (redirect `/login` when not authenticated); `featureGuard('catalog'…)`
       reads `AuthStore.permissions()` for the **bare feature key** (claims carry `catalog`, not
@@ -426,47 +443,247 @@ src/Client/
 > Each feature: `list` (paged table + filters + kpis) and `form` (create/edit) pages,
 > backed by a typed facade service + MSW test handlers. Build order mirrors A6-B1…B5.
 
-- [ ] **P3.1 Auth/Login pages** — `/login` (tenant) + `/host/login` (admin cookie). **How:**
+- [x] **P3.1 Auth/Login pages** — `/login` (tenant) + `/host/login` (admin cookie). **How:**
       forms with `app-*` controls, `AuthStore.login/hostLogin`, error toast on 401; redirect to
-      the first permitted route. Verify: e2e logs in with a seeded tenant user.
-- [ ] **P3.2 Dashboard** (`feature: none`, auth only) — `/dashboard/store-operations`: KPI
+      the first permitted route (from `buildNavItems(permissions)`; dashboard is always first).
+      **Note:** both logins are pure API calls — the server issues JWTs into HttpOnly cookies
+      (`GoldStore.AccessToken`/`.RefreshToken` for tenants, `GoldStore.HostAccessToken` for
+      admins); the client stores nothing. Host login also receives the `XSRF-TOKEN` cookie, and
+      host mutations send it back as `X-XSRF-TOKEN` (validated by `AntiforgeryEndpointFilter`).
+      Verify: e2e logs in with a seeded tenant user and a host admin.
+- [x] **P3.2 Dashboard** (`feature: none`, auth only) — `/dashboard/store-operations`: KPI
       cards from `/kpis`, operations table from `/paged` (filters: date, operationType,
       employee, account, search), employee day stats from `/today-employee-stats`, detail drawer
       from `/{id}/detail?operationType=`. Verify: cross-module counts match an MVC page.
-- [ ] **P3.3 Catalog** (`catalog`) — `/catalog/categories`: tree table (self-ref parent),
+      **Note:** `/employees` returns `{ id, name }` (StoreOperations DTO) while OpenAPI pins the
+      HR-shaped `EmployeeResponse` schema — the client pins the real shape via a local
+      `DashboardEmployeeOption` type. Account filter options are derived from the accounts on the
+      current page rows (no account-list endpoint exists in the dashboard group); the server-side
+      `accountId` filter is still sent. `app-table` gained an optional `cellTemplate` per column
+      (badges/actions rendered inline while keeping the column's sort value).
+- [x] **P3.3 Catalog** (`catalog`) — `/catalog/categories`: tree table (self-ref parent),
       create/edit/delete + toggle-active; reuse `/reference/karats` & `/currencies` selects.
       Verify: e2e create → toggle → delete.
-- [ ] **P3.4 Gold prices** (auth only) — live price chip + prices page from
+      **Note:** the plan required delete, but the backend only had create/edit/toggle — added
+      `DELETE /api/v1/categories/{id}` (`DeleteCategoryCommand` + handler; 409 on children or on
+      invoice-item references, 404 on missing). Client flattens categories depth-first into
+      `CategoryTreeRow`s (indented, Arabic-sorted, no cycle via `buildParentOptions` excluding
+      self+descendants); tree order is canonical so the table is deliberately not sortable.
+      Delete-confirm buttons render in the dialog body (footer projection is unreliable in
+      zoneless tests); MSW `params` require `params['id']` (index signature).
+- [x] **P3.4 Gold prices** (auth only) — live price chip + prices page from
       `/gold-prices/current` with `httpResource` refetch (SW STW 5m). Verify: price tile updates
       without page reload.
-- [ ] **P3.5 Users & settings** (`settings`) — `/settings/users`: list from `/users`, create
+      **Note:** the chip already existed (interval auto-refresh). Added `/gold-prices` page
+      (`GoldPricesPage`) using `httpResource` with `withCredentials`; auto-refresh via `reload()`
+      on the same 5m interval, tiles update in place via signals. Added a `gold-prices` dataGroup
+      (Performance/5m/5s) ahead of the generic `api-cache` in `ngsw-config.json` and enabled
+      `withFetch()` in `app.config.ts` so the SW can intercept API requests (HttpClient used XHR
+      before, which the SW ignores). Note: on ANY resource error `hasValue()` flips to false and
+      `value()` throws — the page guards every `value()` read and shows an inline retry card.
+      New `coins` icon + auth-only nav item (no feature gate; backend group requires auth only).
+- [x] **P3.5 Users & settings** (`settings`) — `/settings/users`: list from `/users`, create
       (`/users`), edit (`/users/{id}`), delete (`/users/{id}`); profile from `/users/me`.
       Verify: cannot send `tenantId` in any payload (assert in MSW tests).
-- [ ] **P3.6 Suppliers** (`suppliers`) — list/create/edit/toggle from `/suppliers`;
+      **Note:** the backend only allows editing the current user
+      (`UpdateUserCommandHandler` — `userContext.UserId != command.Id` → 401), so the page
+      exposes edit for the current user's row only (badge "أنت" from `/users/me`) and hides
+      delete for self; create/delete apply to any tenant user. Profile card (name + email +
+      "تعديل بياناتي") sits above the users table, fed by `/users/me`. Password is optional
+      in edit mode (blank = keep, per `UpdateUserRequest.password`); create requires ≥ 8 chars.
+      `tenantId` absence is asserted inside the MSW handlers for POST/PUT in both store and
+      page specs, and was verified live against the real API (request body carries only
+      `{ email, firstName, lastName, password }`). New icons: `settings`, `user-plus`.
+- [x] **P3.6 Suppliers** (`suppliers`) — list/create/edit/toggle from `/suppliers`;
       deliveries create from `/supplier-deliveries` (server computes 21K — mirror the command
       shape only); scrap-gold & manufacturing payments from `/supplier-payments/*`;
       financial transactions list + create + payments + kpis from
       `/supplier-financial-transactions`. Verify: delivery posts with `weightInGrams`+`karat`
       only.
-- [ ] **P3.7 Inventory** (`inventory`) — adjustments list/create + kpis from
+      **Note:** one page (`SuppliersPage`) for the whole feature: suppliers `app-table`
+      (sortable by name/balances/last activity), supplier financial KPI cards per currency
+      (له/لنا/net + count), and a manual paged transactions table (filters: supplier/direction/
+      search). Delivery lines post `{ karat, weightInGrams }` only — the server computes the
+      21K-equivalent; asserted in MSW handlers (store + page specs) alongside the `tenantId`
+      absence in every POST/PUT body. Direction radio: 1 = له (سلفة من مورد), 2 = لنا (سلفة
+      لمورد). Accounts for payment forms come from `/finance/accounts` **best-effort**
+      (gated `feature: finance` — a suppliers-only user sees an inline notice instead of an
+      error toast; the forms degrade gracefully). There is no delete endpoint in the
+      suppliers group — rows are toggled via `POST /suppliers/{id}/toggle-active`. New
+      icons: `truck`, `coins`, `receipt`, `wallet` (reused), `power`, `eye`.
+- [x] **P3.7 Inventory** (`inventory`) — adjustments list/create + kpis from
       `/inventory/adjustments`; gold ledger paged (karat/from/to/referenceType filters) +
       trend chart + kpis from `/inventory/gold-ledger*`. Verify: ledger IN/OUT math in e2e.
-- [ ] **P3.8 Sales** (`sales`) — invoice create (header + items + payment legs — mirror
-      `CreateSalesInvoiceRequest`), list/paged, detail, `next-number` prefill, kpis from
-      `/sales-invoices`. Verify: partial payment creates a debt and financial leg.
-- [ ] **P3.9 Purchases** (`purchases`) — `/customer-purchases/invoices` create + next-number,
+      **Note:** one page (`InventoryPage`) for the whole feature: inventory KPIs (21K-equivalent
+      total + estimated value + per-karat breakdowns with the primary-21K badge), today's
+      adjustment KPIs, a 7/14/30-day trend chart (pure CSS bars — gold IN / red OUT, day
+      labels, net-over-period footer; no chart library), a paged adjustments table
+      (type/date filters + create via `AdjustmentDialog`), and a paged gold-ledger table
+      (karat/reference-type/date filters). The adjustment dialog posts the exact
+      `CreateInventoryAdjustmentRequest` keys (`adjustmentType` 1..5, `karat` 18/21/24,
+      `weightInGrams`, `reason`, `notes`, `date`) — asserted in MSW handlers (store + page
+      specs) alongside the `tenantId` absence. `referenceType` filter values are the
+      `GoldReferenceType` enum names (SupplierDelivery, CustomerGoldPurchase, Sale,
+      SupplierScrapPayment, InventoryAdjustment); the trend endpoint clamps `days` 1..90.
+      The server's `typeColor`/`typeBg`/`movementColor` Tailwind class names are **not**
+      reused client-side — types map to `app-badge` variants (Increase → success,
+      Correction → neutral, others → error) since server-only classes (e.g.
+      `bg-error-container/30`) may not exist in the client theme. Adjustment rows show the
+      signed weight (`+`/`-`, green/red). The server 409 `InsufficientStock` surfaces inline
+      in the dialog error box. New icons: none (reuses `boxes`, `plus`, `filter`,
+      `trending-up/down`).
+- [x] **P3.8 Sales** (`sales`) — one `SalesPage` for the whole feature: today's KPIs +
+      invoice totals from `/sales-invoices/kpis` (Display strings only — the raw values are
+      sums across mixed currencies, so no unit/symbol is shown), a paged invoices table
+      (search by invoice number or customer name, status + from/to date filters) and two
+      dialogs — `InvoiceDialog` (create) and `InvoiceDetailDialog` (row → `GET /{id}`).
+      The create dialog mirrors `CreateSalesInvoiceRequest` exactly (asserted in MSW
+      handlers, store + page specs, alongside the `tenantId` absence): customer
+      name/phone, a line-items editor (optional category — degraded inline when
+      `feature: catalog` is missing, karat 18/21/24, weight, price — the server computes
+      the 21K-equivalent, never the client), the required selling employee (best-effort
+      from `/employees`, gated `feature: hr` — a sales-only user sees an inline notice
+      that creating invoices needs the HR permission), invoice currency (JOD/USD/ILS from
+      the reference store), the due total, and a payment section with a single method
+      (نقدي / تحويل بنكي + receiving account + buyer account number) **or** multi-currency
+      payment legs (account → currency → amount → rate; the base-currency rate is fixed at
+      1 and the equivalent = amount × rate, rounded to 3; the paid amount equals the legs
+      total and is capped by the total; first-leg account type decides Cash vs Bank and the
+      primary accountId). `next-number` prefills the dialog header; the summary box shows
+      total weight, gold value, paid and the remaining (debt) in the invoice currency; the
+      server 400 validation / 409 insufficient-stock errors surface inline. The detail
+      dialog renders the row instantly and refreshes via `GET /{id}` while open; status
+      maps to `app-badge` variants (Completed → success, PartiallyPaid → warning,
+      Draft → neutral, Cancelled → error); `paymentMethod` shows نقدي/مصرفي only when
+      non-empty; `categoryName` is null server-side so items render without a category.
+      Paginated responses use `pageNumber` (the suppliers' custom paged DTO `page` is
+      correct for its own endpoint). Shared `Dialog` gained a `maxWidth` input
+      (default `max-w-lg`; the invoice dialog uses `max-w-3xl`). New icons: none (reuses
+      `receipt`, `plus`, `trash-2`, `eye`, `filter`, `search`, `coins`, `wallet`,
+      `trending-up`, `chevrons`).
+- [x] **P3.9 Purchases** (`purchases`) — `/customer-purchases/invoices` create + next-number,
       list. Verify: gold IN + financial OUT appear on the ledger.
-- [ ] **P3.10 Finance** (`finance`) — accounts list + with-balances + create + set balance
+      **Rebuilt sales-style (same shape as P3.8):** the backend group now exposes paged list
+      (`GET /?page&pageSize&fromDate&toDate&search`), KPIs (`GET /kpis` — today count, total
+      purchases/paid/remaining with server-computed Display strings, cached per tenant like the
+      sales KPIs) and detail (`GET /{id}`), so the page is a KPI row + filterable paged table
+      + `PurchaseDialog` (the create form moved into a modal, mirroring `InvoiceDialog`) +
+      `PurchaseDetailDialog`. The form keeps the MVC `customer-purchase-invoices.js` builder:
+      seller info (name/ID number — both required, year of birth 1940–2100, phone, address), a
+      line-items editor (optional category — degraded inline when `feature: catalog` is
+      missing, karat 18/21/24, weight, price — the server computes the 21K-equivalent, never
+      the client), the buying employee (best-effort from `/employees`, gated `feature: hr`),
+      invoice date, invoice currency (JOD/USD/ILS from the reference store), the due total,
+      and a payment section with a single method (نقدي / تحويل بنكي — the API requires an
+      `accountId` even for cash, so the dialog auto-selects the first account matching the
+      currency + Cash/Bank type, mirroring the MVC auto-selection, with an inline notice when
+      none matches) **or** multi-currency payment legs (account → currency → amount → rate;
+      base-currency rate fixed at 1, equivalent = amount × rate rounded to 3, paid = legs
+      total capped by the total, first-leg account type decides Cash vs Bank and the primary
+      accountId). `next-number` (`PUR-{period}-…`) prefills the dialog header; the summary box
+      shows total weight, gold value, per-karat weight totals, total, paid and the remaining
+      (debt) in the invoice currency; the server 400 validation / account mismatch /
+      insufficient-balance errors surface inline. Success toasts "تم إصدار فاتورة شراء
+      الذهب بنجاح", emits `saved`, closes the dialog and the page reloads list + KPIs +
+      next-number. The payload mirrors `CreateCustomerPurchaseInvoiceRequest` key-for-key
+      (asserted in MSW handlers, store + page specs, alongside the `tenantId` absence). New
+      icons: none (reuses `shopping-bag`, `plus`, `trash-2`, `receipt`, `trending-up`,
+      `wallet`, `coins`, `eye`, `search`, `filter`, `chevrons`).
+- [x] **P3.10 Finance** (`finance`) — accounts list + with-balances + create + set balance
       from `/finance/accounts`; debts paged + create + pay from `/finance/debts`; transactions
       paged + recent from `/finance/transactions`. Verify: balance equals ledger sum.
-- [ ] **P3.11 Expenses** (`expenses`) — categories CRUD + expenses CRUD + paged + kpis from
+      **Implemented as one `FinancePage` in three tabs — الحركات المالية first, then الذمم,
+      then الحسابات (each lazy-loads on first activation):** debt KPI cards
+      (لنا / علينا / صافي from `/debts/kpis` with the server Display strings), the accounts
+      table (`/accounts/with-balances?activeOnly=false` — name, نوع نقدي/مصرفي, currency,
+      number, ledger-derived balance, inactive badge, per-currency totals strip computed
+      client-side so "balance equals ledger sum" is visible at a glance) with a set-balance
+      dialog (target ≥ 0 + reason; shows current balance and the signed difference — the
+      server posts a ManualAdjustment entry for the delta), an account-create dialog
+      (name/currency/number/notes/opening-balance; the server always creates Bank-type and
+      auto-numbers when omitted), the paged debts table (direction filter Receivable/Payable +
+      search, outstanding from the server, سداد action hidden at zero) with a create-debt
+      dialog (direction radio decides the flow: receivable OUT / payable IN on creation;
+      account select filtered to the chosen currency + active only — the server 409s any
+      mismatch) and a payment dialog (amount capped by the outstanding client-side too),
+      and the read-only paged transactions table (account-name/type/currency/date filters;
+      amounts signed + colored by Inflow/Outflow — the API returns enum names as strings).
+      Every successful mutation reloads accounts + KPIs + debts + transactions. Payloads
+      mirror the request records key-for-key with no `tenantId` (asserted in MSW handlers,
+      store + page specs). New icons: none (reuses `wallet`, `plus`, `pencil`, `filter`,
+      `trending-up/down`, `chevrons`).
+- [x] **P3.11 Expenses** (`expenses`) — categories CRUD + expenses CRUD + paged + kpis from
       `/expenses*`. Verify: delete reversal posts correct financial OUT.
-- [ ] **P3.12 HR** (`hr`) — employees CRUD/toggle/list/by-id, pay-salary, salary-payments,
+      **Implemented as one `ExpensesPage` in two tabs — المصروفات first, then التصنيفات (each
+      lazy-loads on first activation):** expense KPI cards from `/expenses/kpis` (مصروفات اليوم
+      / مصروفات الشهر / أكثر تصنيف إنفاقاً — all per-currency `CurrencyTotal`s with the
+      top-category name), a paged expenses table (category + accountName + from/to date
+      filters; rows show `expenseDate` via `formatDate`, category badge, description,
+      red OUT amount + `currencySymbol` via `data-mono`, `accountName`, edit/delete
+      actions) backed by `GET /expenses?page&pageSize&categoryId&accountName&fromDate&toDate`,
+      and a categories table (`GET /expenses/categories?activeOnly=false` — name + active
+      badge, no toggle endpoint exists). Dialogs: `ExpenseDialog` (create/update — mirrors
+      `CreateExpenseRequest`/`UpdateExpenseRequest` key-for-key: `expenseDate` `YYYY-MM-DD`,
+      `categoryId` nullable + "بدون تصنيف" option, `description` nullable, `amount` > 0,
+      `accountId` required — account select is best-effort from `/finance/accounts`, gated
+      `feature: finance`, degraded with an inline notice when empty/gated; no `tenantId`) and
+      `ExpenseCategoryDialog` (create/update — mirrors `CreateExpenseCategoryRequest`:
+      `name` only, 409 on duplicate name). Delete expense removes its financial OUT
+      transaction (ledger reversal, verified by `DELETE /expenses/{id}` → success toast +
+      reload of expenses + KPIs + categories); delete category 409s when any expense still
+      references it and surfaces `saveError` inline. Every successful mutation reloads
+      expenses + KPIs + categories. Payloads mirror the request records key-for-key with no
+      `tenantId` (asserted in MSW handlers, store + page specs). New icons: none (reuses
+      `trending-down`, `receipt`, `wallet`, `calendar`, `plus`, `pencil`, `trash-2`,
+      `filter`, `chevrons`, `alert-circle`, `inbox`).
+- [x] **P3.12 HR** (`hr`) — employees CRUD/toggle/list/by-id, pay-salary, salary-payments,
       salary-period-summary, unlinked-users from `/employees*`. Verify: salary payment hits
       the ledger.
-- [ ] **P3.13 Host admin** (cookie auth) — `/host/admin/tenants` list/status PATCH from
+      **Implemented as one `HrPage` in two tabs — الموظفون first, then سجل الرواتب (each
+      lazy-loads on first activation):** employees table from `GET /employees` (fullName +
+      roleName, salary `data-mono` + `currency` JOD/USD/ILS + `salaryCycleName`, userEmail,
+      active badge, lastPaymentDate/Net via `EmployeeResponse`, actions تعديل/تفعيل-إيقاف/دفع
+      راتب — daily cycle (1) disables pay, inactive disables pay) backed by `EmployeeDialog`
+      (create → `POST /employees` with `CreateEmployeeRequest` key-for-key: `firstName`,
+      `lastName`, `role` 1..4, `salary` >0, `currency` 1..3, `salaryCycle` 1..3, `connectToUser`
+      + `existingUserId` from `GET /employees/unlinked-users` best-effort or `newUserEmail`
+      + `newUserPassword` ≥8; update → `PUT /employees/{id}` with `UpdateEmployeeRequest`:
+      `firstName`, `lastName`, `role`, `salary`, `currency`, `salaryCycle`, `isActive`; no
+      `tenantId`) and `PaySalaryDialog` (pay → `POST /employees/{id}/pay-salary` with
+      `PaySalaryRequest` key-for-key: `accountId`, `amount`, `paymentDate` `YYYY-MM-DD`,
+      `notes` — account select best-effort from `/finance/accounts` gated `feature: finance`,
+      filtered to employee currency + active only, degraded inline notice; auto-fetches
+      `GET /employees/salary-period-summary?employeeId&paymentDate` on open/date change and
+      shows net/alreadyPaid/remaining/discount/scheduledDate/cycle/isFullyPaid; amount capped
+      by `remaining` and disabled when fully paid; 409 insufficient-balance/currency-mismatch
+      surfaces inline); toggle via `POST /employees/{id}/toggle-active`; paged salary
+      payments table from `GET /employees/salary-payments?page&pageSize&employeeName&fromDate&toDate`
+      (employeeName partial, date range) with `isOnSchedule` badge; `GET /employees/{id}` detail
+      route exists but the page uses the list for editing (detail kept in store for future
+      drawer). Every successful mutation reloads employees + payments. Payloads mirror request
+      records key-for-key with no `tenantId` (asserted in MSW handlers, store + page specs).
+      New icons: none (reuses `users`, `plus`, `pencil`, `power`, `wallet`, `receipt`,
+      `filter`, `chevrons`, `alert-circle`, `inbox`).
+- [x] **P3.13 Host admin** (cookie auth) — `/host/admin/tenants` list/status PATCH from
       `/host/api/v1/tenants` + reconciliation view. **How:** guard by `isHostAdmin`; XSRF
       interceptor active; never mixed into tenant services. Verify: host login → tenants list.
+      **Implemented as one `HostAdminPage` in two tabs — المستأجرون first, then المطابقة (each
+      lazy-loads on first activation):** tenants table from `GET /host/api/v1/tenants`
+      (key/name/status badge + 4 variants Trial→warning/Active→success/Cancelled→error/Pending→neutral,
+      action تغيير الحالة) backed by `HostUpdateStatusDialog` (posts `UpdateTenantStatusRequest`
+      key-for-key: `newStatus` 0..3 + `transitionAtUtc` UTC ISO | null — `datetime-local` → `toISOString()`,
+      to `PATCH /host/api/v1/tenants/{id}/status`, validated by `AntiforgeryEndpointFilter`,
+      `XSRF-TOKEN`→`X-XSRF-TOKEN` via `xsrfInterceptor` which now fires for `/host`; no `tenantId` in
+      any body, asserted in MSW handlers store+page); reconciliation view from
+      `GET /host/api/v1/reconciliation?tenantId` (optional filter select populated from tenants list,
+      all→no query) showing `generatedAtUtc` + anomalies table (`table/tenantId/count/message` — `Missing
+      TenantId` → should be empty) + per-tenant blocks (`rowCounts`, `goldStock` with `totalEquivalent21K`,
+      `financialTotals`+`financialBalances`, `debtTotals`, collapsible supplier balances) recomputed from
+      raw ledger entries. Route `host/admin/tenants` outside `AppShell` (host session only) with
+      `hostGuard` → `/host/login`; nav `إدارة المنصة` (`server` icon) visible only when `isHostAdmin`.
+      Proxy `proxy.conf.json` now forwards both `/api` and `/host` to `http://localhost:5999`. Payloads
+      mirror request records key-for-key with no `tenantId`. New icons: none (reuses `server`, `pencil`,
+      `search`, `refresh-cw`, `check-circle`, `alert-circle`).
 - [ ] **P3.14 403 / 404 / offline pages** + route fallback. Verify: nav test clicks a
       permission-gated route → 403 page.
 
@@ -511,8 +728,9 @@ src/Client/
 ## 13. Definition of done for Phase 7b
 
 - [ ] `src/Client` builds production-ready (AOT, strict, budgets, SW) with **0 lint errors**.
-- [ ] Tenant users authenticate via `/api/v1/auth/*` (in-memory tokens, silent refresh); host
-      admins via `/host/api/v1/auth/*` (cookie + XSRF). No `TenantId` ever sent.
+- [ ] Tenant users authenticate via `/api/v1/auth/*` and host admins via `/host/api/v1/auth/*` —
+      **both** APIs issue JWTs into HttpOnly cookies (tenant access+refresh, host access); the
+      client stores no tokens and never sends `TenantId`.
 - [ ] All 10 feature gates have lazy, permission-driven RTL pages over the A6 endpoints
       (dashboard, catalog, gold-prices, suppliers, inventory, sales, purchases, finance,
       expenses, hr) + host-admin surface.

@@ -12,5 +12,9 @@ internal sealed class SubscriptionPlanConfiguration : IEntityTypeConfiguration<S
         builder.Property(plan => plan.Name).HasMaxLength(100).IsRequired();
         builder.Property(plan => plan.Key).HasMaxLength(63).IsRequired();
         builder.HasIndex(plan => plan.Key).IsUnique();
+        builder.Property(plan => plan.IsTrial).IsRequired();
+        builder.Property(plan => plan.DurationInMonths).IsRequired();
+        builder.Property(plan => plan.Price).HasPrecision(18, 2).IsRequired();
+        builder.Property(plan => plan.DiscountPercent).HasPrecision(5, 2);
     }
 }

@@ -23,7 +23,7 @@ internal sealed class GetGoldLedgerTrendQueryHandler(
         var entries = await context.GoldLedgerEntries
             .AsNoTracking()
             .Where(e => e.TenantId == currentTenant.TenantId && e.CreatedAtUtc >= fromDate)
-            .Select(e => new { Date = e.CreatedAtUtc!.Value.Date, e.MovementType, e.Equivalent21KWeightInGrams })
+            .Select(e => new { e.CreatedAtUtc!.Value.Date, e.MovementType, e.Equivalent21KWeightInGrams })
             .ToListAsync(cancellationToken);
 
         var aggregates = entries

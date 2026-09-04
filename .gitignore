@@ -401,3 +401,8 @@ FodyWeavers.xsd
 *.sln.iml
 
 .containers/
+
+# Firebase service account keys - never commit secrets
+**/*firebase-adminsdk*.json
+**/goldstore-f2729-fireb*.json
+*.bak

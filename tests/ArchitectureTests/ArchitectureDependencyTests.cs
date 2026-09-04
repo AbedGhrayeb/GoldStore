@@ -51,20 +51,14 @@ public sealed class ArchitectureDependencyTests
     }
 
     [Fact]
-    public void WebUi_ControllersDependOnApplicationLayer()
+    public void WebUi_EndpointsDependOnApplicationLayer()
     {
-        // BaseController (shared plumbing) and HomeController (pure view shell) are the
-        // only controllers that do not dispatch application commands/queries. DTO records
-        // co-located in the Controllers namespace are excluded by the name filter.
+        // Minimal API endpoints (WebUI.Endpoints) must dispatch through Application handlers.
         TestResult result = Types.InAssembly(WebUi)
             .That()
-            .ResideInNamespace("WebUI.Controllers")
+            .ResideInNamespace("WebUI.Endpoints")
             .And()
-            .HaveNameEndingWith("Controller")
-            .And()
-            .DoNotHaveName("BaseController")
-            .And()
-            .DoNotHaveName("HomeController")
+            .HaveNameEndingWith("Endpoints")
             .Should()
             .HaveDependencyOn("Application")
             .GetResult();

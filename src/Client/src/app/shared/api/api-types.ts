@@ -12,6 +12,11 @@ export interface MeResponse {
   permissions: string[];
 }
 
+/** Active host-administrator identity returned by GET /host/api/v1/auth/me. */
+export interface HostMeResponse {
+  email: string;
+}
+
 /** Feature permission keys as seeded in Domain.Tenants.Features (mirrors the server policy names). */
 export type FeatureKey =
   | 'catalog'

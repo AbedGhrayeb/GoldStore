@@ -26,11 +26,13 @@ public sealed class InventoryEndpoints : IEndpoint
             .WithTags("Inventory")
             .RequireAuthorization()
             .RequireAuthorization($"feature:{Features.Inventory}")
+            .RequireAuthorization("inventory.view")
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         group.MapPost("/adjustments", CreateAdjustment)
+                    .RequireAuthorization("inventory.manage")
             .WithSummary("Create an inventory adjustment.")
             .Produces<Guid>(StatusCodes.Status201Created)
             .ProducesValidationProblem()

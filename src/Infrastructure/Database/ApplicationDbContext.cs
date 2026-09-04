@@ -6,13 +6,13 @@ using Domain.Catalog;
 using Domain.Common;
 using Domain.CustomerPurchases;
 using Domain.Debts;
+using Domain.Employees;
 using Domain.Expenses;
 using Domain.Finance;
 using Domain.Inventory;
 using Domain.Sales;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
-using Domain.Employees;
 using Domain.Tenants;
 using Domain.Users;
 using Infrastructure.DomainEvents;
@@ -89,7 +89,13 @@ public sealed class ApplicationDbContext(
 
     public DbSet<UserRole> UserRoles { get; set; }
 
+    public DbSet<UserPermission> UserPermissions { get; set; }
+
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+
+    public DbSet<UserRecoveryCode> UserRecoveryCodes { get; set; }
+
+    public DbSet<PlatformRecoveryCode> PlatformRecoveryCodes { get; set; }
 
     public DbSet<Tenant> Tenants { get; set; }
 

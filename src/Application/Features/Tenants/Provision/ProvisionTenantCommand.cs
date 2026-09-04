@@ -16,6 +16,8 @@ public sealed record ProvisionTenantCommand(
     string AdminLastName,
     string AdminEmail,
     string AdminPassword,
+    string? AdminPhoneNumber,
+    string? AdminWhatsappNumber,
     Guid SubscriptionPlanId,
     SubscriptionBillingCycle BillingCycle,
     DateTimeOffset StartsAtUtc,

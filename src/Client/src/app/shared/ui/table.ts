@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  output,
+  signal,
+  TemplateRef,
+} from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
 
 import { EmptyState } from './empty-state';
@@ -15,7 +24,10 @@ export interface SortState {
 export interface TableColumn<T> {
   key: string;
   header: string;
-  cell: (row: T) => string | number | null | undefined;
+  /** Plain-text renderer. Omit it (or provide `cellTemplate`) to render rich content per row. */
+  cell?: (row: T) => string | number | null | undefined;
+  /** Optional per-cell template — receives the row as `$implicit`. Supersedes `cell`. */
+  cellTemplate?: TemplateRef<{ $implicit: T }>;
   sortable?: boolean;
   sortValue?: (row: T) => string | number;
   numeric?: boolean;
@@ -32,17 +44,17 @@ const ALIGN: Readonly<Record<'start' | 'end' | 'center', string>> = {
 @Component({
   selector: 'app-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LucideAngularModule, EmptyState, Skeleton],
+  imports: [LucideAngularModule, EmptyState, Skeleton, NgTemplateOutlet],
   template: `
-    <div class="overflow-auto" [style.maxHeight]="maxHeight()">
-      <table class="w-full border-collapse text-sm">
+    <div class="overflow-auto overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0" [style.maxHeight]="maxHeight()">
+      <table class="w-full min-w-[640px] border-collapse text-sm sm:min-w-0">
         <thead>
           <tr>
             @for (column of columns(); track column.key) {
               <th
                 [style.width]="column.width"
                 [class]="headerClass(column)"
-                class="sticky top-0 z-10 border-b border-gray-200 bg-card px-4 py-3 font-semibold text-gray-600"
+                class="sticky top-0 z-10 border-b border-gray-200 bg-card px-3 py-3 font-semibold text-gray-600 sm:px-4 whitespace-nowrap"
               >
                 @if (column.sortable) {
                   <button
@@ -93,7 +105,14 @@ const ALIGN: Readonly<Record<'start' | 'end' | 'center', string>> = {
               >
                 @for (column of columns(); track column.key) {
                   <td [class]="cellClass(column)" class="px-4 py-3">
-                    {{ column.cell(row) }}
+                    @if (column.cellTemplate) {
+                      <ng-container
+                        [ngTemplateOutlet]="column.cellTemplate"
+                        [ngTemplateOutletContext]="{ $implicit: row }"
+                      />
+                    } @else {
+                      {{ column.cell ? column.cell(row) : '' }}
+                    }
                   </td>
                 }
               </tr>
@@ -129,7 +148,7 @@ export class Table<T> {
     if (!column) {
       return this.rows();
     }
-    const valueOf = column.sortValue ?? column.cell;
+    const valueOf = column.sortValue ?? column.cell ?? (() => '');
     const direction = state.direction === 'asc' ? 1 : -1;
     return [...this.rows()].sort((a, b) => {
       const first = valueOf(a);

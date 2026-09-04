@@ -65,7 +65,7 @@ internal sealed class GetSalesInvoicesQueryHandler(IApplicationDbContext context
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        List<SalesInvoiceResponse> items = pageItems.Select(invoice => new SalesInvoiceResponse
+        var items = pageItems.Select(invoice => new SalesInvoiceResponse
         {
             Id = invoice.Id,
             InvoiceNumber = invoice.InvoiceNumber,

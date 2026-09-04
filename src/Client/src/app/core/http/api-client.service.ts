@@ -27,6 +27,10 @@ export class ApiClient {
     return this.http.post<T>(this.resolve(path), body, this.toHttpOptions(options));
   }
 
+  put<T>(path: string, body?: unknown, options?: ApiRequestOptions): Observable<T> {
+    return this.http.put<T>(this.resolve(path), body, this.toHttpOptions(options));
+  }
+
   patch<T>(path: string, body?: unknown, options?: ApiRequestOptions): Observable<T> {
     return this.http.patch<T>(this.resolve(path), body, this.toHttpOptions(options));
   }
@@ -43,6 +47,6 @@ export class ApiClient {
     context?: HttpContext;
     withCredentials?: boolean;
   } {
-    return options ?? {};
+    return { withCredentials: true, ...options };
   }
 }

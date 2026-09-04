@@ -4,11 +4,9 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { firstValueFrom } from 'rxjs';
 
-import { AuthStore } from '../auth/auth-store';
-import { TokenStorage } from '../auth/token-storage';
 import type { MeResponse } from '../../shared/api/api-types';
 import { apiUrl } from '../../testing/api-url';
-import { bearerInterceptor } from './bearer.interceptor';
+import { AuthStore } from '../auth/auth-store';
 import { refreshInterceptor } from './refresh.interceptor';
 
 const ME: MeResponse = {
@@ -23,27 +21,16 @@ const ME: MeResponse = {
 let refreshCalls = 0;
 
 const server = setupServer(
-  http.post(apiUrl('/api/v1/auth/login'), () =>
-    HttpResponse.json({
-      accessToken: 'access-1',
-      refreshToken: 'refresh-1',
-      refreshExpiresAt: '2026-09-01T00:00:00Z',
-    }),
-  ),
+  http.post(apiUrl('/api/v1/auth/login'), () => new HttpResponse(null, { status: 200 })),
   http.get(apiUrl('/api/v1/auth/me'), () => HttpResponse.json(ME)),
   http.post(apiUrl('/api/v1/auth/refresh'), () => {
     refreshCalls += 1;
-    return HttpResponse.json({
-      accessToken: 'access-2',
-      refreshToken: 'refresh-2',
-      refreshExpiresAt: '2026-09-01T00:00:00Z',
-    });
+    return new HttpResponse(null, { status: 200 });
   }),
 );
 
 describe('refreshInterceptor', () => {
   let client: HttpClient;
-  let tokens: TokenStorage;
   let auth: AuthStore;
 
   beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
@@ -55,35 +42,33 @@ describe('refreshInterceptor', () => {
 
   beforeEach(async () => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(withInterceptors([bearerInterceptor, refreshInterceptor]))],
+      providers: [provideHttpClient(withInterceptors([refreshInterceptor]))],
     });
     client = TestBed.inject(HttpClient);
-    tokens = TestBed.inject(TokenStorage);
     auth = TestBed.inject(AuthStore);
     await auth.login('cashier@goldstore.app', 'secret');
   });
 
-  it('rotates the token once on a 401 and retries the original request', async () => {
-    let servedWith = '';
+  it('rotates the refresh cookie once on a 401 and retries the original request', async () => {
+    let served = 0;
     server.use(
-      http.get(apiUrl('/api/v1/reference/karats'), ({ request }) => {
-        servedWith = request.headers.get('Authorization') ?? '';
-        if (servedWith === 'Bearer access-1') {
-          return HttpResponse.json({ message: 'expired' }, { status: 401 });
-        }
-        return HttpResponse.json([{ id: 1, name: '21K' }]);
+      http.get(apiUrl('/api/v1/reference/karats'), () => {
+        served += 1;
+        return served === 1
+          ? HttpResponse.json({ message: 'expired' }, { status: 401 })
+          : HttpResponse.json([{ id: 1, name: '21K' }]);
       }),
     );
 
     const result = await firstValueFrom(client.get<unknown[]>(apiUrl('/api/v1/reference/karats')));
 
     expect(refreshCalls).toBe(1);
-    expect(servedWith).toBe('Bearer access-2');
+    expect(served).toBe(2);
     expect(result).toEqual([{ id: 1, name: '21K' }]);
-    expect(tokens.access).toBe('access-2');
+    expect(auth.isAuthenticated()).toBe(true);
   });
 
-  it('passes the 401 through when rotation fails and the session is cleared', async () => {
+  it('passes the 401 through and clears the session when rotation fails', async () => {
     server.use(
       http.post(apiUrl('/api/v1/auth/refresh'), () => {
         refreshCalls += 1;
@@ -99,7 +84,6 @@ describe('refreshInterceptor', () => {
     ).rejects.toMatchObject({ status: 401 });
 
     expect(refreshCalls).toBe(1);
-    expect(tokens.access).toBeNull();
     expect(auth.isAuthenticated()).toBe(false);
   });
 
@@ -115,6 +99,5 @@ describe('refreshInterceptor', () => {
     ).rejects.toMatchObject({ status: 401 });
 
     expect(refreshCalls).toBe(0);
-    expect(tokens.access).toBe('access-1');
   });
 });

@@ -12,6 +12,14 @@ public sealed class User : Entity, ITenantEntity
     public string FirstName { get; private set; }
     public string LastName { get; private set; }
     public string PasswordHash { get; private set; }
+    public string? PhoneNumber { get; private set; }
+    public string? WhatsappNumber { get; private set; }
+
+    public bool TwoFactorEnabled { get; private set; }
+
+    public bool PhoneNumberVerified { get; private set; }
+
+    public DateTimeOffset? TwoFactorEnabledAtUtc { get; private set; }
 
     /// <summary>
     /// Session/token version (plan Phase 4). Every issued cookie, access token, and
@@ -38,13 +46,15 @@ public sealed class User : Entity, ITenantEntity
         PasswordHash = string.Empty;
         SecurityStamp = string.Empty;
     }
-    public User(Guid id, Guid tenantId, string email, string firstName, string lastName, string passwordHash) : base(id)
+    public User(Guid id, Guid tenantId, string email, string firstName, string lastName, string passwordHash, string? phoneNumber = null, string? whatsappNumber = null) : base(id)
     {
         TenantId = tenantId;
         Email = email;
         FirstName = firstName;
         LastName = lastName;
         PasswordHash = passwordHash;
+        PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+        WhatsappNumber = string.IsNullOrWhiteSpace(whatsappNumber) ? null : whatsappNumber.Trim();
         SecurityStamp = NewSecurityStamp();
 
     }
@@ -83,9 +93,29 @@ public sealed class User : Entity, ITenantEntity
     /// <summary>Rotates the security stamp, invalidating previously issued sessions.</summary>
     public void RegenerateSecurityStamp() => SecurityStamp = NewSecurityStamp();
 
+    public void EnableTwoFactor(string verifiedPhoneE164, DateTimeOffset utcNow)
+    {
+        PhoneNumber = verifiedPhoneE164;
+        PhoneNumberVerified = true;
+        TwoFactorEnabled = true;
+        TwoFactorEnabledAtUtc = utcNow;
+    }
+
+    public void DisableTwoFactor()
+    {
+        TwoFactorEnabled = false;
+        TwoFactorEnabledAtUtc = null;
+    }
+
+    public void SetPhoneNumberVerified(string verifiedPhoneE164)
+    {
+        PhoneNumber = verifiedPhoneE164;
+        PhoneNumberVerified = true;
+    }
+
     private static string NewSecurityStamp() => Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
 
-    public static Result<User> Create(Guid id, Guid tenantId, string email, string firstName, string lastName, string passwordHash)
+    public static Result<User> Create(Guid id, Guid tenantId, string email, string firstName, string lastName, string passwordHash, string? phoneNumber = null, string? whatsappNumber = null)
     {
         if (id == Guid.Empty)
         {
@@ -112,13 +142,13 @@ public sealed class User : Entity, ITenantEntity
             return UserErrors.LastNameRequired;
         }
 
-        var user = new User(id, tenantId, email, firstName, lastName, passwordHash);
+        var user = new User(id, tenantId, email, firstName, lastName, passwordHash, phoneNumber, whatsappNumber);
 
         user.Raise(new UserRegisteredDomainEvent(user.Id, user.TenantId));
 
         return user;
     }
-    public Result<Updated> Update(string firstName, string lastName, string? passwordHash)
+    public Result<Updated> Update(string firstName, string lastName, string? passwordHash, string? phoneNumber = null, string? whatsappNumber = null)
     {
 
         if (string.IsNullOrWhiteSpace(firstName))
@@ -135,6 +165,8 @@ public sealed class User : Entity, ITenantEntity
         }
         FirstName = firstName;
         LastName = lastName;
+        PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+        WhatsappNumber = string.IsNullOrWhiteSpace(whatsappNumber) ? null : whatsappNumber.Trim();
         return Result.Updated;
     }
 }

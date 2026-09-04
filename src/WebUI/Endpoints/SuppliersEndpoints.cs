@@ -24,6 +24,7 @@ public sealed class SuppliersEndpoints : IEndpoint
             .WithTags("Suppliers")
             .RequireAuthorization()
             .RequireAuthorization($"feature:{Features.Suppliers}")
+            .RequireAuthorization("suppliers.view")
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
@@ -38,12 +39,14 @@ public sealed class SuppliersEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/", CreateSupplier)
+                    .RequireAuthorization("suppliers.manage")
             .WithSummary("Create a supplier.")
             .Produces<Guid>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPut("/{id:guid}", UpdateSupplier)
+                    .RequireAuthorization("suppliers.manage")
             .WithSummary("Update a supplier.")
             .Produces<Updated>(StatusCodes.Status200OK)
             .ProducesValidationProblem()
@@ -51,6 +54,7 @@ public sealed class SuppliersEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPost("/{id:guid}/toggle-active", ToggleActiveSupplier)
+                    .RequireAuthorization("suppliers.manage")
             .WithSummary("Toggle a supplier's active state.")
             .Produces<Updated>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound);

@@ -9,17 +9,19 @@ const ALL_FEATURES = [
   'finance',
   'expenses',
   'hr',
+  'settings',
 ] as const;
 
 describe('buildNavItems', () => {
   it('returns dashboard only when no claims exist', () => {
-    expect(buildNavItems([]).map((item) => item.key)).toEqual(['dashboard']);
+    expect(buildNavItems([]).map((item) => item.key)).toEqual(['dashboard', 'gold-prices']);
   });
 
   it('returns the item order defined by the plan', () => {
-    const keys = buildNavItems([...ALL_FEATURES], true).map((item) => item.key);
+    const keys = buildNavItems([...ALL_FEATURES], true, ['store_admin']).map((item) => item.key);
     expect(keys).toEqual([
       'dashboard',
+      'gold-prices',
       'catalog',
       'suppliers',
       'inventory',
@@ -28,6 +30,8 @@ describe('buildNavItems', () => {
       'finance',
       'expenses',
       'hr',
+      'settings',
+      'permissions',
       'host-admin',
     ]);
   });
@@ -36,6 +40,7 @@ describe('buildNavItems', () => {
     const keys = buildNavItems(
       ALL_FEATURES.filter((f) => f !== 'catalog'),
       true,
+      ['store_admin'],
     ).map((item) => item.key);
     expect(keys).not.toContain('catalog');
     expect(keys).toContain('sales');
@@ -53,10 +58,19 @@ describe('buildNavItems', () => {
   });
 
   it('exposes Arabic labels, icons and routes on every item', () => {
-    for (const item of buildNavItems([...ALL_FEATURES], true)) {
+    for (const item of buildNavItems([...ALL_FEATURES], true, ['store_admin'])) {
       expect(item.label.length).toBeGreaterThan(0);
       expect(item.icon.length).toBeGreaterThan(0);
       expect(item.route.startsWith('/')).toBe(true);
     }
+  });
+
+  it('hides hr from non-store_admin even with hr feature', () => {
+    const keys = buildNavItems([...ALL_FEATURES], false, []).map((item) => item.key);
+    expect(keys).not.toContain('hr');
+    expect(keys).not.toContain('permissions');
+    const adminKeys = buildNavItems([...ALL_FEATURES], false, ['store_admin']).map((item) => item.key);
+    expect(adminKeys).toContain('hr');
+    expect(adminKeys).toContain('permissions');
   });
 });

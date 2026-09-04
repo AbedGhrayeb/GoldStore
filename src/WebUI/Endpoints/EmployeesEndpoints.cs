@@ -31,6 +31,7 @@ public sealed class EmployeesEndpoints : IEndpoint
             .WithTags("Employees")
             .RequireAuthorization()
             .RequireAuthorization($"feature:{Features.Hr}")
+            .RequireAuthorization(policy => policy.RequireRole("store_admin"))
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status500InternalServerError);

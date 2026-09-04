@@ -137,45 +137,44 @@ internal sealed class GetTenantReconciliationQueryHandler(
             .Select(pair => new EntityRowCount(pair.Key, pair.Value.GetValueOrDefault(tenantId)))
             .ToList();
 
-        List<GoldStockBalance> goldStock = await context.GoldLedgerEntries
+        // Gold stock — client-side grouping avoids EF translation of enum string conversion + conditional Sum.
+        List<Domain.Inventory.GoldLedgerEntry> goldEntries = await context.GoldLedgerEntries
             .IgnoreQueryFilters()
             .Where(entry => entry.TenantId == tenantId)
+            .ToListAsync(cancellationToken);
+
+        var goldStock = goldEntries
             .GroupBy(entry => entry.Karat)
             .Select(group => new GoldStockBalance(
                 (int)group.Key,
                 group.Sum(entry => entry.MovementType == GoldMovementType.Increase ? entry.WeightInGrams : -entry.WeightInGrams),
                 group.Sum(entry => entry.MovementType == GoldMovementType.Increase ? entry.Equivalent21KWeightInGrams : -entry.Equivalent21KWeightInGrams)))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
-        decimal totalEquivalent21K = await context.GoldLedgerEntries
-            .IgnoreQueryFilters()
-            .Where(entry => entry.TenantId == tenantId)
-            .SumAsync(entry => entry.MovementType == GoldMovementType.Increase ? entry.Equivalent21KWeightInGrams : -entry.Equivalent21KWeightInGrams, cancellationToken);
+        decimal totalEquivalent21K = goldEntries
+            .Sum(entry => entry.MovementType == GoldMovementType.Increase ? entry.Equivalent21KWeightInGrams : -entry.Equivalent21KWeightInGrams);
 
-        List<CurrencyTotals> financialTotals = await context.FinancialTransactions
+        // Financial — client-side grouping for same reason (Currency enum stored as string).
+        List<Domain.Finance.FinancialTransaction> financialTx = await context.FinancialTransactions
             .IgnoreQueryFilters()
             .Where(transaction => transaction.TenantId == tenantId)
+            .ToListAsync(cancellationToken);
+
+        var financialTotals = financialTx
             .GroupBy(transaction => transaction.Currency)
-            .OrderByDescending(group =>
-                group.Sum(transaction => transaction.TransactionType == FinancialTransactionType.Inflow ? transaction.Amount : 0m) -
-                group.Sum(transaction => transaction.TransactionType == FinancialTransactionType.Outflow ? transaction.Amount : 0m))
             .Select(group => new CurrencyTotals(
                 group.Key.ToString(),
-                group.Sum(transaction => transaction.TransactionType == FinancialTransactionType.Inflow ? transaction.Amount : 0m),
-                group.Sum(transaction => transaction.TransactionType == FinancialTransactionType.Outflow ? transaction.Amount : 0m),
+                group.Where(transaction => transaction.TransactionType == FinancialTransactionType.Inflow).Sum(transaction => transaction.Amount),
+                group.Where(transaction => transaction.TransactionType == FinancialTransactionType.Outflow).Sum(transaction => transaction.Amount),
                 group.Sum(transaction => transaction.TransactionType == FinancialTransactionType.Inflow ? transaction.Amount : -transaction.Amount)))
-            .ToListAsync(cancellationToken);
+            .OrderByDescending(totals => totals.Net)
+            .ToList();
 
-        Dictionary<Guid, decimal> accountBalances = await context.FinancialTransactions
-            .IgnoreQueryFilters()
-            .Where(transaction => transaction.TenantId == tenantId)
+        var accountBalances = financialTx
             .GroupBy(transaction => transaction.AccountId)
-            .Select(group => new
-            {
-                AccountId = group.Key,
-                Balance = group.Sum(transaction => transaction.TransactionType == FinancialTransactionType.Inflow ? transaction.Amount : -transaction.Amount)
-            })
-            .ToDictionaryAsync(balance => balance.AccountId, balance => balance.Balance, cancellationToken);
+            .ToDictionary(
+                group => group.Key,
+                group => group.Sum(transaction => transaction.TransactionType == FinancialTransactionType.Inflow ? transaction.Amount : -transaction.Amount));
 
         List<FinancialAccount> accounts = await context.FinancialAccounts
             .IgnoreQueryFilters()
@@ -184,7 +183,7 @@ internal sealed class GetTenantReconciliationQueryHandler(
             .ThenBy(account => account.Name)
             .ToListAsync(cancellationToken);
 
-        List<FinancialBalance> financialBalances = accounts
+        var financialBalances = accounts
             .Select(account => new FinancialBalance(
                 account.Id,
                 account.Name,
@@ -200,9 +199,12 @@ internal sealed class GetTenantReconciliationQueryHandler(
             .Select(supplier => new { supplier.Id, supplier.Name })
             .ToDictionaryAsync(supplier => supplier.Id, supplier => supplier.Name, cancellationToken);
 
-        List<SupplierGoldBalance> supplierGoldBalances = (await context.SupplierGoldLedgerEntries
+        List<Domain.Suppliers.SupplierGoldLedgerEntry> supplierGoldEntries = await context.SupplierGoldLedgerEntries
             .IgnoreQueryFilters()
             .Where(entry => entry.TenantId == tenantId)
+            .ToListAsync(cancellationToken);
+
+        var supplierGoldBalances = supplierGoldEntries
             .GroupBy(entry => new { entry.SupplierId, entry.Karat })
             .Select(group => new
             {
@@ -210,7 +212,6 @@ internal sealed class GetTenantReconciliationQueryHandler(
                 group.Key.Karat,
                 Net = group.Sum(entry => entry.MovementType == SupplierBalanceMovementType.Increase ? entry.WeightInGrams : -entry.WeightInGrams)
             })
-            .ToListAsync(cancellationToken))
             .Select(balance => new SupplierGoldBalance(
                 balance.SupplierId,
                 supplierNames.GetValueOrDefault(balance.SupplierId, string.Empty),
@@ -219,9 +220,12 @@ internal sealed class GetTenantReconciliationQueryHandler(
             .OrderByDescending(balance => balance.NetWeight)
             .ToList();
 
-        List<SupplierManufacturingBalance> supplierManufacturingBalances = (await context.SupplierManufacturingLedgerEntries
+        List<Domain.Suppliers.SupplierManufacturingLedgerEntry> supplierManufacturingEntries = await context.SupplierManufacturingLedgerEntries
             .IgnoreQueryFilters()
             .Where(entry => entry.TenantId == tenantId)
+            .ToListAsync(cancellationToken);
+
+        var supplierManufacturingBalances = supplierManufacturingEntries
             .GroupBy(entry => new { entry.SupplierId, entry.Currency })
             .Select(group => new
             {
@@ -229,7 +233,6 @@ internal sealed class GetTenantReconciliationQueryHandler(
                 group.Key.Currency,
                 Net = group.Sum(entry => entry.MovementType == SupplierBalanceMovementType.Increase ? entry.Amount : -entry.Amount)
             })
-            .ToListAsync(cancellationToken))
             .Select(balance => new SupplierManufacturingBalance(
                 balance.SupplierId,
                 supplierNames.GetValueOrDefault(balance.SupplierId, string.Empty),

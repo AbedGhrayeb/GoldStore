@@ -15,14 +15,16 @@ using Infrastructure.DomainEvents;
 using Infrastructure.GoldPrices;
 using Infrastructure.HealthChecks;
 using Infrastructure.Invoices;
+using Infrastructure.Phone;
 using Infrastructure.Subscriptions;
-using Infrastructure.Tenants;
 using Infrastructure.Tenancy;
+using Infrastructure.Tenants;
 using Infrastructure.Time;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -30,6 +32,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SharedKernel;
 
@@ -59,6 +63,8 @@ public static class DependencyInjection
 
         services.Configure<GoldApiOptions>(configuration.GetSection("GoldApi"));
         services.Configure<TenantHostOptions>(configuration.GetSection(TenantHostOptions.SectionName));
+        services.Configure<FirebaseOptions>(configuration.GetSection(FirebaseOptions.SectionName));
+        services.Configure<TwoFactorOptions>(configuration.GetSection(TwoFactorOptions.SectionName));
 
         // HybridCache (in-memory L1 only per M7 decision 3; no Redis L2). Registered
         // per-tenant stampede protection for the gold price and any keyed caches.
@@ -74,6 +80,42 @@ public static class DependencyInjection
         // Central subscription quota gate (plan Phase 4 item 7).
         services.AddScoped<ISubscriptionGate, SubscriptionGate>();
         services.AddScoped<IInvoiceNumberService, InvoiceNumberService>();
+
+        // Firebase: initialize DefaultInstance only when ProjectId + credentials are configured.
+        // Development can run without Firebase via LogPhoneVerifier (dev-token:+970...) .
+        try
+        {
+            string? projectId = configuration["Firebase:ProjectId"];
+            if (!string.IsNullOrWhiteSpace(projectId))
+            {
+                string? svc = configuration["Firebase:ServiceAccountJsonPath"];
+                FirebaseAdmin.FirebaseApp app = string.IsNullOrWhiteSpace(svc) || !File.Exists(svc)
+                    ? FirebaseAdmin.FirebaseApp.Create(new FirebaseAdmin.AppOptions { ProjectId = projectId })
+                    : FirebaseAdmin.FirebaseApp.Create(new FirebaseAdmin.AppOptions
+                    {
+                        ProjectId = projectId,
+                        Credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(svc)
+                    });
+                _ = app;
+            }
+        }
+        catch
+        {
+            // Defer to runtime verifier — AllowDevTokens will cover dev
+        }
+
+        services.AddScoped<Application.Abstractions.Phone.IPhoneVerifier>(sp =>
+        {
+            IWebHostEnvironment env = sp.GetRequiredService<IWebHostEnvironment>();
+            IConfiguration cfg = sp.GetRequiredService<IConfiguration>();
+            IOptions<FirebaseOptions> fb = sp.GetRequiredService<IOptions<FirebaseOptions>>();
+            bool hasProject = !string.IsNullOrWhiteSpace(fb.Value.ProjectId) && FirebaseAdmin.FirebaseApp.DefaultInstance is not null;
+            return hasProject
+                ? new FirebasePhoneVerifier(fb)
+                : new LogPhoneVerifier(env, cfg) as Application.Abstractions.Phone.IPhoneVerifier;
+        });
+        services.AddSingleton<Application.Abstractions.Phone.ITwoFactorTicketService, TwoFactorTicketService>();
+        services.AddSingleton<Application.Abstractions.Phone.IPhoneRecoveryCodeService, PhoneRecoveryCodeService>();
 
         // Ambient tenant for the current scope (claims-based on HTTP requests,
         // explicitly selected for host/background flows).
@@ -93,12 +135,12 @@ public static class DependencyInjection
     {
         string? connectionString = configuration.GetConnectionString("Database");
 
-         services.AddDbContext<ApplicationDbContext>((sp, options) =>
-         {
-             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
-             options.UseSqlServer(connectionString, sqlServerOptions =>
-                              sqlServerOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName));
-         });
+        services.AddDbContext<ApplicationDbContext>((sp, options) =>
+        {
+            options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
+            options.UseSqlServer(connectionString, sqlServerOptions =>
+                             sqlServerOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName));
+        });
 
         // Readiness check pings the database through the app's own DbContext so the
         // configured connection string is validated end to end (plan Phase 9 / M7 A3).
@@ -187,32 +229,55 @@ public static class DependencyInjection
                     ClockSkew = TimeSpan.FromMinutes(1)
                 };
 
-                // Tenant status (Active / trial / cancellation read-only grace) is enforced
-                // centrally by TenantResolutionMiddleware on every authenticated request, so
-                // no per-request database hit is needed here (plan Phase 4 item 4).
+                // Browser clients receive this JWT in an HttpOnly cookie. Header credentials
+                // keep precedence so external API clients can continue to use bearer tokens.
+                opts.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        if (string.IsNullOrEmpty(context.Token))
+                        {
+                            context.Token = context.Request.Cookies[JwtCookieDefaults.TenantAccessCookieName];
+                        }
+
+                        return Task.CompletedTask;
+                    },
+                };
             })
-            .AddCookie(HostAuthDefaults.AuthenticationScheme, opts =>
+            .AddJwtBearer(HostAuthDefaults.AuthenticationScheme, opts =>
             {
-                opts.LoginPath = "/host/api/v1/auth/login";
-                opts.LogoutPath = "/host/api/v1/auth/logout";
-                opts.AccessDeniedPath = "/host/api/v1/auth/login";
+                opts.MapInboundClaims = true;
+                opts.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = issuer,
+                    ValidAudience = audience,
+                    IssuerSigningKey = signingKey,
+                    ClockSkew = TimeSpan.FromMinutes(1)
+                };
+                opts.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        if (string.IsNullOrEmpty(context.Token))
+                        {
+                            context.Token = context.Request.Cookies[JwtCookieDefaults.HostAccessCookieName];
+                        }
 
-                opts.SlidingExpiration = true;
-                opts.ExpireTimeSpan = TimeSpan.FromHours(8);
-
-                opts.Cookie.Name = "GoldStoreHost.Session";
-                opts.Cookie.HttpOnly = true;
-                opts.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-                opts.Cookie.SameSite = SameSiteMode.Strict;
-                opts.Cookie.IsEssential = true;
+                        return Task.CompletedTask;
+                    },
+                };
             });
 
         services.AddHttpContextAccessor();
         services.AddScoped<IUserContext, UserContext>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IAuthSessionManager, CookieAuthSessionManager>();
-        services.AddScoped<IPlatformAuthSessionManager, PlatformAuthSessionManager>();
         services.AddScoped<ITokenProvider, TokenProvider>();
+        services.AddScoped<IPlatformTokenProvider, PlatformTokenProvider>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<SecurityStampValidator>();
 

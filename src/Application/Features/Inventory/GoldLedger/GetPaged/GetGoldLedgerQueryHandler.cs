@@ -14,7 +14,7 @@ internal sealed class GetGoldLedgerQueryHandler(IApplicationDbContext context, I
 {
     public async Task<Result<PaginatedList<GoldLedgerEntryResponse>>> Handle(GetGoldLedgerQuery query, CancellationToken cancellationToken)
     {
-        IQueryable<GoldLedgerEntry> entries = context.GoldLedgerEntries.OrderByDescending(c=>c.CreatedAtUtc).AsNoTracking().Where(e => e.TenantId == currentTenant.TenantId);
+        IQueryable<GoldLedgerEntry> entries = context.GoldLedgerEntries.OrderByDescending(c => c.CreatedAtUtc).AsNoTracking().Where(e => e.TenantId == currentTenant.TenantId);
 
         if (query.Karat.HasValue)
         {

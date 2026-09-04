@@ -63,10 +63,7 @@ internal sealed class BearerSecuritySchemeTransformer(
 
             foreach (OpenApiOperation operation in path.Operations.Values)
             {
-                if (operation.Security is null)
-                {
-                    operation.Security = [];
-                }
+                operation.Security ??= [];
 
                 operation.Security.Add(new OpenApiSecurityRequirement
                 {

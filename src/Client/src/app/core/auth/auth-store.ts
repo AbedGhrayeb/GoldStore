@@ -2,8 +2,8 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type { MeResponse } from '../../shared/api/api-types';
+import type { Login2faRequired } from './auth-api.service';
 import { AuthApi } from './auth-api.service';
-import { TokenStorage } from './token-storage';
 
 /**
  * The only global store (ADR-2). Holds the current tenant user (claims from /auth/me) and the
@@ -12,7 +12,6 @@ import { TokenStorage } from './token-storage';
 @Injectable({ providedIn: 'root' })
 export class AuthStore {
   private readonly api = inject(AuthApi);
-  private readonly tokens = inject(TokenStorage);
 
   private readonly userSignal = signal<MeResponse | null>(null);
   private readonly hostAdminSignal = signal(false);
@@ -22,30 +21,45 @@ export class AuthStore {
   readonly isAuthenticated = computed(() => this.userSignal() !== null);
   readonly isHostAdmin = this.hostAdminSignal.asReadonly();
   readonly permissions = computed(() => this.userSignal()?.permissions ?? []);
+  readonly roles = computed(() => this.userSignal()?.roles ?? []);
   readonly tenantKey = computed(() => this.userSignal()?.tenantKey ?? null);
 
-  async login(email: string, password: string): Promise<MeResponse> {
-    const tokens = await firstValueFrom(this.api.login(email, password));
-    this.tokens.set(tokens);
+  hasPermission(permission: string): boolean {
+    return this.permissions().includes(permission);
+  }
+
+  hasAnyPermission(...permissions: string[]): boolean {
+    const current = this.permissions();
+    return permissions.some((p) => current.includes(p));
+  }
+
+  hasRole(role: string): boolean {
+    return this.roles().includes(role);
+  }
+
+  async login(email: string, password: string): Promise<MeResponse | Login2faRequired> {
+    const res = await firstValueFrom(this.api.login(email, password));
+    if (res && (res as Login2faRequired).is2fa) return res as Login2faRequired;
     return this.loadMe();
   }
 
-  async hostLogin(email: string, password: string): Promise<void> {
-    await firstValueFrom(this.api.hostLogin(email, password));
-    this.hostAdminSignal.set(true);
+  async hostLogin(email: string, password: string): Promise<void | Login2faRequired> {
+    const res = await firstValueFrom(this.api.hostLogin(email, password));
+    if (res && (res as Login2faRequired).is2fa) return res as Login2faRequired;
+    await this.restoreHostSession();
+    return undefined;
   }
 
-  /** Rotates the refresh token. Single-flight: concurrent 401s share one rotation. */
+  /** Restores either HttpOnly-cookie session before guards execute on an application reload. */
+  async restoreSessions(): Promise<void> {
+    await Promise.all([this.restoreTenantSession(), this.restoreHostSession()]);
+  }
+
+  /** Rotates the HttpOnly refresh cookie. Concurrent 401s share one rotation. */
   async silentRefresh(): Promise<boolean> {
-    if (this.tokens.refresh === null) {
-      return false;
-    }
     if (this.refreshInFlight === null) {
-      this.refreshInFlight = firstValueFrom(this.api.refresh(this.tokens.refresh))
-        .then((tokens) => {
-          this.tokens.set(tokens);
-          return true;
-        })
+      this.refreshInFlight = firstValueFrom(this.api.refresh())
+        .then(() => true)
         .catch(() => {
           this.clearSession();
           return false;
@@ -58,13 +72,10 @@ export class AuthStore {
   }
 
   async logout(): Promise<void> {
-    const refreshToken = this.tokens.refresh;
-    if (refreshToken !== null) {
-      try {
-        await firstValueFrom(this.api.logout(refreshToken));
-      } catch {
-        // Revocation failure is not worth blocking the local sign-out.
-      }
+    try {
+      await firstValueFrom(this.api.logout());
+    } catch {
+      // Revocation failure is not worth blocking the local sign-out.
     }
     this.clearSession();
   }
@@ -79,7 +90,6 @@ export class AuthStore {
   }
 
   clearSession(): void {
-    this.tokens.clear();
     this.userSignal.set(null);
   }
 
@@ -87,5 +97,22 @@ export class AuthStore {
     const me = await firstValueFrom(this.api.me());
     this.userSignal.set(me);
     return me;
+  }
+
+  private async restoreTenantSession(): Promise<void> {
+    try {
+      await this.loadMe();
+    } catch {
+      this.userSignal.set(null);
+    }
+  }
+
+  private async restoreHostSession(): Promise<void> {
+    try {
+      await firstValueFrom(this.api.hostMe());
+      this.hostAdminSignal.set(true);
+    } catch {
+      this.hostAdminSignal.set(false);
+    }
   }
 }

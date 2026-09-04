@@ -16,10 +16,10 @@ namespace Infrastructure.Authentication;
 
 /// <summary>
 /// Creates short-lived access tokens (plan Phase 4 items 3-4). Claims are immutable for
-/// the lifetime of the token: user id, tenant id and key, roles, permissions, and the
-/// security stamp. Token creation runs during login, before any tenant context exists, so
-/// the user/tenant/role lookups select the user's tenant explicitly and bypass the global
-/// query filter — the same exception the login flow already uses.
+/// the lifetime of the token: user id, tenant id and key, roles, permissions, enabled
+/// features, and the security stamp. Token creation runs during login, before any tenant
+/// context exists, so the user/tenant/role lookups select the user's tenant explicitly and
+/// bypass the global query filter — the same exception the login flow already uses.
 /// </summary>
 internal sealed class TokenProvider(
     IConfiguration configuration,
@@ -38,6 +38,13 @@ internal sealed class TokenProvider(
         Tenant tenant = await context.Tenants
             .AsNoTracking()
             .SingleAsync(t => t.Id == user.TenantId, cancellationToken);
+
+        IReadOnlyList<string> enabledFeatures = await context.TenantSettings
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(settings => settings.TenantId == user.TenantId)
+            .Select(settings => settings.EnabledFeatures)
+            .SingleOrDefaultAsync(cancellationToken) ?? [];
 
         UserAuthorizationInfo authorization = await permissionProvider
             .GetForUserAsync(userId, user.TenantId, cancellationToken);
@@ -58,6 +65,11 @@ internal sealed class TokenProvider(
             new(CustomClaims.SecurityStamp, user.SecurityStamp),
         ];
 
+        if (user.TwoFactorEnabled && user.PhoneNumberVerified)
+        {
+            claims.Add(new Claim("amr", "mfa"));
+        }
+
         foreach (string role in authorization.Roles)
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
@@ -66,6 +78,11 @@ internal sealed class TokenProvider(
         foreach (string permission in authorization.Permissions)
         {
             claims.Add(new Claim(CustomClaims.Permission, permission));
+        }
+
+        foreach (string feature in enabledFeatures)
+        {
+            claims.Add(new Claim(CustomClaims.Feature, feature));
         }
 
         DateTime expiresAt = dateTimeProvider.UtcNow.AddMinutes(configuration.GetValue("Jwt:ExpirationInMinutes", defaultValue: 60));

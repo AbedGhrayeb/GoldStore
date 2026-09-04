@@ -1,4 +1,4 @@
-# GoldStore Host-Administration Runbook (Phase 9)
++# GoldStore Host-Administration Runbook (Phase 9)
 
 Operational guide for platform administrators. It assumes the host identity model from
 `docs/tenancy-policy.md` (platform administrators use the separate `PlatformUser` identity and

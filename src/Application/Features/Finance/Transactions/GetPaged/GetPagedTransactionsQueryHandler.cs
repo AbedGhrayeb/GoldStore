@@ -17,7 +17,7 @@ internal sealed class GetPagedTransactionsQueryHandler(IApplicationDbContext con
         CancellationToken cancellationToken)
     {
 
-        IQueryable<FinancialTransaction> transactionsQuery = context.FinancialTransactions.OrderByDescending(f=>f.CreatedAtUtc).AsNoTracking().Where(t => t.TenantId == currentTenant.TenantId);
+        IQueryable<FinancialTransaction> transactionsQuery = context.FinancialTransactions.OrderByDescending(f => f.CreatedAtUtc).AsNoTracking().Where(t => t.TenantId == currentTenant.TenantId);
 
         if (!string.IsNullOrWhiteSpace(query.Currency)
             && Enum.TryParse<Currency>(query.Currency, ignoreCase: true, out Currency currency))

@@ -33,7 +33,7 @@ public class ApplicationDbContextInitializer(
     private readonly ICurrentTenantSetter _currentTenantSetter = currentTenantSetter;
     private readonly TimeProvider _timeProvider = timeProvider;
 
-    public async Task InitializeAsync(CancellationToken cancellationToken=default)
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
 #pragma warning disable S2139 // Exceptions should be either logged or rethrown but not both
         try
@@ -48,7 +48,7 @@ public class ApplicationDbContextInitializer(
 #pragma warning restore S2139 // Exceptions should be either logged or rethrown but not both
     }
 
-    public async Task SeedAsync(CancellationToken cancellationToken=default)
+    public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
 #pragma warning disable S2139 // Exceptions should be either logged or rethrown but not both
         try
@@ -63,7 +63,7 @@ public class ApplicationDbContextInitializer(
 #pragma warning restore S2139 // Exceptions should be either logged or rethrown but not both
     }
 
-    public async Task TrySeedAsync(CancellationToken cancellationToken=default)
+    public async Task TrySeedAsync(CancellationToken cancellationToken = default)
     {
         // Host-level data first: plans and tenants are global and not tenant-filtered.
         SubscriptionPlan plan = await SeedSubscriptionPlanAsync(cancellationToken);
@@ -78,6 +78,7 @@ public class ApplicationDbContextInitializer(
         // templates are shared by every tenant.
         await SeedPermissionsAsync(cancellationToken);
         await SeedStoreAdministratorRoleAsync(cancellationToken);
+        await SeedAdditionalRolesAsync(cancellationToken);
 
         await SeedInitialSubscriptionAsync(plan, cancellationToken);
         await SeedInitialSettingsAsync(cancellationToken);
@@ -103,8 +104,15 @@ public class ApplicationDbContextInitializer(
         }
 
         // Unlimited default plan; limits are introduced with real subscriptions later.
-        plan = SubscriptionPlan.Create("Standard", "standard", null, null, null, null).Value;
+        plan = SubscriptionPlan.Create("Standard", "standard", null, null, null, null, isTrial: false, durationInMonths: 12, price: 199.00m, discountPercent: null).Value;
         _context.SubscriptionPlans.Add(plan);
+
+        // Seed a trial plan for 1 month (free) if not exists
+        if (!await _context.SubscriptionPlans.AnyAsync(p => p.Key == "trial", cancellationToken))
+        {
+            SubscriptionPlan trial = SubscriptionPlan.Create("Trial", "trial", 2, 50, 1, 5368709120, isTrial: true, durationInMonths: 1, price: 0m, discountPercent: null).Value;
+            _context.SubscriptionPlans.Add(trial);
+        }
 
         return plan;
     }
@@ -181,7 +189,75 @@ public class ApplicationDbContextInitializer(
         {
             if (!grantedIds.Contains(permissionId))
             {
-                role.AddPermission(permissionId);
+                // Fix: add via DbSet directly to ensure Added state (navigation Add was resulting in Detached->Modified and concurrency failure)
+                var rp = new RolePermission(Guid.CreateVersion7(), role.Id, permissionId);
+                _context.RolePermissions.Add(rp);
+            }
+        }
+    }
+
+    private async Task SeedAdditionalRolesAsync(CancellationToken cancellationToken)
+    {
+        // Seeded granular roles for admin-managed permission page
+        var roleDefinitions = new[]
+        {
+            new { Key = "manager", Name = "مدير عام", Permissions = new[] {
+                Permissions.UsersView, Permissions.EmployeesView, Permissions.EmployeesManage,
+                Permissions.SuppliersView, Permissions.SuppliersManage,
+                Permissions.InventoryView, Permissions.InventoryManage,
+                Permissions.FinanceView, Permissions.FinanceManage,
+                Permissions.SalesView, Permissions.SalesManage,
+                Permissions.PurchasesView, Permissions.PurchasesManage,
+                Permissions.ExpensesView, Permissions.ExpensesManage,
+                Permissions.ReportsView, Permissions.SettingsView
+            }},
+            new { Key = "cashier", Name = "أمين صندوق", Permissions = new[] {
+                Permissions.SalesView, Permissions.SalesManage,
+                Permissions.PurchasesView, Permissions.FinanceView, Permissions.InventoryView,
+                Permissions.ExpensesView
+            }},
+            new { Key = "viewer", Name = "مشاهد", Permissions = new[] {
+                Permissions.UsersView, Permissions.EmployeesView, Permissions.SuppliersView,
+                Permissions.InventoryView, Permissions.FinanceView, Permissions.SalesView,
+                Permissions.PurchasesView, Permissions.ExpensesView, Permissions.ReportsView, Permissions.SettingsView
+            }},
+            new { Key = "inventory_clerk", Name = "مسؤول مخزون", Permissions = new[] {
+                Permissions.InventoryView, Permissions.InventoryManage,
+                Permissions.SuppliersView, Permissions.SuppliersManage,
+                Permissions.PurchasesView
+            }},
+        };
+
+        // Need permission lookup by key
+        Dictionary<string, Guid> permissionMap = await _context.Permissions.ToDictionaryAsync(p => p.Key, p => p.Id, cancellationToken);
+
+        foreach (var def in roleDefinitions)
+        {
+            Role? role = await _context.Roles.FirstOrDefaultAsync(r => r.Key == def.Key, cancellationToken);
+            if (role is null)
+            {
+                Result<Role> created = Role.Create(def.Key, def.Name);
+                role = created.Value;
+                _context.Roles.Add(role);
+                await _context.SaveChangesAsync(cancellationToken); // need Id for FK
+            }
+
+            List<Guid> grantedIds = await _context.RolePermissions
+                .Where(rp => rp.RoleId == role.Id)
+                .Select(rp => rp.PermissionId)
+                .ToListAsync(cancellationToken);
+
+            foreach (string permKey in def.Permissions)
+            {
+                if (!permissionMap.TryGetValue(permKey, out Guid permId))
+                {
+                    continue;
+                }
+
+                if (!grantedIds.Contains(permId))
+                {
+                    _context.RolePermissions.Add(new RolePermission(Guid.CreateVersion7(), role.Id, permId));
+                }
             }
         }
     }
@@ -221,13 +297,21 @@ public class ApplicationDbContextInitializer(
     {
         if (await _context.PlatformUsers.AnyAsync(cancellationToken))
         {
+            // Ensure legacy seed has phone (migration adds nullable column)
+            PlatformUser? existing = await _context.PlatformUsers.FirstOrDefaultAsync(cancellationToken);
+            if (existing is not null && string.IsNullOrWhiteSpace(existing.PhoneNumber))
+            {
+                existing.SetPhoneNumberVerified("+970592990484");
+                await _context.SaveChangesAsync(cancellationToken);
+            }
             return;
         }
 
         string defaultPassword = _configuration["DefaultPlatformUserPassword"] ?? _configuration["DefaultUserPassword"]!;
         Result<PlatformUser> platformUser = PlatformUser.Create(
             "platform@goldstore.app", "Platform", "Admin", _passwordHasher.Hash(defaultPassword));
-
+        // Seed Palestine phone for mandatory 2FA demo; enrollment via dev-token:+970592990484 in dev
+        platformUser.Value.SetPhoneNumberVerified("+970592990484");
         _context.PlatformUsers.Add(platformUser.Value);
     }
 
@@ -235,13 +319,19 @@ public class ApplicationDbContextInitializer(
     {
         if (await _context.Users.AnyAsync(cancellationToken))
         {
+            User? existing = await _context.Users.FirstOrDefaultAsync(u => u.Email == "admin@goldstore", cancellationToken);
+            if (existing is not null && string.IsNullOrWhiteSpace(existing.PhoneNumber))
+            {
+                existing.SetPhoneNumberVerified("+970592990484");
+                await _context.SaveChangesAsync(cancellationToken);
+            }
             return;
         }
 
         string defaultPassword = _configuration["DefaultUserPassword"]!;
         string hashedPassword = _passwordHasher.Hash(defaultPassword);
         Result<User> defaultUser = User.Create(Guid.CreateVersion7(), InitialTenant.Id, "admin@goldstore", "Admin", "Admin", hashedPassword);
-
+        defaultUser.Value.SetPhoneNumberVerified("+970592990484");
         _context.Users.Add(defaultUser.Value);
     }
 
@@ -267,7 +357,7 @@ public class ApplicationDbContextInitializer(
 
 public static class InitializerExtensions
 {
-    public static async Task InitializeDatabaseAsync(this WebApplication app,CancellationToken cancellationToken=default)
+    public static async Task InitializeDatabaseAsync(this WebApplication app, CancellationToken cancellationToken = default)
     {
         using IServiceScope scope = app.Services.CreateScope();
 

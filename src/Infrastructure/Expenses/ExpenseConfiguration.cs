@@ -14,13 +14,13 @@ internal sealed class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
 
         builder.Property(e => e.Description).HasMaxLength(500);
 
-        builder.HasOne(e=>e.FinancialAccount)
+        builder.HasOne(e => e.FinancialAccount)
             .WithMany()
             .HasForeignKey(e => e.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(e=>e.ExpenseCategory)
-            .WithMany(c=>c.Expenses)
+        builder.HasOne(e => e.ExpenseCategory)
+            .WithMany(c => c.Expenses)
             .HasForeignKey(e => e.ExpenseCategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 

@@ -139,7 +139,6 @@ Shared-schema model · tenant lifecycle · EF global query filter + write-guard 
 - [ ] Shell: RTL layout, sidebar (right), tenant branding from `/reference/*` + settings.
 - [ ] Module pages per feature (config, suppliers/inventory, sales/purchases, finance/HR, dashboard) over the A6 endpoints.
 - [ ] Error handling + loading states; PWA (manifest, service worker) via Angular CLI.
-- [ ] Keep MVC (`src/WebUI`) as fallback — do not delete.
 
 ---
 
@@ -175,4 +174,4 @@ Shared-schema model · tenant lifecycle · EF global query filter + write-guard 
 ## 6. Definition of done for Phase 7
 
 - [x] Phase 7a: every business module has a tenant-isolated `api/v1` endpoint; host endpoints stay on `host/api/v1`; isolation suite green; OpenAPI + Scalar live.
-- [ ] Phase 7b: Angular client serves all stores RTL-first over the 7a API; MVC remains the fallback.
+- [ ] Phase 7b: Angular client serves all stores RTL-first over the 7a API;

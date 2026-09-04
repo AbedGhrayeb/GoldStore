@@ -2,9 +2,9 @@
 
 public enum SalaryCycleEnum
 {
-    Daily=1,
-    Weekly=2,
-    Monthly=3
+    Daily = 1,
+    Weekly = 2,
+    Monthly = 3
 }
 public static class SalaryCycleEnumExtensions
 {

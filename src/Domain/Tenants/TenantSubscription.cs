@@ -69,6 +69,22 @@ public sealed class TenantSubscription : Entity, ITenantEntity
         return Result.Updated;
     }
 
+    public Result<Updated> ChangePlan(Guid newPlanId)
+    {
+        if (newPlanId == Guid.Empty)
+        {
+            return TenantErrors.IdRequired;
+        }
+
+        SubscriptionPlanId = newPlanId;
+        return Result.Updated;
+    }
+
+    public void ChangeBillingCycle(SubscriptionBillingCycle billingCycle)
+    {
+        BillingCycle = billingCycle;
+    }
+
     public void MarkPastDue()
     {
         Status = SubscriptionStatus.PastDue;

@@ -9,7 +9,7 @@ public sealed class Category : AuditableEntity, ITenantEntity
 
 
 
-    public Guid? ParentCategoryId { get;  set; }
+    public Guid? ParentCategoryId { get; set; }
 
     public string Name { get; private set; }
 

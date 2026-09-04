@@ -6,7 +6,6 @@ import { setupServer } from 'msw/node';
 import type { MeResponse } from '../../shared/api/api-types';
 import { apiUrl } from '../../testing/api-url';
 import { AuthStore } from './auth-store';
-import { TokenStorage } from './token-storage';
 
 const ME: MeResponse = {
   userId: 'user-1',
@@ -17,12 +16,6 @@ const ME: MeResponse = {
   permissions: ['catalog', 'sales', 'inventory'],
 };
 
-const TOKENS = {
-  accessToken: 'access-1',
-  refreshToken: 'refresh-1',
-  refreshExpiresAt: '2026-09-01T00:00:00Z',
-};
-
 let refreshCalls = 0;
 
 const server = setupServer(
@@ -31,14 +24,18 @@ const server = setupServer(
     if (Object.keys(body).includes('tenantId')) {
       return HttpResponse.json({ message: 'tenantId must never be sent' }, { status: 400 });
     }
-    return HttpResponse.json(TOKENS);
+    // The server issues the JWT and stores it in an HttpOnly cookie; the body carries no tokens.
+    return new HttpResponse(null, { status: 200 });
   }),
   http.post(apiUrl('/api/v1/auth/refresh'), () => {
     refreshCalls += 1;
-    return HttpResponse.json({ ...TOKENS, accessToken: 'access-2', refreshToken: 'refresh-2' });
+    return new HttpResponse(null, { status: 200 });
   }),
   http.post(apiUrl('/api/v1/auth/logout'), () => new HttpResponse(null, { status: 204 })),
   http.get(apiUrl('/api/v1/auth/me'), () => HttpResponse.json(ME)),
+  http.get(apiUrl('/host/api/v1/auth/me'), () =>
+    HttpResponse.json({ email: 'platform@goldstore.app' }),
+  ),
 );
 
 describe('AuthStore', () => {
@@ -53,15 +50,12 @@ describe('AuthStore', () => {
     TestBed.configureTestingModule({ providers: [provideHttpClient()] });
   });
 
-  it('logs in, stores tokens in memory only, and loads claims from /me', async () => {
+  it('logs in through the API (JWT set as an HttpOnly cookie) and loads claims from /me', async () => {
     const store = TestBed.inject(AuthStore);
-    const tokens = TestBed.inject(TokenStorage);
 
     const me = await store.login('cashier@goldstore.app', 'secret');
 
     expect(me.permissions).toEqual(['catalog', 'sales', 'inventory']);
-    expect(tokens.access).toBe('access-1');
-    expect(tokens.refresh).toBe('refresh-1');
     expect(store.isAuthenticated()).toBe(true);
     expect(store.tenantKey()).toBe('goldstore');
     expect(store.permissions()).toContain('sales');
@@ -73,9 +67,8 @@ describe('AuthStore', () => {
     expect(refreshCalls).toBe(0);
   });
 
-  it('rotates tokens on silentRefresh and is single-flight for concurrent callers', async () => {
+  it('rotates the HttpOnly refresh cookie on silentRefresh, single-flight for concurrent callers', async () => {
     const store = TestBed.inject(AuthStore);
-    const tokens = TestBed.inject(TokenStorage);
     await store.login('cashier@goldstore.app', 'secret');
 
     const results = await Promise.all([
@@ -86,49 +79,38 @@ describe('AuthStore', () => {
 
     expect(refreshCalls).toBe(1);
     expect(results).toEqual([true, true, true]);
-    expect(tokens.access).toBe('access-2');
-    expect(tokens.refresh).toBe('refresh-2');
     expect(store.isAuthenticated()).toBe(true);
   });
 
-  it('returns false without calling the API when no refresh token exists', async () => {
-    const store = TestBed.inject(AuthStore);
-
-    await expect(store.silentRefresh()).resolves.toBe(false);
-    expect(refreshCalls).toBe(0);
-  });
-
-  it('clears the session when token rotation fails', async () => {
+  it('returns false and clears the session when rotation fails', async () => {
     server.use(
       http.post(apiUrl('/api/v1/auth/refresh'), () =>
         HttpResponse.json({ message: 'expired' }, { status: 401 }),
       ),
     );
     const store = TestBed.inject(AuthStore);
-    const tokens = TestBed.inject(TokenStorage);
     await store.login('cashier@goldstore.app', 'secret');
 
     await expect(store.silentRefresh()).resolves.toBe(false);
-    expect(tokens.access).toBeNull();
     expect(store.isAuthenticated()).toBe(false);
   });
 
-  it('revokes the refresh token on logout and clears all state', async () => {
-    let revokedBody: unknown = null;
-    server.use(
-      http.post(apiUrl('/api/v1/auth/logout'), async ({ request }) => {
-        revokedBody = await request.json();
-        return new HttpResponse(null, { status: 204 });
-      }),
-    );
+  it('revokes the session on logout and clears state', async () => {
     const store = TestBed.inject(AuthStore);
-    const tokens = TestBed.inject(TokenStorage);
     await store.login('cashier@goldstore.app', 'secret');
 
     await store.logout();
 
-    expect(revokedBody).toEqual({ refreshToken: 'refresh-1' });
-    expect(tokens.hasTokens()).toBe(false);
     expect(store.isAuthenticated()).toBe(false);
+  });
+
+  it('restores both cookie sessions from /me and /host/me on reload', async () => {
+    const store = TestBed.inject(AuthStore);
+
+    await store.restoreSessions();
+
+    expect(store.isAuthenticated()).toBe(true);
+    expect(store.isHostAdmin()).toBe(true);
+    expect(store.tenantKey()).toBe('goldstore');
   });
 });

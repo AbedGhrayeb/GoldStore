@@ -68,18 +68,21 @@ public sealed class AuthEligibilityTests : IClassFixture<MultiTenantWebApplicati
     [Fact]
     public async Task CancelledTenantInsideGrace_CanReadButNotWrite()
     {
-        HttpClient client = await _factory.CreateAuthenticatedClientAsync(GraceAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient client = await _factory.CreateJwtClientAsync(GraceAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
-        HttpResponseMessage read = await client.GetAsync("/Suppliers/List");
+        HttpResponseMessage read = await client.GetAsync("/api/v1/suppliers");
         Assert.Equal(HttpStatusCode.OK, read.StatusCode);
 
-        HttpResponseMessage write = await client.PostAsync("/Suppliers/AddOrUpdateAjax",
-            new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                ["Name"] = "Read Only Shop",
-                ["PrimaryPhone"] = "0791234567",
-                ["__RequestVerificationToken"] = "",
-            }));
+        using var payload = JsonContent.Create(new
+        {
+            name = "Read Only Shop",
+            primaryPhone = "0791234567",
+            secondaryPhone = (string?)null,
+            bankAccountNumber = "JO00READONLY",
+            notes = "grace read-only probe",
+            isActive = true
+        });
+        HttpResponseMessage write = await client.PostAsync("/api/v1/suppliers", payload);
         string body = await write.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.Forbidden, write.StatusCode);
@@ -89,35 +92,19 @@ public sealed class AuthEligibilityTests : IClassFixture<MultiTenantWebApplicati
     [Fact]
     public async Task TenantUser_CannotReachHostAdministration()
     {
-        // No auto-redirect: the challenge itself must be inspected, not the landing page.
-        HttpClient client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        // Tenant JWT must not grant access to host administration.
+        HttpClient client = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
 
-        // Sign in to the store as a tenant admin through the real MVC login flow.
-        string? token = await TestAuth.GetAntiforgeryTokenAsync(client, "/Account/Login");
-        Assert.NotNull(token);
-        using FormUrlEncodedContent form = new(new Dictionary<string, string>
-        {
-            ["Username"] = TenantAAdmin,
-            ["Password"] = TenantAAdminPassword,
-            ["__RequestVerificationToken"] = token!,
-        });
-        HttpResponseMessage login = await client.PostAsync("/Account/Login", form);
-        Assert.Equal(HttpStatusCode.Redirect, login.StatusCode);
-
-        // Simulate a browser navigation so the cookie challenge redirects instead of
-        // returning 401 (the cookie handler treats header-less requests as API calls).
-        client.DefaultRequestHeaders.Accept.ParseAdd("text/html");
-
+        // Host administration is guarded by the dedicated host JWT (HttpOnly cookie). A store
+        // user's tenant credentials are never accepted there: the host JWT bearer scheme
+        // challenges with a plain 401 — no redirect and no server-rendered login page (the
+        // Angular client renders /host/login itself).
         HttpResponseMessage response = await client.GetAsync("/host/api/v1/tenants");
 
-        // Host administration is protected by the dedicated host cookie; a store user is
-        // not authenticated for that scheme. The cookie challenge redirects browsers to
-        // the host login, and returns 401 with the host login location for API clients.
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.Contains("/host/api/v1/auth/login", response.Headers.Location?.ToString(), StringComparison.OrdinalIgnoreCase);
-
-        // The redirect target renders the host sign-in page (GET works, unlike the POST API).
-        HttpResponseMessage loginPage = await client.GetAsync(response.Headers.Location!);
-        Assert.Equal(HttpStatusCode.OK, loginPage.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Null(response.Headers.Location);
+        Assert.Contains(
+            response.Headers.WwwAuthenticate,
+            header => header.Scheme.Equals("Bearer", StringComparison.OrdinalIgnoreCase));
     }
 }

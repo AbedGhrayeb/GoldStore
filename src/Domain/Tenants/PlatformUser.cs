@@ -13,6 +13,14 @@ public sealed class PlatformUser : Entity
 
     public string PasswordHash { get; private set; }
 
+    public string? PhoneNumber { get; private set; }
+
+    public bool TwoFactorEnabled { get; private set; }
+
+    public bool PhoneNumberVerified { get; private set; }
+
+    public DateTimeOffset? TwoFactorEnabledAtUtc { get; private set; }
+
     /// <summary>Consecutive failed sign-in attempts since the last success (M7 lockout).</summary>
     public int FailedLoginAttempts { get; private set; }
 
@@ -37,6 +45,15 @@ public sealed class PlatformUser : Entity
         FirstName = firstName;
         LastName = lastName;
         PasswordHash = passwordHash;
+    }
+
+    private PlatformUser(Guid id, string email, string firstName, string lastName, string passwordHash, string? phoneNumber) : base(id)
+    {
+        Email = email;
+        FirstName = firstName;
+        LastName = lastName;
+        PasswordHash = passwordHash;
+        PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
     }
 
     public static Result<PlatformUser> Create(string email, string firstName, string lastName, string passwordHash)
@@ -83,5 +100,30 @@ public sealed class PlatformUser : Entity
     {
         FailedLoginAttempts = 0;
         LockedUntilUtc = null;
+    }
+
+    public void EnableTwoFactor(string verifiedPhoneE164, DateTimeOffset utcNow)
+    {
+        PhoneNumber = verifiedPhoneE164;
+        PhoneNumberVerified = true;
+        TwoFactorEnabled = true;
+        TwoFactorEnabledAtUtc = utcNow;
+    }
+
+    public void DisableTwoFactor()
+    {
+        TwoFactorEnabled = false;
+        TwoFactorEnabledAtUtc = null;
+    }
+
+    public void SetPhoneNumberVerified(string verifiedPhoneE164)
+    {
+        PhoneNumber = verifiedPhoneE164;
+        PhoneNumberVerified = true;
+    }
+
+    public void ChangePassword(string newPasswordHash)
+    {
+        PasswordHash = newPasswordHash;
     }
 }

@@ -32,7 +32,14 @@ internal sealed class CookieAuthSessionManager(
 
         UserAuthorizationInfo authorization = await permissionProvider.GetForUserAsync(user.Id, user.TenantId, cancellationToken);
 
-        IEnumerable<Claim> claims = BuildClaims(user, tenant, authorization);
+        IReadOnlyList<string> enabledFeatures = await context.TenantSettings
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(settings => settings.TenantId == user.TenantId)
+            .Select(settings => settings.EnabledFeatures)
+            .SingleOrDefaultAsync(cancellationToken) ?? [];
+
+        IEnumerable<Claim> claims = BuildClaims(user, tenant, authorization, enabledFeatures);
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
 
@@ -50,7 +57,11 @@ internal sealed class CookieAuthSessionManager(
 
     public Task SignOutAsync() => httpContextAccessor.HttpContext!.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-    private static IEnumerable<Claim> BuildClaims(User user, Tenant tenant, UserAuthorizationInfo authorization)
+    private static IEnumerable<Claim> BuildClaims(
+        User user,
+        Tenant tenant,
+        UserAuthorizationInfo authorization,
+        IReadOnlyList<string> enabledFeatures)
     {
         var claims = new List<Claim>
         {
@@ -66,6 +77,7 @@ internal sealed class CookieAuthSessionManager(
 
         claims.AddRange(authorization.Roles.Select(role => new Claim(ClaimTypes.Role, role)));
         claims.AddRange(authorization.Permissions.Select(permission => new Claim(CustomClaims.Permission, permission)));
+        claims.AddRange(enabledFeatures.Select(feature => new Claim(CustomClaims.Feature, feature)));
 
         return claims;
     }

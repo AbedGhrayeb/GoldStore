@@ -46,7 +46,7 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
             _ => FinancialTransactionType.Inflow
         };
 
-        Guid transactionId = Guid.CreateVersion7();
+        var transactionId = Guid.CreateVersion7();
 
         decimal amount;
         Guid accountId;
@@ -73,13 +73,15 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
             if (account is null)
             {
                 return SupplierFinancialErrors.AccountNotFound(command.AccountId);
-            };
+            }
+            ;
 
             if (!account.IsActive)
 
             {
                 return SupplierFinancialErrors.AccountNotActive;
-            };
+            }
+            ;
 
             if (account.Currency != currency)
             {
@@ -100,7 +102,7 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
             }
         }
 
-        SupplierFinancialTransaction supplierFinancialTransaction = SupplierFinancialTransaction.Create(
+        var supplierFinancialTransaction = SupplierFinancialTransaction.Create(
             transactionId,
             command.SupplierId,
             direction,

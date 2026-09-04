@@ -324,7 +324,7 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
         SubscriptionPlan plan,
         DateTimeOffset utcNow)
     {
-        Guid tenantId = Guid.CreateVersion7();
+        var tenantId = Guid.CreateVersion7();
         setter.Set(tenantId, "no-catalog-store");
 
         db.Tenants.Add(Tenant.Create(tenantId, "No Catalog Store", "no-catalog-store", TenantStatus.Active).Value);
@@ -355,7 +355,7 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
         string userSuffix,
         string disabledFeature)
     {
-        Guid tenantId = Guid.CreateVersion7();
+        var tenantId = Guid.CreateVersion7();
         setter.Set(tenantId, tenantKey);
 
         db.Tenants.Add(Tenant.Create(tenantId, tenantName, tenantKey, TenantStatus.Active).Value);
@@ -383,7 +383,7 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
         TenantStatus status,
         DateTimeOffset? graceUntilUtc)
     {
-        Guid tenantId = Guid.CreateVersion7();
+        var tenantId = Guid.CreateVersion7();
         setter.Set(tenantId, key);
 
         Tenant tenant = Tenant.Create(tenantId, key, key, TenantStatus.Active).Value;

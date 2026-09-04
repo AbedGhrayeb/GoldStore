@@ -16,7 +16,7 @@ internal sealed class GetRecentTransactionsQueryHandler(IApplicationDbContext co
     {
         int count = Math.Clamp(query.Count, 1, 100);
 
-        IQueryable<FinancialTransaction> transactionsQuery = context.FinancialTransactions.OrderByDescending(c=>c.CreatedAtUtc).AsNoTracking().Where(t => t.TenantId == currentTenant.TenantId);
+        IQueryable<FinancialTransaction> transactionsQuery = context.FinancialTransactions.OrderByDescending(c => c.CreatedAtUtc).AsNoTracking().Where(t => t.TenantId == currentTenant.TenantId);
 
         var accountIds = transactionsQuery.Select(t => t.AccountId).Distinct().ToList();
 
@@ -28,7 +28,7 @@ internal sealed class GetRecentTransactionsQueryHandler(IApplicationDbContext co
         return await transactionsQuery.Select(t => new RecentTransactionResponse
         {
             Id = t.Id,
-            Date =t.CreatedAtUtc.HasValue? t.CreatedAtUtc!.Value.LocalDateTime: default,
+            Date = t.CreatedAtUtc.HasValue ? t.CreatedAtUtc!.Value.LocalDateTime : default,
             Description = t.ReferenceType.GetDescription(),
             AccountName = accountNames.GetValueOrDefault(t.AccountId, string.Empty),
             Amount = t.Amount,

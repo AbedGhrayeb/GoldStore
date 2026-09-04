@@ -110,6 +110,6 @@ internal sealed class GetExpensesQueryHandler(IApplicationDbContext context, ICu
         });
 
         return await PaginatedList<ExpenseResponse>.CreateAsync(items, page, pageSize);
-      
+
     }
 }

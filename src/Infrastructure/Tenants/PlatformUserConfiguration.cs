@@ -13,6 +13,10 @@ internal sealed class PlatformUserConfiguration : IEntityTypeConfiguration<Platf
         builder.Property(user => user.FirstName).HasMaxLength(100).IsRequired();
         builder.Property(user => user.LastName).HasMaxLength(100).IsRequired();
         builder.Property(user => user.PasswordHash).HasMaxLength(500).IsRequired();
+        builder.Property(user => user.PhoneNumber).HasMaxLength(30);
+        builder.Property(user => user.TwoFactorEnabled).IsRequired();
+        builder.Property(user => user.PhoneNumberVerified).IsRequired();
         builder.HasIndex(user => user.Email).IsUnique();
+        builder.HasIndex(user => user.PhoneNumber).IsUnique().HasFilter("[PhoneNumber] IS NOT NULL");
     }
 }

@@ -28,7 +28,8 @@ public sealed class UsersEndpoints : IEndpoint
             .RequireAuthorization($"feature:{Features.Settings}");
 
         group.MapGet("/", GetUsers)
-            .WithSummary("List the store's users.")
+            .RequireAuthorization(policy => policy.RequireRole("store_admin"))
+            .WithSummary("List the store's users (store admin only).")
             .Produces<List<UserResponse>>(StatusCodes.Status200OK);
 
         group.MapGet("/me", GetMe)
@@ -37,18 +38,20 @@ public sealed class UsersEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/", CreateUser)
-            .WithSummary("Create a new store user.")
+            .RequireAuthorization(policy => policy.RequireRole("store_admin"))
+            .WithSummary("Create a new store user (store admin only).")
             .Produces(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
         group.MapPut("/{id:guid}", UpdateUser)
-            .WithSummary("Update a store user.")
+            .WithSummary("Update a store user (self-only enforced).")
             .Produces(StatusCodes.Status200OK)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapDelete("/{id:guid}", DeleteUser)
-            .WithSummary("Delete a store user.")
+            .RequireAuthorization(policy => policy.RequireRole("store_admin"))
+            .WithSummary("Delete a store user (store admin only).")
             .Produces(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound);
     }
@@ -79,7 +82,7 @@ public sealed class UsersEndpoints : IEndpoint
         CancellationToken cancellationToken)
     {
         Result<Guid> result = await dispatcher.DispatchAsync<CreateUserCommand, Guid>(
-            new CreateUserCommand(request.Email, request.FirstName, request.LastName, request.Password),
+            new CreateUserCommand(request.Email, request.FirstName, request.LastName, request.Password, request.PhoneNumber, request.WhatsappNumber),
             cancellationToken);
 
         return ApiResults.Created($"/{ApiRoutes.Tenant}/users/{result.Value}", result);
@@ -92,7 +95,7 @@ public sealed class UsersEndpoints : IEndpoint
         CancellationToken cancellationToken)
     {
         Result<bool> result = await dispatcher.DispatchAsync<UpdateUserCommand, bool>(
-            new UpdateUserCommand(id, request.FirstName, request.LastName, request.Password),
+            new UpdateUserCommand(id, request.FirstName, request.LastName, request.Password, request.PhoneNumber, request.WhatsappNumber),
             cancellationToken);
 
         return ApiResults.From(result);
@@ -110,6 +113,6 @@ public sealed class UsersEndpoints : IEndpoint
     }
 }
 
-public sealed record CreateUserRequest(string Email, string FirstName, string LastName, string Password);
+public sealed record CreateUserRequest(string Email, string FirstName, string LastName, string Password, string? PhoneNumber = null, string? WhatsappNumber = null);
 
-public sealed record UpdateUserRequest(string FirstName, string LastName, string? Password = null);
+public sealed record UpdateUserRequest(string FirstName, string LastName, string? Password = null, string? PhoneNumber = null, string? WhatsappNumber = null);

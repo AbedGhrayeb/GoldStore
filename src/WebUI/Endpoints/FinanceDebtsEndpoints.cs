@@ -25,6 +25,7 @@ public sealed class FinanceDebtsEndpoints : IEndpoint
             .WithTags("Finance Debts")
             .RequireAuthorization()
             .RequireAuthorization($"feature:{Features.Finance}")
+            .RequireAuthorization("finance.view")
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
@@ -39,6 +40,7 @@ public sealed class FinanceDebtsEndpoints : IEndpoint
             .Produces<DebtKpiResponse>(StatusCodes.Status200OK);
 
         group.MapPost("/", CreateDebt)
+                    .RequireAuthorization("finance.manage")
             .WithSummary("Create a debt and its ledger entries.")
             .Produces<Guid>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
@@ -46,6 +48,7 @@ public sealed class FinanceDebtsEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPut("/{id:guid}", UpdateDebt)
+                    .RequireAuthorization("finance.manage")
             .WithSummary("Update a debt.")
             .Produces<Updated>(StatusCodes.Status200OK)
             .ProducesValidationProblem()
@@ -53,6 +56,7 @@ public sealed class FinanceDebtsEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPost("/{id:guid}/payments", CreateDebtPayment)
+                    .RequireAuthorization("finance.manage")
             .WithSummary("Record a payment against a debt.")
             .Produces<Updated>(StatusCodes.Status200OK)
             .ProducesValidationProblem()

@@ -93,12 +93,39 @@
     U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+html {
+  -webkit-tap-highlight-color: transparent;
+  scrollbar-gutter: stable;
+}
+
 body {
   background-color: #fcfafa;
   color: #1f2937;
   font-family: 'IBM Plex Sans Arabic', 'Segoe UI', system-ui, sans-serif;
+  overscroll-behavior-y: contain;
+  -webkit-font-smoothing: antialiased;
 }
 
 .data-mono {
   font-variant-numeric: tabular-nums;
+}
+
+/* iOS 16px prevents autofocus zoom; ensure all inputs meet minimum */
+input, select, textarea {
+  font-size: 16px;
+}
+@media (min-width: 640px) {
+  input, select, textarea {
+    font-size: 14px;
+  }
+}
+
+/* Safe area helpers */
+.safe-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Mobile: prevent horizontal bounce, smooth scroll */
+* {
+  -webkit-tap-highlight-color: rgba(212, 175, 55, 0.15);
 }

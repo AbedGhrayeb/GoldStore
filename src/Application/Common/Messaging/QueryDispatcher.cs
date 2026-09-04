@@ -24,11 +24,7 @@ internal sealed class QueryDispatcher(IServiceProvider serviceProvider) : IQuery
     {
         Type handlerType = typeof(IQueryHandler<,>).MakeGenericType(typeof(TQuery), typeof(TResult));
 
-        object? handler = serviceProvider.GetService(handlerType);
-        if (handler is null)
-        {
-            throw new InvalidOperationException($"No query handler registered for '{typeof(TQuery).Name}'.");
-        }
+        object? handler = serviceProvider.GetService(handlerType) ?? throw new InvalidOperationException($"No query handler registered for '{typeof(TQuery).Name}'.");
 
         return (IQueryHandler<TQuery, TResult>)handler;
     }

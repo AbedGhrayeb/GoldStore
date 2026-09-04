@@ -14,3 +14,15 @@ public interface ITokenProvider
     /// </summary>
     Task<AccessTokenResponse> CreateAccessTokenAsync(Guid userId, CancellationToken cancellationToken);
 }
+
+/// <summary>A short-lived access token for a platform administrator.</summary>
+public sealed record PlatformAccessTokenResponse(string Value, DateTimeOffset ExpiresAtUtc);
+
+/// <summary>
+/// Creates JWTs for host administrators. Platform identities deliberately carry no tenant
+/// claims and can therefore authenticate only on host-only endpoints.
+/// </summary>
+public interface IPlatformTokenProvider
+{
+    Task<PlatformAccessTokenResponse> CreateAccessTokenAsync(Guid platformUserId, CancellationToken cancellationToken);
+}

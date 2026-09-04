@@ -14,6 +14,9 @@ public static class CustomClaims
     /// <summary>One claim per granted permission key (plan Phase 4 item 3).</summary>
     public const string Permission = "permission";
 
+    /// <summary>One claim per tenant-enabled feature key (bare key, e.g. `catalog`).</summary>
+    public const string Feature = "feature";
+
     /// <summary>The user's current security stamp (session/token version).</summary>
     public const string SecurityStamp = "security_stamp";
 

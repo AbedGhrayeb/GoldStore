@@ -30,6 +30,7 @@ public sealed class SalesInvoicesEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         group.MapPost("/", CreateInvoice)
+            .RequireAuthorization("sales.manage")
             .WithSummary("Create a sales invoice.")
             .WithDescription("Creates the invoice, payment/debt records, and gold-ledger OUT entries server-side.")
             .Produces<Guid>(StatusCodes.Status201Created)
@@ -38,6 +39,7 @@ public sealed class SalesInvoicesEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapGet("/", GetInvoices)
+            .RequireAuthorization("sales.view")
             .WithSummary("Return paged sales invoices.")
             .Produces<PaginatedList<SalesInvoiceResponse>>(StatusCodes.Status200OK)
             .ProducesValidationProblem();
@@ -75,7 +77,7 @@ public sealed class SalesInvoicesEndpoints : IEndpoint
                 item.PricePerGram))
             .ToList() ?? [];
 
-        List<PaymentLegDto>? paymentLegs = request.PaymentLegs?
+        var paymentLegs = request.PaymentLegs?
             .Select(leg => new PaymentLegDto(
                 leg!.AccountId,
                 leg.Currency,

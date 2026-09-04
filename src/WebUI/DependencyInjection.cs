@@ -1,12 +1,13 @@
 ﻿using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.OpenApi;
 using WebUI.Endpoints;
 using WebUI.Infrastructure;
+using WebUI.Infrastructure.Authentication;
 using WebUI.Infrastructure.OpenApi;
 namespace WebUI;
 
@@ -15,11 +16,27 @@ public static class DependencyInjection
 
     public static IServiceCollection AddPresentation(this IServiceCollection services, IConfiguration configuration)
     {
-        // MVC
-        services.AddControllersWithViews();
+        services.AddScoped<JwtCookieManager>();
+
+        // Host admin surface authenticates via a JWT cookie (host flow); the Angular client
+        // attaches the request token through its XSRF interceptor (XSRF-TOKEN cookie
+        // + X-XSRF-TOKEN header), validated on host mutations by AntiforgeryEndpointFilter.
+        // The antiforgery cookie (.AspNetCore.Antiforgery.*) stays HttpOnly; the readable
+        // XSRF-TOKEN cookie holding the RequestToken is set manually in HostEndpoints.Login.
+        services.AddAntiforgery(options =>
+        {
+            options.HeaderName = "X-XSRF-TOKEN";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Strict;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            options.Cookie.IsEssential = true;
+        });
+        services.AddScoped<AntiforgeryEndpointFilter>();
+
+        // API only — no MVC/Razor views. Minimal APIs + Angular SPA.
         services.AddAuthorization()
                 .AddExceptionHandling()
-                .AddControllerWithJsonConfiguration()
+                .AddApiJsonConfiguration()
                 .AddValidation()
                 .AddAppRateLimiting()
                 .AddAppOutputCaching()
@@ -169,11 +186,13 @@ public static class DependencyInjection
         return services;
     }
 
-    public static IServiceCollection AddControllerWithJsonConfiguration(this IServiceCollection services)
+    public static IServiceCollection AddApiJsonConfiguration(this IServiceCollection services)
     {
-        services.AddControllers().AddJsonOptions(options => options
-            .JsonSerializerOptions
-            .DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
+        services.Configure<JsonOptions>(options =>
+            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
+
+        services.ConfigureHttpJsonOptions(options =>
+            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
 
         return services;
     }

@@ -15,9 +15,9 @@ const VARIANTS: Readonly<Record<ButtonVariant, string>> = {
 };
 
 const SIZES: Readonly<Record<ButtonSize, string>> = {
-  sm: 'gap-1.5 px-3 py-1.5 text-xs',
-  md: 'gap-2 px-4 py-2 text-sm',
-  lg: 'gap-2 px-5 py-2.5 text-base',
+  sm: 'gap-1.5 px-3 py-2 text-xs min-h-[36px]',
+  md: 'gap-2 px-4 py-2.5 text-sm min-h-[44px]',
+  lg: 'gap-2 px-5 py-3 text-base min-h-[48px]',
 };
 
 @Component({

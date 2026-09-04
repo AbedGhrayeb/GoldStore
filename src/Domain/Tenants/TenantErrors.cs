@@ -59,4 +59,24 @@ public static class TenantErrors
     public static Error TransitionDateRequired(TenantStatus target) => Error.Validation(
         "Tenants.Status.TransitionDate.Required",
         $"يجب تحديد تاريخ الانتقال لحالة {target}");
+
+    public static Error InvalidPlanDuration => Error.Validation(
+        "Tenants.Plan.Duration.Invalid",
+        "مدة الخطة يجب أن تكون بين 1 و 60 شهراً.");
+
+    public static Error InvalidTrialDuration => Error.Validation(
+        "Tenants.Plan.TrialDuration.Invalid",
+        "الخطة التجريبية يجب أن تكون مدتها شهر واحد فقط.");
+
+    public static Error InvalidPlanPrice => Error.Validation(
+        "Tenants.Plan.Price.Invalid",
+        "سعر الخطة يجب أن يكون صفر أو أكثر.");
+
+    public static Error InvalidDiscountPercent => Error.Validation(
+        "Tenants.Plan.Discount.Invalid",
+        "نسبة الخصم يجب أن تكون بين 0 و 100.");
+
+    public static Error TrialCannotRenew => Error.Validation(
+        "Tenants.Plan.TrialCannotRenew",
+        "خطة التجربة لا يمكن تجديدها، يجب الترقية إلى خطة مدفوعة.");
 }

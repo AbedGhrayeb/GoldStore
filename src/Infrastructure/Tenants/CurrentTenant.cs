@@ -112,11 +112,7 @@ internal sealed class CurrentTenant(
             return _enabledFeatures;
         }
 
-        (Guid TenantId, string TenantKey)? resolved = Resolve();
-        if (resolved is null)
-        {
-            throw new CurrentTenantUnavailableException();
-        }
+        (Guid TenantId, string TenantKey)? resolved = Resolve() ?? throw new CurrentTenantUnavailableException();
 
         IApplicationDbContext context = serviceProvider.GetRequiredService<IApplicationDbContext>();
 

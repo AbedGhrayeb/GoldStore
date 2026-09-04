@@ -23,11 +23,18 @@ internal sealed class PermissionProvider(IApplicationDbContext context)
                                     join role in context.Roles on userRole.RoleId equals role.Id
                                     select role.Key).Distinct().ToListAsync(cancellationToken);
 
-        List<string> permissions = await (from userRole in context.UserRoles.IgnoreQueryFilters()
-                                          where userRole.UserId == userId && userRole.TenantId == tenantId
-                                          join rolePermission in context.RolePermissions on userRole.RoleId equals rolePermission.RoleId
-                                          join permission in context.Permissions on rolePermission.PermissionId equals permission.Id
-                                          select permission.Key).Distinct().ToListAsync(cancellationToken);
+        List<string> rolePermissions = await (from userRole in context.UserRoles.IgnoreQueryFilters()
+                                              where userRole.UserId == userId && userRole.TenantId == tenantId
+                                              join rolePermission in context.RolePermissions on userRole.RoleId equals rolePermission.RoleId
+                                              join permission in context.Permissions on rolePermission.PermissionId equals permission.Id
+                                              select permission.Key).Distinct().ToListAsync(cancellationToken);
+
+        List<string> directPermissions = await (from userPerm in context.UserPermissions.IgnoreQueryFilters()
+                                                where userPerm.UserId == userId && userPerm.TenantId == tenantId
+                                                join permission in context.Permissions on userPerm.PermissionId equals permission.Id
+                                                select permission.Key).Distinct().ToListAsync(cancellationToken);
+
+        var permissions = rolePermissions.Concat(directPermissions).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
         return new UserAuthorizationInfo(roles, permissions);
     }

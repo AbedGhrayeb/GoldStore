@@ -1,6 +1,7 @@
 using Application.Abstractions.Messaging;
 using Application.Categories;
 using Application.Categories.Create;
+using Application.Categories.Delete;
 using Application.Categories.GetAll;
 using Application.Categories.ToggleActive;
 using Application.Categories.Update;
@@ -27,7 +28,8 @@ public sealed class CategoriesEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status500InternalServerError)
-            .RequireAuthorization($"feature:{Features.Catalog}");
+            .RequireAuthorization($"feature:{Features.Catalog}")
+            .RequireAuthorization("inventory.view");
 
         group.MapGet("/", GetCategories)
             .WithName(nameof(GetCategories))
@@ -37,6 +39,7 @@ public sealed class CategoriesEndpoints : IEndpoint
 
 
         group.MapPost("/", CreateCategory)
+            .RequireAuthorization("inventory.manage")
             .WithName(nameof(CreateCategory))
             .WithSummary("Create a new category.")
             .WithDescription("Creates a new category for the current tenant. The category name must be unique within its parent category.")
@@ -45,6 +48,7 @@ public sealed class CategoriesEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPut("/{id:guid}", UpdateCategory)
+            .RequireAuthorization("inventory.manage")
             .WithName(nameof(UpdateCategory))
             .WithSummary("Update a category.")
             .WithDescription("Updates an existing category for the current tenant. The category name must be unique within its parent category.")
@@ -54,9 +58,19 @@ public sealed class CategoriesEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPost("/{id:guid}/toggle-active", ToggleActiveCategory)
-            .WithName(nameof(ToggleActiveCategory))
-            .WithSummary("Toggle a category's active state.")
-            .WithDescription("Toggles the active state of an existing category for the current tenant.")
+                    .RequireAuthorization("inventory.manage")
+                    .WithName(nameof(ToggleActiveCategory))
+                    .WithSummary("Toggle a category's active state.")
+                    .WithDescription("Toggles the active state of an existing category for the current tenant.")
+                    .Produces(StatusCodes.Status200OK)
+                    .ProducesProblem(StatusCodes.Status404NotFound)
+                    .ProducesProblem(StatusCodes.Status409Conflict);
+
+        group.MapDelete("/{id:guid}", DeleteCategory)
+            .RequireAuthorization("inventory.manage")
+            .WithName(nameof(DeleteCategory))
+            .WithSummary("Delete a category.")
+            .WithDescription("Deletes a category for the current tenant. Fails when the category has children or is referenced by sales or purchase invoice items.")
             .Produces(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
@@ -98,12 +112,23 @@ public sealed class CategoriesEndpoints : IEndpoint
     }
 
     private static async Task<IResult> ToggleActiveCategory(
+            Guid id,
+            ICommandDispatcher dispatcher,
+            CancellationToken cancellationToken)
+    {
+        Result<Updated> result = await dispatcher.DispatchAsync<ToggleActiveCategoryCommand, Updated>(
+            new ToggleActiveCategoryCommand(id), cancellationToken);
+
+        return ApiResults.From(result);
+    }
+
+    private static async Task<IResult> DeleteCategory(
         Guid id,
         ICommandDispatcher dispatcher,
         CancellationToken cancellationToken)
     {
-        Result<Updated> result = await dispatcher.DispatchAsync<ToggleActiveCategoryCommand, Updated>(
-            new ToggleActiveCategoryCommand(id), cancellationToken);
+        Result<Deleted> result = await dispatcher.DispatchAsync<DeleteCategoryCommand, Deleted>(
+            new DeleteCategoryCommand(id), cancellationToken);
 
         return ApiResults.From(result);
     }

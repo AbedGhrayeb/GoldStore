@@ -21,7 +21,9 @@ internal sealed class GetUsersQueryHandler(IApplicationDbContext context, ICurre
                  Id = u.Id,
                  FirstName = u.FirstName,
                  LastName = u.LastName,
-                 Email = u.Email
+                 Email = u.Email,
+                 PhoneNumber = u.PhoneNumber,
+                 WhatsappNumber = u.WhatsappNumber
              })
              .ToListAsync(cancellationToken);
 

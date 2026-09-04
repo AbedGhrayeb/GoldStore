@@ -21,6 +21,7 @@ public sealed class FinanceTransactionsEndpoints : IEndpoint
             .WithTags("Finance Transactions")
             .RequireAuthorization()
             .RequireAuthorization($"feature:{Features.Finance}")
+            .RequireAuthorization("finance.view")
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status500InternalServerError);

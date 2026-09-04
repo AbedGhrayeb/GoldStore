@@ -38,6 +38,10 @@ public static class CustomerPurchaseInvoiceErrors
         "CustomerPurchaseInvoices.AccountDoesNotMatchPayment",
         "الحساب المطلوب غير مطابق للدفع");
 
+    public static Error NotFound(Guid id) => Error.NotFound(
+        "CustomerPurchaseInvoices.NotFound",
+        "فاتورة الشراء غير موجودة");
+
     public static readonly Error DatabaseError = Error.Failure(
         "CustomerPurchaseInvoices.DatabaseError",
         "حدث خطأ غير متوقع أثناء حفظ فاتورة الشراء");

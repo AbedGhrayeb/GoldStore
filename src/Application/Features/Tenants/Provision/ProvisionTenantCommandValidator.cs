@@ -14,8 +14,10 @@ internal sealed class ProvisionTenantCommandValidator : AbstractValidator<Provis
         RuleFor(x => x.AdminLastName).NotEmpty().MaximumLength(100);
         RuleFor(x => x.AdminEmail).NotEmpty().EmailAddress();
         RuleFor(x => x.AdminPassword).NotEmpty().MinimumLength(6);
+        RuleFor(x => x.AdminPhoneNumber).MaximumLength(30).Matches(@"^[0-9+\-\s\(\)]*$").When(x => !string.IsNullOrWhiteSpace(x.AdminPhoneNumber)).WithMessage("رقم الهاتف غير صالح");
+        RuleFor(x => x.AdminWhatsappNumber).MaximumLength(30).Matches(@"^[0-9+\-\s\(\)]*$").When(x => !string.IsNullOrWhiteSpace(x.AdminWhatsappNumber)).WithMessage("رقم الواتساب غير صالح");
         RuleFor(x => x.SubscriptionPlanId).NotEmpty();
         RuleFor(x => x.StartsAtUtc).NotEmpty();
-        RuleFor(x => x.EndsAtUtc).GreaterThan(x => x.StartsAtUtc);
+        RuleFor(x => x.EndsAtUtc).GreaterThan(x => x.StartsAtUtc).When(x => x.EndsAtUtc != default);
     }
 }

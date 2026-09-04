@@ -20,7 +20,7 @@ internal sealed class GetDebtsQueryHandler(IApplicationDbContext context, ICurre
 
     public async Task<Result<PaginatedList<DebtResponse>>> Handle(GetDebtsQuery query, CancellationToken cancellationToken)
     {
-        IQueryable<Debt> debtsQuery = context.Debts.OrderByDescending(d=>d.CreatedAtUtc).AsNoTracking().Where(d => d.TenantId == currentTenant.TenantId);
+        IQueryable<Debt> debtsQuery = context.Debts.OrderByDescending(d => d.CreatedAtUtc).AsNoTracking().Where(d => d.TenantId == currentTenant.TenantId);
 
         if (!string.IsNullOrWhiteSpace(query.Direction) &&
             Enum.TryParse<DebtDirection>(query.Direction, out DebtDirection direction))

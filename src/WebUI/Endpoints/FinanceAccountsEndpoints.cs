@@ -25,6 +25,7 @@ public sealed class FinanceAccountsEndpoints : IEndpoint
             .WithTags("Finance Accounts")
             .RequireAuthorization()
             .RequireAuthorization($"feature:{Features.Finance}")
+            .RequireAuthorization("finance.view")
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
@@ -43,12 +44,14 @@ public sealed class FinanceAccountsEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/", CreateAccount)
+                    .RequireAuthorization("finance.manage")
             .WithSummary("Create a financial account.")
             .Produces<Guid>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPut("/{id:guid}/balance", SetAccountBalance)
+                    .RequireAuthorization("finance.manage")
             .WithSummary("Set a financial account balance through a ledger adjustment.")
             .Produces<Updated>(StatusCodes.Status200OK)
             .ProducesValidationProblem()

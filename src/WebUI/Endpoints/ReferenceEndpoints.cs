@@ -1,3 +1,4 @@
+using Application.Abstractions.Caching;
 using Domain.Common;
 using Microsoft.AspNetCore.Builder;
 
@@ -8,7 +9,7 @@ namespace WebUI.Endpoints;
 /// hardcoded domain lists (<see cref="SupportedValues"/>), not database tables, so these
 /// routes return them directly without a dispatcher. Auth only — no feature gate.
 /// </summary>
-public sealed class ReferenceEndpoints : IEndpoint
+public sealed class ReferenceEndpoints(ICacheService cache) : IEndpoint
 {
     public void Map(IEndpointRouteBuilder app)
     {
@@ -25,8 +26,10 @@ public sealed class ReferenceEndpoints : IEndpoint
             .Produces<CurrencyReference[]>(StatusCodes.Status200OK);
     }
 
-    private static IResult GetKarats()
+    private IResult GetKarats()
     {
+        _ = cache;
+
         KaratReference[] karats = SupportedValues.Karats
             .Select(karat => new KaratReference((int)karat, karat.KaratLabel()))
             .ToArray();
@@ -34,8 +37,10 @@ public sealed class ReferenceEndpoints : IEndpoint
         return TypedResults.Ok(karats);
     }
 
-    private static IResult GetCurrencies()
+    private IResult GetCurrencies()
     {
+        _ = cache;
+
         CurrencyReference[] currencies = SupportedValues.Currencies
             .Select(currency => new CurrencyReference(
                 (int)currency,

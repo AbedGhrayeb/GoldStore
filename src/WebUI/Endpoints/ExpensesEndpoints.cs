@@ -30,6 +30,7 @@ public sealed class ExpensesEndpoints : IEndpoint
             .WithTags("Expenses")
             .RequireAuthorization()
             .RequireAuthorization($"feature:{Features.Expenses}")
+            .RequireAuthorization("expenses.view")
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
@@ -44,6 +45,7 @@ public sealed class ExpensesEndpoints : IEndpoint
             .Produces<ExpenseKpiResponse>(StatusCodes.Status200OK);
 
         group.MapPost("/", CreateExpense)
+                    .RequireAuthorization("expenses.manage")
             .WithSummary("Create an expense and its financial outflow.")
             .Produces<Guid>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
@@ -51,6 +53,7 @@ public sealed class ExpensesEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPut("/{id:guid}", UpdateExpense)
+                    .RequireAuthorization("expenses.manage")
             .WithSummary("Update an expense and its financial outflow.")
             .Produces<Updated>(StatusCodes.Status200OK)
             .ProducesValidationProblem()
@@ -58,6 +61,7 @@ public sealed class ExpensesEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapDelete("/{id:guid}", DeleteExpense)
+                    .RequireAuthorization("expenses.manage")
             .WithSummary("Delete an expense and its financial outflow.")
             .Produces<Deleted>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound);
@@ -67,12 +71,14 @@ public sealed class ExpensesEndpoints : IEndpoint
             .Produces<List<ExpenseCategoryResponse>>(StatusCodes.Status200OK);
 
         group.MapPost("/categories", CreateCategory)
+                    .RequireAuthorization("expenses.manage")
             .WithSummary("Create an expense category.")
             .Produces<Guid>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPut("/categories/{id:guid}", UpdateCategory)
+                    .RequireAuthorization("expenses.manage")
             .WithSummary("Update an expense category.")
             .Produces<Updated>(StatusCodes.Status200OK)
             .ProducesValidationProblem()
@@ -80,6 +86,7 @@ public sealed class ExpensesEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapDelete("/categories/{id:guid}", DeleteCategory)
+                    .RequireAuthorization("expenses.manage")
             .WithSummary("Delete an unused expense category.")
             .Produces<Deleted>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound)

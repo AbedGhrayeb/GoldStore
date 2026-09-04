@@ -150,7 +150,7 @@ internal sealed class CreateSalesInvoiceCommandHandler(
             context.SalesInvoices.Add(invoiceResult.Value);
             await context.SalesInvoiceItems.AddRangeAsync(Items, cancellationToken);
 
-            foreach (var karatGroup in Items.GroupBy(i => i.Karat))
+            foreach (IGrouping<Karat, SalesInvoiceItem> karatGroup in Items.GroupBy(i => i.Karat))
             {
                 decimal required = karatGroup.Sum(i => i.WeightInGrams);
                 decimal available = await context.GetGoldStockAsync(karatGroup.Key, cancellationToken);
