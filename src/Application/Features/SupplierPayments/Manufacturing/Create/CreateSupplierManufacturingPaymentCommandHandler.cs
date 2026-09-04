@@ -6,6 +6,7 @@ using Domain.Common;
 using Domain.Finance;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
+using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -19,7 +20,8 @@ internal sealed class CreateSupplierManufacturingPaymentCommandHandler(
 {
     public async Task<Result<Guid>> Handle(CreateSupplierManufacturingPaymentCommand command, CancellationToken cancellationToken)
     {
-        Supplier? supplier = await context.Suppliers.FindAsync([command.SupplierId], cancellationToken);
+        Supplier? supplier = await context.Suppliers
+            .FirstOrDefaultAsync(s => s.Id == command.SupplierId, cancellationToken);
 
         if (supplier is null)
         {
@@ -31,7 +33,9 @@ internal sealed class CreateSupplierManufacturingPaymentCommandHandler(
             return SupplierErrors.SupplierNotActive;
         }
 
-        FinancialAccount? account = await context.FinancialAccounts.FindAsync([command.AccountId], cancellationToken);
+        FinancialAccount? account = await context.FinancialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == command.AccountId, cancellationToken);
 
         if (account is null)
         {

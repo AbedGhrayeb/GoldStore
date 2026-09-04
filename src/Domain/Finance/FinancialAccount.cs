@@ -4,8 +4,10 @@ using SharedKernel.Result;
 
 namespace Domain.Finance;
 
-public sealed class FinancialAccount : AuditableEntity
+public sealed class FinancialAccount : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
     public string Name { get; private set; }
 
     public Currency Currency { get; private set; }

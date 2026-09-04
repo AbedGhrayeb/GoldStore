@@ -1,47 +1,67 @@
 using System.Security.Claims;
 using System.Text;
 using Application.Abstractions.Authentication;
-using Application.Features.Platform.Auth.PlatformAdminLogin;
+using Application.Abstractions.Data;
 using Domain.Tenants;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using SharedKernel;
-using SharedKernel.Result;
 
 namespace Infrastructure.Authentication;
 
-internal sealed class PlatformTokenProvider(IConfiguration configuration, IDateTimeProvider dateTimeProvider)
-    : IPlatformTokenProvider
+/// <summary>
+/// Issues short-lived JWTs for platform administrators. The token has no tenant claims, which
+/// keeps host identities isolated from tenant endpoints at the authentication boundary.
+/// </summary>
+internal sealed class PlatformTokenProvider(
+    IConfiguration configuration,
+    IApplicationDbContext context,
+    IDateTimeProvider dateTimeProvider) : IPlatformTokenProvider
 {
-    public const string PlatformAdminRole = "PlatformAdmin";
-
-    public Task<Result<PlatformAdminLoginResponse>> CreateAsync(PlatformAdmin platformAdmin, CancellationToken ct)
+    public async Task<PlatformAccessTokenResponse> CreateAccessTokenAsync(
+        Guid platformUserId,
+        CancellationToken cancellationToken)
     {
-        IConfigurationSection jwtSettings = configuration.GetSection("Jwt");
+        PlatformUser user = await context.PlatformUsers
+            .AsNoTracking()
+            .SingleOrDefaultAsync(platformUser => platformUser.Id == platformUserId, cancellationToken)
+            ?? throw new InvalidOperationException($"Cannot issue a token for unknown platform user '{platformUserId}'.");
 
-        DateTime expires = dateTimeProvider.UtcNow.AddMinutes(configuration.GetValue<int>("Jwt:ExpirationInMinutes"));
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Secret"]!));
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
+        string secretKey = configuration["Jwt:Secret"]!;
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+        DateTime expiresAt = dateTimeProvider.UtcNow.AddMinutes(
+            configuration.GetValue("Jwt:ExpirationInMinutes", defaultValue: 60));
+
+        List<Claim> claims =
+        [
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email),
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}".Trim()),
+            new(ClaimTypes.Email, user.Email),
+            new(CustomClaims.IsHost, bool.TrueString),
+        ];
+
+        if (user.TwoFactorEnabled && user.PhoneNumberVerified)
+        {
+            claims.Add(new Claim("amr", "mfa"));
+        }
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(
-            [
-                new Claim(JwtRegisteredClaimNames.Sub, platformAdmin.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, platformAdmin.Email),
-                new Claim(ClaimTypes.Role, PlatformAdminRole)
-            ]),
-            Expires = expires,
+            Subject = new ClaimsIdentity(claims),
+            Expires = expiresAt,
+            IssuedAt = dateTimeProvider.UtcNow,
             SigningCredentials = credentials,
-            Issuer = jwtSettings["Issuer"],
-            Audience = jwtSettings["PlatformAudience"]
+            Issuer = configuration["Jwt:Issuer"],
+            Audience = configuration["Jwt:Audience"],
         };
 
-        var handler = new JsonWebTokenHandler();
-
-        var response = new PlatformAdminLoginResponse(handler.CreateToken(tokenDescriptor), expires);
-
-        return Task.FromResult<Result<PlatformAdminLoginResponse>>(response);
+        string token = new JsonWebTokenHandler().CreateToken(tokenDescriptor);
+        return new PlatformAccessTokenResponse(token, new DateTimeOffset(expiresAt, TimeSpan.Zero));
     }
 }

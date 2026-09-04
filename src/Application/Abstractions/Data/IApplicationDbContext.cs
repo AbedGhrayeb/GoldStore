@@ -1,4 +1,6 @@
-﻿using Domain.Catalog;
+﻿using Domain.Authorization;
+using Domain.Catalog;
+using Domain.Common;
 using Domain.CustomerPurchases;
 using Domain.Debts;
 using Domain.Employees;
@@ -8,8 +10,8 @@ using Domain.Inventory;
 using Domain.Sales;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
+using Domain.Tenants;
 using Domain.Users;
-using Domain.Users.RefreshToken;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Abstractions.Data;
@@ -22,6 +24,7 @@ public interface IApplicationDbContext
     DbSet<FinancialTransaction> FinancialTransactions { get; }
     DbSet<FinancialAccount> FinancialAccounts { get; }
     DbSet<Category> Categories { get; }
+    DbSet<InvoiceNumberSequence> InvoiceNumberSequences { get; }
     DbSet<GoldLedgerEntry> GoldLedgerEntries { get; }
     DbSet<InventoryAdjustment> InventoryAdjustments { get; }
     DbSet<Supplier> Suppliers { get; }
@@ -47,7 +50,32 @@ public interface IApplicationDbContext
     DbSet<CustomerPurchaseInvoice> CustomerPurchaseInvoices { get; }
 
     DbSet<CustomerPurchaseInvoiceItem> CustomerPurchaseInvoiceItems { get; }
+
+    DbSet<Permission> Permissions { get; }
+
+    DbSet<Role> Roles { get; }
+
+    DbSet<RolePermission> RolePermissions { get; }
+
+    DbSet<UserRole> UserRoles { get; }
+
+    DbSet<UserPermission> UserPermissions { get; }
+
     DbSet<RefreshToken> RefreshTokens { get; }
+
+    DbSet<UserRecoveryCode> UserRecoveryCodes { get; }
+
+    DbSet<PlatformRecoveryCode> PlatformRecoveryCodes { get; }
+
+    DbSet<Tenant> Tenants { get; }
+
+    DbSet<TenantSettings> TenantSettings { get; }
+
+    DbSet<TenantSubscription> TenantSubscriptions { get; }
+
+    DbSet<SubscriptionPlan> SubscriptionPlans { get; }
+
+    DbSet<PlatformUser> PlatformUsers { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

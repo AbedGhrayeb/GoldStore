@@ -1,19 +1,20 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Result;
 
 namespace Application.Finance.Accounts.GetWithBalance;
 
-internal sealed class GetAccountsWithBalancesQueryHandler(IApplicationDbContext context)
+internal sealed class GetAccountsWithBalancesQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetAccountsWithBalancesQuery, List<AccountWithBalanceResponse>>
 {
     public async Task<Result<List<AccountWithBalanceResponse>>> Handle(
         GetAccountsWithBalancesQuery query,
         CancellationToken cancellationToken)
     {
-        IQueryable<FinancialAccount> accounts = context.FinancialAccounts.AsNoTracking();
+        IQueryable<FinancialAccount> accounts = context.FinancialAccounts.AsNoTracking().Where(a => a.TenantId == currentTenant.TenantId);
 
         if (query.ActiveOnly)
         {
@@ -40,7 +41,7 @@ internal sealed class GetAccountsWithBalancesQueryHandler(IApplicationDbContext 
 
         var balanceData = await context.FinancialTransactions
             .AsNoTracking()
-            .Where(t => accountIds.Contains(t.AccountId))
+            .Where(t => t.TenantId == currentTenant.TenantId && accountIds.Contains(t.AccountId))
             .GroupBy(t => t.AccountId)
             .Select(g => new
             {
@@ -54,7 +55,7 @@ internal sealed class GetAccountsWithBalancesQueryHandler(IApplicationDbContext 
 
         var allTransactions = await context.FinancialTransactions
             .AsNoTracking()
-            .Where(t => accountIds.Contains(t.AccountId))
+            .Where(t => t.TenantId == currentTenant.TenantId && accountIds.Contains(t.AccountId))
             .OrderByDescending(t => t.CreatedAtUtc)
             .Select(t => new { t.AccountId, t.Amount, t.TransactionType })
             .ToListAsync(cancellationToken);

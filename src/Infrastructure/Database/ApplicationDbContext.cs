@@ -1,6 +1,9 @@
-﻿using Application.Abstractions.Data;
-using Application.Abstractions.Tenancy;
+﻿using System.Reflection;
+using Application.Abstractions.Data;
+using Application.Abstractions.Tenants;
+using Domain.Authorization;
 using Domain.Catalog;
+using Domain.Common;
 using Domain.CustomerPurchases;
 using Domain.Debts;
 using Domain.Employees;
@@ -10,31 +13,22 @@ using Domain.Inventory;
 using Domain.Sales;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
+using Domain.Tenants;
 using Domain.Users;
-using Domain.Users.RefreshToken;
 using Infrastructure.DomainEvents;
-using Infrastructure.Platform;
+using Infrastructure.Tenants;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using SharedKernel;
 
 namespace Infrastructure.Database;
 
 public sealed class ApplicationDbContext(
     DbContextOptions<ApplicationDbContext> options,
-    ITenantContext tenantContext,
-    IDomainEventsDispatcher domainEventsDispatcher)
+    IDomainEventsDispatcher domainEventsDispatcher,
+    ICurrentTenant currentTenant)
     : DbContext(options), IApplicationDbContext
 {
-    /// <summary>
-    /// Schema baked into tenant migrations at design time (no tenant resolved).
-    /// The migration runner replaces it with the real tenant schema when executing scripts.
-    /// </summary>
-    internal const string PlaceholderSchema = "$tenant";
-
-    /// <summary>The schema this context instance maps to — the resolved tenant's schema,
-    /// or <see cref="PlaceholderSchema"/> at design time / when no tenant is resolved.</summary>
-    internal string SchemaName => tenantContext.IsResolved ? tenantContext.SchemaName : PlaceholderSchema;
-
     public DbSet<User> Users { get; set; }
 
     public DbSet<Employee> Employees { get; set; }
@@ -46,6 +40,8 @@ public sealed class ApplicationDbContext(
     public DbSet<FinancialAccount> FinancialAccounts { get; set; }
 
     public DbSet<Category> Categories { get; set; }
+
+    public DbSet<InvoiceNumberSequence> InvoiceNumberSequences { get; set; }
 
     public DbSet<GoldLedgerEntry> GoldLedgerEntries { get; set; }
 
@@ -85,20 +81,67 @@ public sealed class ApplicationDbContext(
 
     public DbSet<CustomerPurchaseInvoiceItem> CustomerPurchaseInvoiceItems { get; set; }
 
-    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Permission> Permissions { get; set; }
+
+    public DbSet<Role> Roles { get; set; }
+
+    public DbSet<RolePermission> RolePermissions { get; set; }
+
+    public DbSet<UserRole> UserRoles { get; set; }
+
+    public DbSet<UserPermission> UserPermissions { get; set; }
+
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+
+    public DbSet<UserRecoveryCode> UserRecoveryCodes { get; set; }
+
+    public DbSet<PlatformRecoveryCode> PlatformRecoveryCodes { get; set; }
+
+    public DbSet<Tenant> Tenants { get; set; }
+
+    public DbSet<TenantSettings> TenantSettings { get; set; }
+
+    public DbSet<TenantSubscription> TenantSubscriptions { get; set; }
+
+    public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
+
+    public DbSet<PlatformUser> PlatformUsers { get; set; }
+
+    /// <summary>
+    /// The tenant applied by the global query filters. Read from the scoped
+    /// <see cref="ICurrentTenant"/> at query time, never captured at model-build
+    /// time. Deny by default: when no tenant is available the filters match nothing.
+    /// </summary>
+    private Guid CurrentTenantId => currentTenant.IsAvailable ? currentTenant.TenantId : Guid.Empty;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Schema-per-tenant: every tenant entity lives in the resolved tenant's schema.
-        // Combined with TenantModelCacheKeyFactory, EF caches one model per schema.
-        modelBuilder.HasDefaultSchema(SchemaName);
-
-        // Exclude platform configurations (Infrastructure.Platform) — catalog entities
-        // (Tenant, Plan, Subscription, PlatformAdmin) belong only to PlatformDbContext.
-        modelBuilder.ApplyConfigurationsFromAssembly(
-            typeof(ApplicationDbContext).Assembly,
-            type => type.Namespace != typeof(PlatformDbContext).Namespace);
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+        modelBuilder.ApplyTenantOwnership();
+        ApplyTenantQueryFilters(modelBuilder);
     }
+
+    private void ApplyTenantQueryFilters(ModelBuilder modelBuilder)
+    {
+        foreach (IMutableEntityType entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (!typeof(ITenantEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                continue;
+            }
+
+            SetTenantQueryFilterMethod.MakeGenericMethod(entityType.ClrType).Invoke(this, [modelBuilder]);
+        }
+    }
+
+    private static readonly MethodInfo SetTenantQueryFilterMethod = typeof(ApplicationDbContext)
+        .GetMethod(nameof(SetTenantQueryFilter), BindingFlags.NonPublic | BindingFlags.Instance)
+        ?? throw new InvalidOperationException("SetTenantQueryFilter method not found.");
+
+    private void SetTenantQueryFilter<TEntity>(ModelBuilder modelBuilder)
+        where TEntity : class, ITenantEntity =>
+        modelBuilder.Entity<TEntity>().HasQueryFilter(e => e.TenantId == CurrentTenantId);
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

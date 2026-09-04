@@ -1,25 +1,25 @@
-﻿using Domain.Users.RefreshToken;
+using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.Users;
 
-internal class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
+internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
 {
-
-
     public void Configure(EntityTypeBuilder<RefreshToken> builder)
     {
-        builder.ToTable("RefreshTokens");
+        builder.HasKey(token => token.Id);
+        builder.Property(token => token.TokenHash).HasMaxLength(128).IsRequired();
+        builder.Property(token => token.UserId).IsRequired();
+        builder.Property(token => token.TenantId).IsRequired();
+        builder.Property(token => token.ReplacedByTokenHash).HasMaxLength(128);
+        builder.Ignore(token => token.IsUsable);
 
-        builder.HasKey(rt => rt.Id).IsClustered(false);
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(token => token.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Property(rt => rt.Token).HasMaxLength(200);
-
-        builder.HasIndex(rt => rt.Token).IsUnique();
-
-        builder.Property(rt => rt.UserId).IsRequired();
-
-        builder.Property(rt => rt.ExpiresOnUtc).IsRequired();
+        builder.HasIndex(token => token.TokenHash).IsUnique();
     }
 }

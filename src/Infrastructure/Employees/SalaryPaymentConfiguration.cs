@@ -28,7 +28,7 @@ internal sealed class SalaryPaymentConfiguration : IEntityTypeConfiguration<Sala
             .HasForeignKey(p => p.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(p => new { p.EmployeeId, p.PaymentDate });
-        builder.HasIndex(p => new { p.PaymentDate });
+        builder.HasIndex(p => new { p.TenantId, p.EmployeeId, p.PaymentDate });
+        builder.HasIndex(p => new { p.TenantId, p.PaymentDate });
     }
 }

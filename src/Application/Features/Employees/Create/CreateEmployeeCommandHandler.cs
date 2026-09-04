@@ -1,6 +1,7 @@
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Employees;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,10 @@ using SharedKernel.Result;
 
 namespace Application.Employees.Create;
 
-internal sealed class CreateEmployeeCommandHandler(IApplicationDbContext context, IPasswordHasher passwordHasher)
+internal sealed class CreateEmployeeCommandHandler(
+    IApplicationDbContext context,
+    IPasswordHasher passwordHasher,
+    ICurrentTenant currentTenant)
     : ICommandHandler<CreateEmployeeCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateEmployeeCommand command, CancellationToken cancellationToken)
@@ -67,18 +71,20 @@ internal sealed class CreateEmployeeCommandHandler(IApplicationDbContext context
 
     private async Task<Result<Guid>> CreateUserAsync(CreateEmployeeCommand command, CancellationToken cancellationToken)
     {
-        if (await context.Users.AnyAsync(u => u.Email == command.NewUserEmail, cancellationToken))
+        // Email addresses are unique system-wide, so the uniqueness check must
+        // bypass the tenant query filter.
+        if (await context.Users.IgnoreQueryFilters().AnyAsync(u => u.Email == command.NewUserEmail, cancellationToken))
         {
             return UserErrors.EmailNotUnique;
         }
 
         Result<User> userResult = User.Create(
             Guid.CreateVersion7(),
+            currentTenant.TenantId,
             command.NewUserEmail!,
             command.FirstName,
             command.LastName,
-            passwordHasher.Hash(command.NewUserPassword!),
-            command.Role.ToString());
+            passwordHasher.Hash(command.NewUserPassword!));
 
         if (userResult.IsError)
         {

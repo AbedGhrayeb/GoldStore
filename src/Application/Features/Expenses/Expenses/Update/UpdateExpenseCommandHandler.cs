@@ -13,13 +13,16 @@ internal sealed class UpdateExpenseCommandHandler(IApplicationDbContext context)
 {
     public async Task<Result<Updated>> Handle(UpdateExpenseCommand command, CancellationToken cancellationToken)
     {
-        Expense? expense = await context.Expenses.FindAsync([command.Id], cancellationToken);
+        Expense? expense = await context.Expenses
+            .FirstOrDefaultAsync(e => e.Id == command.Id, cancellationToken);
         if (expense is null)
         {
             return ExpenseErrors.NotFound(command.Id);
         }
 
-        FinancialAccount? account = await context.FinancialAccounts.FindAsync([command.AccountId], cancellationToken);
+        FinancialAccount? account = await context.FinancialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == command.AccountId, cancellationToken);
         if (account is null)
         {
             return Error.NotFound("Finance.AccountNotFound", "حساب الدفع غير موجود");
@@ -54,12 +57,13 @@ internal sealed class UpdateExpenseCommandHandler(IApplicationDbContext context)
         }
 
         FinancialTransaction? existingTransaction = await context.FinancialTransactions
-       .AsNoTracking()
-       .FirstOrDefaultAsync(t => t.ReferenceType == FinancialReferenceType.Expense && t.ReferenceId == expense.Id, cancellationToken);
+            .FirstOrDefaultAsync(
+                t => t.ReferenceType == FinancialReferenceType.Expense && t.ReferenceId == expense.Id,
+                cancellationToken);
 
         if (existingTransaction is not null)
         {
-            Result<Updated> financialTransactionsUpdateResult = existingTransaction.Update(command.Id, command.AccountId, account.Currency, command.Amount, FinancialTransactionType.Outflow,
+            Result<Updated> financialTransactionsUpdateResult = existingTransaction.Update(existingTransaction.Id, command.AccountId, account.Currency, command.Amount, FinancialTransactionType.Outflow,
             FinancialReferenceType.Expense, expense.Id, command.Description);
             if (financialTransactionsUpdateResult.IsError)
             {

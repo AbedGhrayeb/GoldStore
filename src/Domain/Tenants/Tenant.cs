@@ -1,120 +1,105 @@
-using System.Text.RegularExpressions;
 using SharedKernel;
 using SharedKernel.Result;
 
 namespace Domain.Tenants;
 
-public sealed partial class Tenant : Entity
+public sealed class Tenant : AuditableEntity
 {
-    private static readonly HashSet<string> ReservedSubdomains = new(StringComparer.Ordinal)
-    {
-        "www", "api", "app", "admin", "platform", "mail", "support", "goldstore"
-    };
-
     public string Name { get; private set; }
-    public string Subdomain { get; private set; }
-    public string SchemaName { get; private set; }
+
+    public string Key { get; private set; }
+
     public TenantStatus Status { get; private set; }
-    public Guid PlanId { get; private set; }
-    public string? SettingsJson { get; private set; }
+
     public DateTimeOffset? TrialEndsAtUtc { get; private set; }
-    public DateTimeOffset? SubscriptionExpiresAtUtc { get; private set; }
-    public string? ConnectionString { get; private set; }
-    public DateTimeOffset CreatedAtUtc { get; private set; }
 
-    private Tenant() { }
+    public DateTimeOffset? CancellationReadOnlyUntilUtc { get; private set; }
 
-    private Tenant(Guid id, string name, string subdomain, Guid planId, TenantStatus status, DateTimeOffset createdAtUtc, DateTimeOffset? trialEndsAtUtc)
-        : base(id)
+    private Tenant()
+    {
+        Name = string.Empty;
+        Key = string.Empty;
+    }
+
+    private Tenant(Guid id, string name, string key, TenantStatus status) : base(id)
     {
         Name = name;
-        Subdomain = subdomain;
-        SchemaName = ToSchemaName(subdomain);
-        PlanId = planId;
+        Key = key;
         Status = status;
-        CreatedAtUtc = createdAtUtc;
+    }
+
+    public static Result<Tenant> Create(string name, string key, TenantStatus status)
+    {
+        return Create(Guid.CreateVersion7(), name, key, status);
+    }
+
+    public static Result<Tenant> Create(Guid id, string name, string key, TenantStatus status)
+    {
+        if (id == Guid.Empty)
+        {
+            return TenantErrors.IdRequired;
+        }
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return TenantErrors.NameRequired;
+        }
+
+        string normalizedKey = (key ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(normalizedKey))
+        {
+            return TenantErrors.KeyRequired;
+        }
+
+        if (!IsValidKey(normalizedKey))
+        {
+            return TenantErrors.KeyInvalid;
+        }
+
+        return new Tenant(id, name.Trim(), normalizedKey, status);
+    }
+
+    public Result<Updated> StartTrial(DateTimeOffset trialEndsAtUtc)
+    {
+        if (trialEndsAtUtc <= DateTimeOffset.UtcNow)
+        {
+            return TenantErrors.InvalidSubscriptionPeriod;
+        }
+
+        Status = TenantStatus.Trial;
         TrialEndsAtUtc = trialEndsAtUtc;
-    }
-
-    public static Result<Tenant> Create(string name, string subdomain, Guid planId, DateTimeOffset createdAtUtc, DateTimeOffset? trialEndsAtUtc = null)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return TenantErrors.NameRequired;
-        }
-
-        string normalizedSubdomain = subdomain?.Trim().ToLowerInvariant() ?? string.Empty;
-
-        if (string.IsNullOrWhiteSpace(normalizedSubdomain))
-        {
-            return TenantErrors.SubdomainRequired;
-        }
-
-        if (!SubdomainRegex().IsMatch(normalizedSubdomain))
-        {
-            return TenantErrors.SubdomainInvalid;
-        }
-
-        if (ReservedSubdomains.Contains(normalizedSubdomain))
-        {
-            return TenantErrors.SubdomainReserved;
-        }
-
-        if (planId == Guid.Empty)
-        {
-            return TenantErrors.PlanRequired;
-        }
-
-        TenantStatus status = trialEndsAtUtc.HasValue ? TenantStatus.Trial : TenantStatus.Active;
-
-        return new Tenant(Guid.CreateVersion7(), name, normalizedSubdomain, planId, status, createdAtUtc, trialEndsAtUtc);
-    }
-
-    public Result<Updated> Update(string name, string? settingsJson)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return TenantErrors.NameRequired;
-        }
-
-        Name = name;
-        SettingsJson = settingsJson;
+        CancellationReadOnlyUntilUtc = null;
 
         return Result.Updated;
     }
 
-    public void ChangePlan(Guid planId)
+    public void Activate()
     {
-        PlanId = planId;
-    }
-
-    public Result<Updated> UpdateSettings(string? settingsJson)
-    {
-        SettingsJson = settingsJson;
-
-        return Result.Updated;
-    }
-
-    public void ChangeStatus(TenantStatus status)
-    {
-        Status = status;
-    }
-
-    public void RenewSubscription(DateTimeOffset expiresAtUtc)
-    {
-        SubscriptionExpiresAtUtc = expiresAtUtc;
         Status = TenantStatus.Active;
+        TrialEndsAtUtc = null;
+        CancellationReadOnlyUntilUtc = null;
     }
 
-    public void SetConnectionString(string? connectionString)
+    public Result<Updated> Cancel(DateTimeOffset readOnlyUntilUtc)
     {
-        ConnectionString = connectionString;
+        if (readOnlyUntilUtc <= DateTimeOffset.UtcNow)
+        {
+            return TenantErrors.InvalidSubscriptionPeriod;
+        }
+
+        Status = TenantStatus.Cancelled;
+        CancellationReadOnlyUntilUtc = readOnlyUntilUtc;
+
+        return Result.Updated;
     }
 
-    // SQL identifiers are always bracket-quoted when executed; additionally normalizing
-    // hyphens keeps the generated schema name a simple, safe identifier.
-    private static string ToSchemaName(string subdomain) => $"t_{subdomain.Replace('-', '_')}";
+    private static bool IsValidKey(string key)
+    {
+        if (key.Length is < 3 or > 63 || key[0] == '-' || key[^1] == '-')
+        {
+            return false;
+        }
 
-    [GeneratedRegex("^[a-z0-9]([a-z0-9-]{0,28}[a-z0-9])?$")]
-    private static partial Regex SubdomainRegex();
+        return key.All(character => char.IsAsciiLetterOrDigit(character) || character == '-');
+    }
 }

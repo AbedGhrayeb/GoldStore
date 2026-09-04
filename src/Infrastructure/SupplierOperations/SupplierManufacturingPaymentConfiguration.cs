@@ -27,6 +27,6 @@ internal sealed class SupplierManufacturingPaymentConfiguration : IEntityTypeCon
             .HasForeignKey(payment => payment.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(payment => new { payment.SupplierId, payment.CreatedAtUtc });
+        builder.HasIndex(payment => new { payment.TenantId, payment.SupplierId, payment.CreatedAtUtc });
     }
 }

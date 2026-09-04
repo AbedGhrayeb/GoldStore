@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Authentication;
+namespace Infrastructure.Authentication;
 
 public sealed class UserContextUnavailableException : Exception
 {

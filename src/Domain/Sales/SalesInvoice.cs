@@ -5,8 +5,10 @@ using SharedKernel.Result;
 
 namespace Domain.Sales;
 
-public sealed class SalesInvoice : AuditableEntity
+public sealed class SalesInvoice : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
     public string InvoiceNumber { get; private set; }
 
     public string CustomerName { get; private set; }

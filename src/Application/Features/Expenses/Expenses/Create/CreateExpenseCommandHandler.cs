@@ -13,7 +13,9 @@ internal sealed class CreateExpenseCommandHandler(IApplicationDbContext context)
 {
     public async Task<Result<Guid>> Handle(CreateExpenseCommand command, CancellationToken cancellationToken)
     {
-        FinancialAccount? account = await context.FinancialAccounts.FindAsync([command.AccountId], cancellationToken);
+        FinancialAccount? account = await context.FinancialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == command.AccountId, cancellationToken);
         if (account is null)
         {
             return ExpenseErrors.AccountNotFound(command.AccountId);

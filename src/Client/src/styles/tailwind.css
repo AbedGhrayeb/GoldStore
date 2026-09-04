@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+
+@source "../app";
+@source "../index.html";
+
+@theme {
+  --color-gold: #d4af37;
+  --color-gold-container: #ffe088;
+  --color-surface: #fcfafa;
+  --color-card: #ffffff;
+  --color-error: #ef4444;
+  --color-success: #10b981;
+  --font-sans: 'IBM Plex Sans Arabic', 'Segoe UI', system-ui, sans-serif;
+  --radius-input: 4px;
+  --radius-modal: 8px;
+}

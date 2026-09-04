@@ -31,6 +31,6 @@ internal sealed class SalesInvoiceItemConfiguration : IEntityTypeConfiguration<S
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
 
-        builder.HasIndex(i => i.SalesInvoiceId);
+        builder.HasIndex(i => new { i.TenantId, i.SalesInvoiceId });
     }
 }

@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Application.Common.Models;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
@@ -7,13 +8,13 @@ using SharedKernel.Result;
 
 namespace Application.Features.SalesInvoices.GetPaged;
 
-internal sealed class GetSalesInvoicesQueryHandler(IApplicationDbContext context)
+internal sealed class GetSalesInvoicesQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetSalesInvoicesQuery, PaginatedList<SalesInvoiceResponse>>
 {
     public async Task<Result<PaginatedList<SalesInvoiceResponse>>> Handle(GetSalesInvoicesQuery query, CancellationToken cancellationToken)
     {
         IQueryable<SalesInvoice> invoicesQuery = context.SalesInvoices.
-            Include(x => x.SaleInvoiceItems).AsNoTracking();
+            Include(x => x.SaleInvoiceItems).AsNoTracking().Where(i => i.TenantId == currentTenant.TenantId);
 
         if (query.FromDate.HasValue)
         {
@@ -49,7 +50,7 @@ internal sealed class GetSalesInvoicesQueryHandler(IApplicationDbContext context
 
         Dictionary<Guid, string> employeeNames = await context.Employees
             .AsNoTracking()
-            .Where(u => employeeIds.Contains(u.Id))
+            .Where(u => u.TenantId == currentTenant.TenantId && employeeIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => $"{u.FirstName} {u.LastName}", cancellationToken);
 
         int page = Math.Max(query.Page, 1);
@@ -64,7 +65,7 @@ internal sealed class GetSalesInvoicesQueryHandler(IApplicationDbContext context
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        List<SalesInvoiceResponse> items = pageItems.Select(invoice => new SalesInvoiceResponse
+        var items = pageItems.Select(invoice => new SalesInvoiceResponse
         {
             Id = invoice.Id,
             InvoiceNumber = invoice.InvoiceNumber,

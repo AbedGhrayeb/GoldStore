@@ -3,8 +3,10 @@ using SharedKernel;
 
 namespace Domain.Suppliers;
 
-public sealed class SupplierManufacturingLedgerEntry : AuditableEntity
+public sealed class SupplierManufacturingLedgerEntry : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
     public Guid SupplierId { get; private set; }
 
     public decimal Amount { get; private set; }

@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using SharedKernel.Result;
 
 namespace Application.Abstractions.Messaging;
 
 public interface IQueryDispatcher
 {
-    Task<TResult> DispatchAsync<TResult>(
-        IQuery<TResult> query,
-        CancellationToken cancellationToken = default);
+    Task<Result<TResult>> DispatchAsync<TQuery, TResult>(
+        TQuery query,
+        CancellationToken cancellationToken = default)
+        where TQuery : IQuery<TResult>;
 }

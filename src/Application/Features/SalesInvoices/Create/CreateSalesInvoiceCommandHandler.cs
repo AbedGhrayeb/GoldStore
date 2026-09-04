@@ -1,26 +1,48 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Services;
+using Application.Abstractions.Subscriptions;
 using Application.Common.Errors;
 using Application.Common.Ledger;
+using Domain.Catalog;
 using Domain.Common;
 using Domain.Debts;
+using Domain.Employees;
 using Domain.Finance;
 using Domain.Inventory;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SharedKernel.Result;
 
 namespace Application.Features.SalesInvoices.Create;
 
 internal sealed class CreateSalesInvoiceCommandHandler(
-    IApplicationDbContext context)
+    IApplicationDbContext context,
+    ISubscriptionGate subscriptionGate,
+    IInvoiceNumberService invoiceNumberService,
+    ILogger<CreateSalesInvoiceCommandHandler> logger)
     : ICommandHandler<CreateSalesInvoiceCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateSalesInvoiceCommand command, CancellationToken cancellationToken)
     {
+        // Central quota gate (plan Phase 4 item 7): posted-invoices-per-period plan limit.
+        Result<Success> quota = await subscriptionGate.EnsureCanPostInvoicesAsync(additionalInvoices: 1, cancellationToken);
+        if (quota.IsError)
+        {
+            return quota.Errors;
+        }
+
         if (command.Items.Count == 0)
         {
             return SalesInvoiceErrors.NoItems;
+        }
+
+        Guid? employeeId = command.EmployeeId;
+        if (employeeId is not null && employeeId != Guid.Empty
+            && !await context.Employees.AnyAsync(e => e.Id == employeeId, cancellationToken))
+        {
+            return EmployeeErrors.NotFound(employeeId.Value);
         }
 
         Currency currency = Enum.Parse<Currency>(command.Currency);
@@ -30,6 +52,12 @@ internal sealed class CreateSalesInvoiceCommandHandler(
 
         foreach (SalesInvoiceItemDto item in command.Items)
         {
+            if (item.CategoryId is { } categoryId
+                && !await context.Categories.AnyAsync(c => c.Id == categoryId, cancellationToken))
+            {
+                return CategoryErrors.NotFound(categoryId);
+            }
+
             var karat = (Karat)item.Karat;
 
             Result<SalesInvoiceItem> saleInvoceItemResult = SalesInvoiceItem.Create(invoiceId, item.CategoryId ?? Guid.Empty, karat, item.WeightInGrams, item.PricePerGram);
@@ -42,7 +70,8 @@ internal sealed class CreateSalesInvoiceCommandHandler(
 
         }
 
-        string invoiceNumber = await GenerateInvoiceNumberAsync(cancellationToken);
+        string invoiceNumber = await invoiceNumberService.AllocateAsync(
+            InvoiceDocumentType.Sales, cancellationToken);
 
         decimal amountPaid;
         Guid accountId;
@@ -73,6 +102,12 @@ internal sealed class CreateSalesInvoiceCommandHandler(
             amountPaid = command.AmountPaid;
             accountId = command.AccountId ?? Guid.Empty;
             paymentMethod = command.PaymentMethod.HasValue ? (PaymentMethod)command.PaymentMethod.Value : PaymentMethod.Cash;
+
+            if (accountId != Guid.Empty
+                && !await context.FinancialAccounts.AnyAsync(a => a.Id == accountId, cancellationToken))
+            {
+                return FinancialAccountErrors.NotFound(accountId);
+            }
 
             if (command.AmountPaid > command.TotalAmount)
             {
@@ -105,7 +140,7 @@ internal sealed class CreateSalesInvoiceCommandHandler(
                 command.BuyerAccountNumber,
                 command.Notes,
                 accountId,
-                command.EmployeeId ?? Guid.Empty,
+                employeeId ?? Guid.Empty,
                 Items
                 );
             if (invoiceResult.IsError)
@@ -115,7 +150,7 @@ internal sealed class CreateSalesInvoiceCommandHandler(
             context.SalesInvoices.Add(invoiceResult.Value);
             await context.SalesInvoiceItems.AddRangeAsync(Items, cancellationToken);
 
-            foreach (var karatGroup in Items.GroupBy(i => i.Karat))
+            foreach (IGrouping<Karat, SalesInvoiceItem> karatGroup in Items.GroupBy(i => i.Karat))
             {
                 decimal required = karatGroup.Sum(i => i.WeightInGrams);
                 decimal available = await context.GetGoldStockAsync(karatGroup.Key, cancellationToken);
@@ -186,17 +221,9 @@ internal sealed class CreateSalesInvoiceCommandHandler(
         }
         catch (Exception ex)
         {
-            return ApplicationErrors.DatabaseError(ex);
+            logger.LogError(ex, "Failed to create sales invoice {InvoiceId}", invoiceId);
+            return ApplicationErrors.DatabaseError;
         }
     }
 
-    private async Task<string> GenerateInvoiceNumberAsync(CancellationToken cancellationToken)
-    {
-        string yearMonth = DateTime.UtcNow.ToString("yyyy-MM");
-
-        int count = await context.SalesInvoices
-            .CountAsync(i => i.InvoiceNumber.StartsWith($"INV-{yearMonth}"), cancellationToken);
-
-        return $"INV-{yearMonth}-{count + 1:D4}";
-    }
 }

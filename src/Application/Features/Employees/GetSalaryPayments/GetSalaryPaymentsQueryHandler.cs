@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Application.Common.Models;
 using Domain.Employees;
 using Microsoft.EntityFrameworkCore;
@@ -7,19 +8,21 @@ using SharedKernel.Result;
 
 namespace Application.Employees.GetSalaryPayments;
 
-internal sealed class GetSalaryPaymentsQueryHandler(IApplicationDbContext context)
+internal sealed class GetSalaryPaymentsQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetSalaryPaymentsQuery, PaginatedList<SalaryPaymentResponse>>
 {
     public async Task<Result<PaginatedList<SalaryPaymentResponse>>> Handle(
         GetSalaryPaymentsQuery query,
         CancellationToken cancellationToken)
     {
-        IQueryable<SalaryPayment> payments = context.SalaryPayments.AsNoTracking();
+        IQueryable<SalaryPayment> payments = context.SalaryPayments.AsNoTracking()
+            .Where(p => p.TenantId == currentTenant.TenantId);
 
         if (!string.IsNullOrWhiteSpace(query.EmployeeName))
         {
             List<Guid> matchingEmployeeIds = await context.Employees
                 .AsNoTracking()
+                .Where(e => e.TenantId == currentTenant.TenantId)
                 .Where(e => e.FirstName.Contains(query.EmployeeName) || e.LastName.Contains(query.EmployeeName))
                 .Select(e => e.Id)
                 .ToListAsync(cancellationToken);
@@ -62,11 +65,13 @@ internal sealed class GetSalaryPaymentsQueryHandler(IApplicationDbContext contex
 
         Dictionary<Guid, string> employeeNames = await context.Employees
             .AsNoTracking()
+            .Where(e => e.TenantId == currentTenant.TenantId)
             .Where(e => employeeIds.Contains(e.Id))
             .ToDictionaryAsync(e => e.Id, e => e.FullName, cancellationToken);
 
         Dictionary<Guid, string> accountNames = await context.FinancialAccounts
             .AsNoTracking()
+            .Where(a => a.TenantId == currentTenant.TenantId)
             .Where(a => accountIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id, a => a.Name, cancellationToken);
 

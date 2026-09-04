@@ -1,5 +1,7 @@
+using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -9,10 +11,36 @@ namespace Application.Features.SalesInvoices.GetKpis;
 
 internal sealed class GetSalesInvoiceKpisQueryHandler(
     IApplicationDbContext context,
-    IDateTimeProvider dateTimeProvider)
+    IDateTimeProvider dateTimeProvider,
+    ICurrentTenant currentTenant,
+    ICacheService cache)
     : IQueryHandler<GetSalesInvoiceKpisQuery, SalesInvoiceKpiResponse>
 {
     public async Task<Result<SalesInvoiceKpiResponse>> Handle(GetSalesInvoiceKpisQuery query, CancellationToken cancellationToken)
+    {
+        if (!currentTenant.IsAvailable)
+        {
+            return await BuildAsync(cancellationToken);
+        }
+
+        Guid tenantId = currentTenant.TenantId;
+        if (currentTenant is ICurrentTenantSetter setter)
+        {
+            setter.Set(tenantId, currentTenant.TenantKey);
+        }
+
+        string cacheKey = CacheKeys.Kpi(tenantId, "sales-invoices");
+        SalesInvoiceKpiResponse response = await cache.GetOrCreateAsync(
+            cacheKey,
+            [CacheKeys.KpiTenant(tenantId)],
+            (ct) => BuildAsync(ct),
+            CacheKeys.KpiExpiration,
+            cancellationToken);
+
+        return response;
+    }
+
+    private async Task<SalesInvoiceKpiResponse> BuildAsync(CancellationToken cancellationToken)
     {
         DateTime todayStart = dateTimeProvider.UtcNow.Date;
 

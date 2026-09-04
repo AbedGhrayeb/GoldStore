@@ -17,11 +17,119 @@ namespace Infrastructure.Database.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("$tenant")
                 .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Domain.Authorization.Permission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("Permissions");
+                });
+
+            modelBuilder.Entity("Domain.Authorization.Role", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("Roles");
+                });
+
+            modelBuilder.Entity("Domain.Authorization.RolePermission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PermissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PermissionId");
+
+                    b.HasIndex("RoleId", "PermissionId")
+                        .IsUnique();
+
+                    b.ToTable("RolePermissions");
+                });
+
+            modelBuilder.Entity("Domain.Authorization.UserPermission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PermissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PermissionId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("TenantId", "UserId", "PermissionId")
+                        .IsUnique();
+
+                    b.ToTable("UserPermissions");
+                });
 
             modelBuilder.Entity("Domain.Catalog.Category", b =>
                 {
@@ -56,15 +164,57 @@ namespace Infrastructure.Database.Migrations
                     b.Property<Guid?>("ParentCategoryId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name");
+                    b.HasIndex("ParentCategoryId");
 
-                    b.HasIndex("ParentCategoryId", "Name")
+                    b.HasIndex("TenantId", "Name");
+
+                    b.HasIndex("TenantId", "ParentCategoryId", "Name")
                         .IsUnique()
                         .HasFilter("[ParentCategoryId] IS NOT NULL");
 
-                    b.ToTable("Categories", "$tenant");
+                    b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("Domain.Common.InvoiceNumberSequence", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("NextNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Period")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "DocumentType", "Period")
+                        .IsUnique();
+
+                    b.ToTable("InvoiceNumberSequences");
                 });
 
             modelBuilder.Entity("Domain.CustomerPurchases.CustomerPurchaseInvoice", b =>
@@ -145,6 +295,9 @@ namespace Infrastructure.Database.Migrations
                         .HasMaxLength(13)
                         .HasColumnType("int");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("TotalAmount")
                         .HasPrecision(18, 3)
                         .HasColumnType("decimal(18,3)");
@@ -153,14 +306,14 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("AccountId");
 
-                    b.HasIndex("Date");
-
                     b.HasIndex("EmployeeId");
 
-                    b.HasIndex("InvoiceNumber")
+                    b.HasIndex("TenantId", "Date");
+
+                    b.HasIndex("TenantId", "InvoiceNumber")
                         .IsUnique();
 
-                    b.ToTable("CustomerPurchaseInvoices", "$tenant");
+                    b.ToTable("CustomerPurchaseInvoices");
                 });
 
             modelBuilder.Entity("Domain.CustomerPurchases.CustomerPurchaseInvoiceItem", b =>
@@ -203,6 +356,9 @@ namespace Infrastructure.Database.Migrations
                         .HasPrecision(18, 3)
                         .HasColumnType("decimal(18,3)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("WeightInGrams")
                         .HasPrecision(18, 3)
                         .HasColumnType("decimal(18,3)");
@@ -213,7 +369,9 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("CustomerPurchaseInvoiceId");
 
-                    b.ToTable("CustomerPurchaseInvoiceItems", "$tenant");
+                    b.HasIndex("TenantId", "CustomerPurchaseInvoiceId");
+
+                    b.ToTable("CustomerPurchaseInvoiceItems");
                 });
 
             modelBuilder.Entity("Domain.Debts.Debt", b =>
@@ -263,15 +421,18 @@ namespace Infrastructure.Database.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId");
 
-                    b.HasIndex("CreatedAtUtc");
+                    b.HasIndex("TenantId", "CreatedAtUtc");
 
-                    b.HasIndex("Name");
+                    b.HasIndex("TenantId", "Name");
 
-                    b.ToTable("Debts", "$tenant");
+                    b.ToTable("Debts");
                 });
 
             modelBuilder.Entity("Domain.Debts.DebtLedgerEntry", b =>
@@ -311,11 +472,16 @@ namespace Infrastructure.Database.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("DebtId", "CreatedAtUtc");
+                    b.HasIndex("DebtId");
 
-                    b.ToTable("DebtLedgerEntries", "$tenant");
+                    b.HasIndex("TenantId", "DebtId", "CreatedAtUtc");
+
+                    b.ToTable("DebtLedgerEntries");
                 });
 
             modelBuilder.Entity("Domain.Employees.Employee", b =>
@@ -365,14 +531,19 @@ namespace Infrastructure.Database.Migrations
                     b.Property<int>("SalaryCycle")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TenantId");
+
                     b.HasIndex("UserId");
 
-                    b.ToTable("Employees", "$tenant");
+                    b.ToTable("Employees");
                 });
 
             modelBuilder.Entity("Domain.Employees.SalaryPayment", b =>
@@ -429,15 +600,20 @@ namespace Infrastructure.Database.Migrations
                     b.Property<DateOnly>("ScheduledDate")
                         .HasColumnType("date");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId");
 
-                    b.HasIndex("PaymentDate");
+                    b.HasIndex("EmployeeId");
 
-                    b.HasIndex("EmployeeId", "PaymentDate");
+                    b.HasIndex("TenantId", "PaymentDate");
 
-                    b.ToTable("SalaryPayments", "$tenant");
+                    b.HasIndex("TenantId", "EmployeeId", "PaymentDate");
+
+                    b.ToTable("SalaryPayments");
                 });
 
             modelBuilder.Entity("Domain.Expenses.Expense", b =>
@@ -478,15 +654,22 @@ namespace Infrastructure.Database.Migrations
                     b.Property<DateTimeOffset?>("LastModifiedUtc")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ExpenseDate");
+                    b.HasIndex("AccountId");
 
-                    b.HasIndex("AccountId", "ExpenseDate");
+                    b.HasIndex("ExpenseCategoryId");
 
-                    b.HasIndex("ExpenseCategoryId", "ExpenseDate");
+                    b.HasIndex("TenantId", "ExpenseDate");
 
-                    b.ToTable("Expenses", "$tenant");
+                    b.HasIndex("TenantId", "AccountId", "ExpenseDate");
+
+                    b.HasIndex("TenantId", "ExpenseCategoryId", "ExpenseDate");
+
+                    b.ToTable("Expenses");
                 });
 
             modelBuilder.Entity("Domain.Expenses.ExpenseCategory", b =>
@@ -515,12 +698,15 @@ namespace Infrastructure.Database.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("TenantId", "Name")
                         .IsUnique();
 
-                    b.ToTable("ExpenseCategories", "$tenant");
+                    b.ToTable("ExpenseCategories");
                 });
 
             modelBuilder.Entity("Domain.Finance.FinancialAccount", b =>
@@ -567,12 +753,15 @@ namespace Infrastructure.Database.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name", "Currency")
+                    b.HasIndex("TenantId", "Name", "Currency")
                         .IsUnique();
 
-                    b.ToTable("FinancialAccounts", "$tenant");
+                    b.ToTable("FinancialAccounts");
                 });
 
             modelBuilder.Entity("Domain.Finance.FinancialTransaction", b =>
@@ -628,6 +817,9 @@ namespace Infrastructure.Database.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("TransactionType")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -635,11 +827,13 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountId", "CreatedAtUtc");
+                    b.HasIndex("AccountId");
 
-                    b.HasIndex("ReferenceType", "ReferenceId");
+                    b.HasIndex("TenantId", "AccountId", "CreatedAtUtc");
 
-                    b.ToTable("FinancialTransactions", "$tenant");
+                    b.HasIndex("TenantId", "ReferenceType", "ReferenceId");
+
+                    b.ToTable("FinancialTransactions");
                 });
 
             modelBuilder.Entity("Domain.Inventory.GoldLedgerEntry", b =>
@@ -689,17 +883,20 @@ namespace Infrastructure.Database.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("WeightInGrams")
                         .HasPrecision(18, 3)
                         .HasColumnType("decimal(18,3)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Karat", "CreatedAtUtc");
+                    b.HasIndex("TenantId", "Karat", "CreatedAtUtc");
 
-                    b.HasIndex("ReferenceType", "ReferenceId");
+                    b.HasIndex("TenantId", "ReferenceType", "ReferenceId");
 
-                    b.ToTable("GoldLedgerEntries", "$tenant");
+                    b.ToTable("GoldLedgerEntries");
                 });
 
             modelBuilder.Entity("Domain.Inventory.InventoryAdjustment", b =>
@@ -741,6 +938,9 @@ namespace Infrastructure.Database.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -752,11 +952,11 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAtUtc");
+                    b.HasIndex("TenantId", "CreatedAtUtc");
 
-                    b.HasIndex("Type", "CreatedAtUtc");
+                    b.HasIndex("TenantId", "Type", "CreatedAtUtc");
 
-                    b.ToTable("InventoryAdjustments", "$tenant");
+                    b.ToTable("InventoryAdjustments");
                 });
 
             modelBuilder.Entity("Domain.Sales.SalesInvoice", b =>
@@ -833,6 +1033,9 @@ namespace Infrastructure.Database.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("TotalAmount")
                         .HasPrecision(18, 3)
                         .HasColumnType("decimal(18,3)");
@@ -841,14 +1044,14 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("AccountId");
 
-                    b.HasIndex("Date");
-
                     b.HasIndex("EmployeeId");
 
-                    b.HasIndex("InvoiceNumber")
+                    b.HasIndex("TenantId", "Date");
+
+                    b.HasIndex("TenantId", "InvoiceNumber")
                         .IsUnique();
 
-                    b.ToTable("SalesInvoices", "$tenant");
+                    b.ToTable("SalesInvoices");
                 });
 
             modelBuilder.Entity("Domain.Sales.SalesInvoiceItem", b =>
@@ -895,6 +1098,9 @@ namespace Infrastructure.Database.Migrations
                     b.Property<Guid>("SalesInvoiceId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("WeightInGrams")
                         .HasPrecision(18, 3)
                         .HasColumnType("decimal(18,3)");
@@ -905,7 +1111,9 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("SalesInvoiceId");
 
-                    b.ToTable("SalesInvoiceItems", "$tenant");
+                    b.HasIndex("TenantId", "SalesInvoiceId");
+
+                    b.ToTable("SalesInvoiceItems");
                 });
 
             modelBuilder.Entity("Domain.SupplierOperations.SupplierDelivery", b =>
@@ -954,6 +1162,9 @@ namespace Infrastructure.Database.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("TotalManufacturingFee")
                         .HasPrecision(18, 3)
                         .HasColumnType("decimal(18,3)");
@@ -964,9 +1175,11 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SupplierId", "CreatedAtUtc");
+                    b.HasIndex("SupplierId");
 
-                    b.ToTable("SupplierDeliveries", "$tenant");
+                    b.HasIndex("TenantId", "SupplierId", "CreatedAtUtc");
+
+                    b.ToTable("SupplierDeliveries");
                 });
 
             modelBuilder.Entity("Domain.SupplierOperations.SupplierManufacturingPayment", b =>
@@ -1009,13 +1222,18 @@ namespace Infrastructure.Database.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId");
 
-                    b.HasIndex("SupplierId", "CreatedAtUtc");
+                    b.HasIndex("SupplierId");
 
-                    b.ToTable("SupplierManufacturingPayments", "$tenant");
+                    b.HasIndex("TenantId", "SupplierId", "CreatedAtUtc");
+
+                    b.ToTable("SupplierManufacturingPayments");
                 });
 
             modelBuilder.Entity("Domain.SupplierOperations.SupplierScrapGoldPayment", b =>
@@ -1055,15 +1273,20 @@ namespace Infrastructure.Database.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("WeightInGrams")
                         .HasPrecision(18, 3)
                         .HasColumnType("decimal(18,3)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SupplierId", "CreatedAtUtc");
+                    b.HasIndex("SupplierId");
 
-                    b.ToTable("SupplierScrapGoldPayments", "$tenant");
+                    b.HasIndex("TenantId", "SupplierId", "CreatedAtUtc");
+
+                    b.ToTable("SupplierScrapGoldPayments");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.Supplier", b =>
@@ -1109,12 +1332,15 @@ namespace Infrastructure.Database.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("TenantId", "Name")
                         .IsUnique();
 
-                    b.ToTable("Suppliers", "$tenant");
+                    b.ToTable("Suppliers");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.SupplierFinancialLedgerEntry", b =>
@@ -1154,11 +1380,16 @@ namespace Infrastructure.Database.Migrations
                     b.Property<Guid>("SupplierFinancialTransactionId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("SupplierFinancialTransactionId", "CreatedAtUtc");
+                    b.HasIndex("SupplierFinancialTransactionId");
 
-                    b.ToTable("SupplierFinancialLedgerEntries", "$tenant");
+                    b.HasIndex("TenantId", "SupplierFinancialTransactionId", "CreatedAtUtc");
+
+                    b.ToTable("SupplierFinancialLedgerEntries");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.SupplierFinancialPayment", b =>
@@ -1196,13 +1427,18 @@ namespace Infrastructure.Database.Migrations
                     b.Property<Guid>("SupplierFinancialTransactionId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId");
 
-                    b.HasIndex("SupplierFinancialTransactionId", "CreatedAtUtc");
+                    b.HasIndex("SupplierFinancialTransactionId");
 
-                    b.ToTable("SupplierFinancialPayments", "$tenant");
+                    b.HasIndex("TenantId", "SupplierFinancialTransactionId", "CreatedAtUtc");
+
+                    b.ToTable("SupplierFinancialPayments");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.SupplierFinancialTransaction", b =>
@@ -1250,13 +1486,18 @@ namespace Infrastructure.Database.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId");
 
-                    b.HasIndex("SupplierId", "CreatedAtUtc");
+                    b.HasIndex("SupplierId");
 
-                    b.ToTable("SupplierFinancialTransactions", "$tenant");
+                    b.HasIndex("TenantId", "SupplierId", "CreatedAtUtc");
+
+                    b.ToTable("SupplierFinancialTransactions");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.SupplierGoldLedgerEntry", b =>
@@ -1309,15 +1550,20 @@ namespace Infrastructure.Database.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("WeightInGrams")
                         .HasPrecision(18, 3)
                         .HasColumnType("decimal(18,3)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SupplierId", "CreatedAtUtc");
+                    b.HasIndex("SupplierId");
 
-                    b.ToTable("SupplierGoldLedgerEntries", "$tenant");
+                    b.HasIndex("TenantId", "SupplierId", "CreatedAtUtc");
+
+                    b.ToTable("SupplierGoldLedgerEntries");
                 });
 
             modelBuilder.Entity("Domain.Suppliers.SupplierManufacturingLedgerEntry", b =>
@@ -1370,41 +1616,355 @@ namespace Infrastructure.Database.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("SupplierId", "CreatedAtUtc");
+                    b.HasIndex("SupplierId");
 
-                    b.ToTable("SupplierManufacturingLedgerEntries", "$tenant");
+                    b.HasIndex("TenantId", "SupplierId", "CreatedAtUtc");
+
+                    b.ToTable("SupplierManufacturingLedgerEntries");
                 });
 
-            modelBuilder.Entity("Domain.Users.RefreshToken.RefreshToken", b =>
+            modelBuilder.Entity("Domain.Tenants.PlatformRecoveryCode", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTimeOffset>("ExpiresOnUtc")
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PlatformUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("UsedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlatformUserId", "CodeHash")
+                        .IsUnique();
+
+                    b.ToTable("PlatformRecoveryCodes");
+                });
+
+            modelBuilder.Entity("Domain.Tenants.PlatformUser", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<int>("FailedLoginAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset?>("LockedUntilUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<bool>("PhoneNumberVerified")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("TwoFactorEnabledAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("PhoneNumber")
+                        .IsUnique()
+                        .HasFilter("[PhoneNumber] IS NOT NULL");
+
+                    b.ToTable("PlatformUsers");
+                });
+
+            modelBuilder.Entity("Domain.Tenants.SubscriptionPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("DiscountPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int>("DurationInMonths")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsTrial")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("nvarchar(63)");
+
+                    b.Property<int?>("MaximumActiveBranches")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaximumActiveUsers")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaximumPostedInvoicesPerPeriod")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("MaximumStorageBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("SubscriptionPlans");
+                });
+
+            modelBuilder.Entity("Domain.Tenants.Tenant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("CancellationReadOnlyUntilUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("nvarchar(63)");
+
+                    b.Property<Guid?>("LastModifiedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("LastModifiedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTimeOffset?>("TrialEndsAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("Tenants");
+                });
+
+            modelBuilder.Entity("Domain.Tenants.TenantSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.PrimitiveCollection<string>("EnabledFeatures")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InvoiceNumberPrefix")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Locale")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TimeZoneId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique();
+
+                    b.ToTable("TenantSettings");
+                });
+
+            modelBuilder.Entity("Domain.Tenants.TenantSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BillingCycle")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("BillingProvider")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("BillingProviderReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset>("EndsAtUtc")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Token")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                    b.Property<DateTimeOffset>("StartsAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("SubscriptionPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriptionPlanId");
+
+                    b.HasIndex("TenantId", "EndsAtUtc");
+
+                    b.ToTable("TenantSubscriptions");
+                });
+
+            modelBuilder.Entity("Domain.Users.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ReplacedByTokenHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
-                    SqlServerKeyBuilderExtensions.IsClustered(b.HasKey("Id"), false);
+                    b.HasIndex("TenantId");
 
-                    b.HasIndex("Token")
-                        .IsUnique()
-                        .HasFilter("[Token] IS NOT NULL");
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
 
-                    b.ToTable("RefreshTokens", "$tenant");
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("Domain.Users.User", b =>
@@ -1417,6 +1977,9 @@ namespace Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<int>("FailedLoginAttempts")
+                        .HasColumnType("int");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1428,19 +1991,148 @@ namespace Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTimeOffset?>("LockedUntilUtc")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Role")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<bool>("PhoneNumberVerified")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SecurityStamp")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("TwoFactorEnabledAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("WhatsappNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users", "$tenant");
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Domain.Users.UserRecoveryCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("UsedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UserId", "CodeHash")
+                        .IsUnique();
+
+                    b.ToTable("UserRecoveryCodes");
+                });
+
+            modelBuilder.Entity("Domain.Users.UserRole", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("TenantId", "UserId", "RoleId")
+                        .IsUnique();
+
+                    b.ToTable("UserRoles");
+                });
+
+            modelBuilder.Entity("Domain.Authorization.RolePermission", b =>
+                {
+                    b.HasOne("Domain.Authorization.Permission", null)
+                        .WithMany()
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Authorization.Role", null)
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Authorization.UserPermission", b =>
+                {
+                    b.HasOne("Domain.Authorization.Permission", null)
+                        .WithMany()
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Catalog.Category", b =>
@@ -1450,7 +2142,22 @@ namespace Infrastructure.Database.Migrations
                         .HasForeignKey("ParentCategoryId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("ParentCategory");
+                });
+
+            modelBuilder.Entity("Domain.Common.InvoiceNumberSequence", b =>
+                {
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.CustomerPurchases.CustomerPurchaseInvoice", b =>
@@ -1465,6 +2172,12 @@ namespace Infrastructure.Database.Migrations
                         .WithMany()
                         .HasForeignKey("EmployeeId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("FinancialAccount");
                 });
@@ -1482,6 +2195,12 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Category");
 
                     b.Navigation("CustomerPurchaseInvoice");
@@ -1494,6 +2213,12 @@ namespace Infrastructure.Database.Migrations
                         .HasForeignKey("AccountId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("FinancialAccount");
                 });
 
@@ -1505,11 +2230,23 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Debt");
                 });
 
             modelBuilder.Entity("Domain.Employees.Employee", b =>
                 {
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Domain.Users.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -1532,6 +2269,12 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Employee");
 
                     b.Navigation("FinancialAccount");
@@ -1549,9 +2292,33 @@ namespace Infrastructure.Database.Migrations
                         .HasForeignKey("ExpenseCategoryId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("ExpenseCategory");
 
                     b.Navigation("FinancialAccount");
+                });
+
+            modelBuilder.Entity("Domain.Expenses.ExpenseCategory", b =>
+                {
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Finance.FinancialAccount", b =>
+                {
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Finance.FinancialTransaction", b =>
@@ -1562,7 +2329,31 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("FinancialAccount");
+                });
+
+            modelBuilder.Entity("Domain.Inventory.GoldLedgerEntry", b =>
+                {
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Inventory.InventoryAdjustment", b =>
+                {
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Sales.SalesInvoice", b =>
@@ -1576,6 +2367,12 @@ namespace Infrastructure.Database.Migrations
                         .WithMany()
                         .HasForeignKey("EmployeeId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("FinancialAccount");
                 });
@@ -1593,6 +2390,12 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Category");
 
                     b.Navigation("SalesInvoice");
@@ -1603,6 +2406,12 @@ namespace Infrastructure.Database.Migrations
                     b.HasOne("Domain.Suppliers.Supplier", "Supplier")
                         .WithMany()
                         .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1623,6 +2432,12 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Account");
 
                     b.Navigation("Supplier");
@@ -1636,7 +2451,22 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Supplier");
+                });
+
+            modelBuilder.Entity("Domain.Suppliers.Supplier", b =>
+                {
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Suppliers.SupplierFinancialLedgerEntry", b =>
@@ -1644,6 +2474,12 @@ namespace Infrastructure.Database.Migrations
                     b.HasOne("Domain.Suppliers.SupplierFinancialTransaction", null)
                         .WithMany()
                         .HasForeignKey("SupplierFinancialTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -1659,6 +2495,12 @@ namespace Infrastructure.Database.Migrations
                     b.HasOne("Domain.Suppliers.SupplierFinancialTransaction", "SupplierFinancialTransaction")
                         .WithMany()
                         .HasForeignKey("SupplierFinancialTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1681,6 +2523,12 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("FinancialAccount");
 
                     b.Navigation("Supplier");
@@ -1691,6 +2539,12 @@ namespace Infrastructure.Database.Migrations
                     b.HasOne("Domain.Suppliers.Supplier", "Supplier")
                         .WithMany("SupplierGoldLedgerEntries")
                         .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1705,7 +2559,96 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Supplier");
+                });
+
+            modelBuilder.Entity("Domain.Tenants.TenantSettings", b =>
+                {
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Tenants.TenantSubscription", b =>
+                {
+                    b.HasOne("Domain.Tenants.SubscriptionPlan", null)
+                        .WithMany()
+                        .HasForeignKey("SubscriptionPlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Users.RefreshToken", b =>
+                {
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Users.User", b =>
+                {
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Users.UserRecoveryCode", b =>
+                {
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Users.UserRole", b =>
+                {
+                    b.HasOne("Domain.Authorization.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Authorization.Role", b =>
+                {
+                    b.Navigation("RolePermissions");
                 });
 
             modelBuilder.Entity("Domain.Catalog.Category", b =>

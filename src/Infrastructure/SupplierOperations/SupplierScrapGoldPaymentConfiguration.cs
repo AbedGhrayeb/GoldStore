@@ -23,6 +23,6 @@ internal sealed class SupplierScrapGoldPaymentConfiguration : IEntityTypeConfigu
             .HasForeignKey(payment => payment.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(payment => new { payment.SupplierId, payment.CreatedAtUtc });
+        builder.HasIndex(payment => new { payment.TenantId, payment.SupplierId, payment.CreatedAtUtc });
     }
 }

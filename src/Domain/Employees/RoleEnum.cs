@@ -5,8 +5,7 @@ public enum RoleEnum
     Admin = 1,
     Manager = 2,
     Accountant = 3,
-    Salesperson = 4,
-    None = 5
+    Salesperson = 4
 }
 public static class RoleEnumExtensions
 {
@@ -18,7 +17,6 @@ public static class RoleEnumExtensions
             RoleEnum.Manager => "مدير المتجر",
             RoleEnum.Accountant => "محاسب",
             RoleEnum.Salesperson => "موظف مبيعات",
-            RoleEnum.None => "غير محدد",
             _ => throw new ArgumentOutOfRangeException(nameof(role), role, null)
         };
     }

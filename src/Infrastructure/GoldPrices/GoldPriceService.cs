@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Application.Abstractions.Services;
 using Domain.Common;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Options;
 
 namespace Infrastructure.GoldPrices;
@@ -9,19 +9,34 @@ namespace Infrastructure.GoldPrices;
 internal sealed class GoldPriceService(
     IHttpClientFactory httpClientFactory,
     IOptions<GoldApiOptions> options,
-    IMemoryCache cache) : IGoldPriceService
+    HybridCache cache) : IGoldPriceService
 {
     private readonly GoldApiOptions _options = options.Value;
 
     public async Task<GoldPriceData> GetCurrentPricesAsync(Currency currency, CancellationToken cancellationToken)
     {
+        // Gold prices are a live external feed shared across tenants (not tenant-owned
+        // data), so the key deliberately carries no tenant id. HybridCache gives in-memory
+        // stampede protection; the LocalCacheExpiration window beyond Expiration enables
+        // stale-while-revalidate, so a GoldAPI outage degrades to the last known price
+        // while a background refresh is attempted.
         string cacheKey = $"GoldPrice_{currency}";
 
-        if (cache.TryGetValue(cacheKey, out GoldPriceData? cached) && cached is not null)
+        HybridCacheEntryOptions cacheOptions = new()
         {
-            return cached;
-        }
+            Expiration = TimeSpan.FromMinutes(_options.CacheDurationMinutes),
+            LocalCacheExpiration = TimeSpan.FromMinutes(_options.CacheDurationMinutes * 2),
+        };
 
+        return await cache.GetOrCreateAsync<GoldPriceData>(
+            cacheKey,
+            (token) => FetchFromApiAsync(currency, token),
+            cacheOptions,
+            cancellationToken: cancellationToken);
+    }
+
+    private async ValueTask<GoldPriceData> FetchFromApiAsync(Currency currency, CancellationToken cancellationToken)
+    {
         string currencyCode = currency switch
         {
             Currency.JOD => "JOD",
@@ -38,12 +53,6 @@ internal sealed class GoldPriceService(
 
         if (!response.IsSuccessStatusCode)
         {
-            // Try fallback to last cached value even if expired
-            if (cache.TryGetValue(cacheKey, out GoldPriceData? fallback) && fallback is not null)
-            {
-                return fallback;
-            }
-
             throw new InvalidOperationException($"GoldAPI request failed with status {response.StatusCode}");
         }
 
@@ -58,19 +67,12 @@ internal sealed class GoldPriceService(
         decimal priceGram18K = root.TryGetProperty("price_gram_18k", out JsonElement p18) ? p18.GetDecimal() : 0m;
         decimal changePercent = root.TryGetProperty("chg_percent", out JsonElement chg) ? chg.GetDecimal() : 0m;
 
-        var data = new GoldPriceData(
+        return new GoldPriceData(
             PricePerOunce: pricePerOunce,
             PricePerGram24K: priceGram24K,
             PricePerGram21K: priceGram21K,
             PricePerGram18K: priceGram18K,
             ChangePercent24H: changePercent,
             Timestamp: DateTime.UtcNow);
-
-        MemoryCacheEntryOptions cacheOptions = new MemoryCacheEntryOptions()
-            .SetAbsoluteExpiration(TimeSpan.FromMinutes(_options.CacheDurationMinutes));
-
-        cache.Set(cacheKey, data, cacheOptions);
-
-        return data;
     }
 }

@@ -24,6 +24,6 @@ internal sealed class SupplierFinancialPaymentConfiguration : IEntityTypeConfigu
             .HasForeignKey(p => p.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(p => new { p.SupplierFinancialTransactionId, p.CreatedAtUtc });
+        builder.HasIndex(p => new { p.TenantId, p.SupplierFinancialTransactionId, p.CreatedAtUtc });
     }
 }

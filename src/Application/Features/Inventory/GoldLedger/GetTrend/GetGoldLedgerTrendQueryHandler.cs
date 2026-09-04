@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Inventory;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -9,7 +10,8 @@ namespace Application.Features.Inventory.GoldLedger.GetTrend;
 
 internal sealed class GetGoldLedgerTrendQueryHandler(
     IApplicationDbContext context,
-    IDateTimeProvider dateTimeProvider)
+    IDateTimeProvider dateTimeProvider,
+    ICurrentTenant currentTenant)
     : IQueryHandler<GetGoldLedgerTrendQuery, List<GoldTrendPoint>>
 {
     public async Task<Result<List<GoldTrendPoint>>> Handle(GetGoldLedgerTrendQuery query, CancellationToken cancellationToken)
@@ -20,8 +22,8 @@ internal sealed class GetGoldLedgerTrendQueryHandler(
 
         var entries = await context.GoldLedgerEntries
             .AsNoTracking()
-            .Where(e => e.CreatedAtUtc >= fromDate)
-            .Select(e => new { Date = e.CreatedAtUtc!.Value.Date, e.MovementType, e.Equivalent21KWeightInGrams })
+            .Where(e => e.TenantId == currentTenant.TenantId && e.CreatedAtUtc >= fromDate)
+            .Select(e => new { e.CreatedAtUtc!.Value.Date, e.MovementType, e.Equivalent21KWeightInGrams })
             .ToListAsync(cancellationToken);
 
         var aggregates = entries

@@ -1,100 +1,104 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
+﻿using System.Security.Claims;
 using System.Text;
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
-using Application.Features.Identity;
+using Domain.Authorization;
+using Domain.Tenants;
 using Domain.Users;
-using Domain.Users.RefreshToken;
+using Infrastructure.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using SharedKernel;
-using SharedKernel.Result;
 
 namespace Infrastructure.Authentication;
 
-internal sealed class TokenProvider(IConfiguration configuration, IDateTimeProvider dateTimeProvider, IApplicationDbContext dbContext) : ITokenProvider
+/// <summary>
+/// Creates short-lived access tokens (plan Phase 4 items 3-4). Claims are immutable for
+/// the lifetime of the token: user id, tenant id and key, roles, permissions, enabled
+/// features, and the security stamp. Token creation runs during login, before any tenant
+/// context exists, so the user/tenant/role lookups select the user's tenant explicitly and
+/// bypass the global query filter — the same exception the login flow already uses.
+/// </summary>
+internal sealed class TokenProvider(
+    IConfiguration configuration,
+    IApplicationDbContext context,
+    PermissionProvider permissionProvider,
+    IDateTimeProvider dateTimeProvider) : ITokenProvider
 {
-    public async Task<Result<TokenResponse>> CreateAsync(User user, CancellationToken ct = default)
+    public async Task<AccessTokenResponse> CreateAccessTokenAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var jwtSettings = configuration.GetSection("Jwt");
+        User user = await context.Users
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleOrDefaultAsync(u => u.Id == userId, cancellationToken)
+            ?? throw new InvalidOperationException($"Cannot issue a token for unknown user '{userId}'.");
 
-        string secretKey = jwtSettings["Secret"]!;
-        string Issuer = jwtSettings["Issuer"]!;
-        string Audience = jwtSettings["Audience"]!;
-        var expires = dateTimeProvider.UtcNow.AddMinutes(configuration.GetValue<int>("Jwt:ExpirationInMinutes"));
+        Tenant tenant = await context.Tenants
+            .AsNoTracking()
+            .SingleAsync(t => t.Id == user.TenantId, cancellationToken);
+
+        IReadOnlyList<string> enabledFeatures = await context.TenantSettings
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(settings => settings.TenantId == user.TenantId)
+            .Select(settings => settings.EnabledFeatures)
+            .SingleOrDefaultAsync(cancellationToken) ?? [];
+
+        UserAuthorizationInfo authorization = await permissionProvider
+            .GetForUserAsync(userId, user.TenantId, cancellationToken);
+
+        string secretKey = configuration["Jwt:Secret"]!;
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
+        List<Claim> claims =
+        [
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email),
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}".Trim()),
+            new(CustomClaims.TenantId, user.TenantId.ToString()),
+            new(CustomClaims.TenantKey, tenant.Key),
+            new(CustomClaims.SecurityStamp, user.SecurityStamp),
+        ];
+
+        if (user.TwoFactorEnabled && user.PhoneNumberVerified)
+        {
+            claims.Add(new Claim("amr", "mfa"));
+        }
+
+        foreach (string role in authorization.Roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
+
+        foreach (string permission in authorization.Permissions)
+        {
+            claims.Add(new Claim(CustomClaims.Permission, permission));
+        }
+
+        foreach (string feature in enabledFeatures)
+        {
+            claims.Add(new Claim(CustomClaims.Feature, feature));
+        }
+
+        DateTime expiresAt = dateTimeProvider.UtcNow.AddMinutes(configuration.GetValue("Jwt:ExpirationInMinutes", defaultValue: 60));
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(
-            [
-                new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
-            ]),
-            Expires = expires,
+            Subject = new ClaimsIdentity(claims),
+            Expires = expiresAt,
+            IssuedAt = dateTimeProvider.UtcNow,
             SigningCredentials = credentials,
-            Issuer = Issuer,
-            Audience = Audience
+            Issuer = configuration["Jwt:Issuer"],
+            Audience = configuration["Jwt:Audience"]
         };
 
-        var handler = new JsonWebTokenHandler();
+        string token = new JsonWebTokenHandler().CreateToken(tokenDescriptor);
 
-        string token = handler.CreateToken(tokenDescriptor);
-        await dbContext.RefreshTokens.Where(rt => rt.UserId == user.Id)
-            .ExecuteDeleteAsync(ct);
-
-        var refreshTokenResult = RefreshToken.Create(Guid.CreateVersion7(), GenerateRefreshToken(), user.Id, DateTime.UtcNow.AddDays(7));
-        if (refreshTokenResult.IsError)
-        {
-            return refreshTokenResult.Errors;
-        }
-        var refreshToken = refreshTokenResult.Value;
-        dbContext.RefreshTokens.Add(refreshToken);
-        await dbContext.SaveChangesAsync(ct);
-
-
-        return new TokenResponse
-        {
-            AccessToken = token,
-            RefreshToken = refreshToken.Token,
-            ExpiresOnUtc = expires
-        };
-    }
-
-    public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
-    {
-        var tokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Secret"]!)),
-            ValidateIssuer = true,
-            ValidIssuer = configuration["Jwt:Issuer"],
-            ValidateAudience = true,
-            ValidAudience = configuration["Jwt:Audience"],
-            ValidateLifetime = false, // Ignore token expiration
-            ClockSkew = TimeSpan.Zero
-        };
-
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
-
-        if (securityToken is not JwtSecurityToken jwtSecurityToken ||
-            !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256Signature, StringComparison.InvariantCultureIgnoreCase))
-        {
-            throw new SecurityTokenException("Invalid token.");
-        }
-
-        return principal;
-    }
-    private string GenerateRefreshToken()
-    {
-        return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        return new AccessTokenResponse(token, new DateTimeOffset(expiresAt, TimeSpan.Zero));
     }
 }

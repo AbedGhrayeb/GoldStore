@@ -8,7 +8,7 @@ public enum Currency
 }
 public static class CurrencyExtensions
 {
-    public  static string ToCurrencyString(this Currency currency)
+    public static string ToCurrencyString(this Currency currency)
     {
         return currency switch
         {

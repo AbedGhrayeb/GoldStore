@@ -28,6 +28,6 @@ internal sealed class SupplierFinancialTransactionConfiguration : IEntityTypeCon
             .HasForeignKey(t => t.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(t => new { t.SupplierId, t.CreatedAtUtc });
+        builder.HasIndex(t => new { t.TenantId, t.SupplierId, t.CreatedAtUtc });
     }
 }

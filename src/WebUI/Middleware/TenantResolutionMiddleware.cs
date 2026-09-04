@@ -1,95 +1,161 @@
-using Application.Abstractions.Tenancy;
-using Domain.Tenants;
+using System.Security.Claims;
+using Application.Abstractions.Tenants;
+using Infrastructure.Authentication;
 using Infrastructure.Tenancy;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using SharedKernel;
+using Serilog.Context;
+using WebUI.Authorization;
+using WebUI.Infrastructure;
 
 namespace WebUI.Middleware;
 
-public class TenantResolutionMiddleware(RequestDelegate next)
+/// <summary>
+/// Resolves and enforces the ambient tenant for every authenticated request (plan Phase 2).
+/// A request cannot reach a tenant endpoint without a valid, operational current tenant,
+/// and the tenant always comes from the authenticated claims — a client can never switch
+/// tenant by changing a header.
+/// </summary>
+public sealed class TenantResolutionMiddleware(
+    RequestDelegate next,
+    IOptions<TenantHostOptions> options)
 {
-    public async Task Invoke(
+    public async Task InvokeAsync(
         HttpContext context,
-        ITenantContextSetter tenantContextSetter,
-        ITenantResolver tenantResolver,
-        IOptions<TenancyOptions> tenancyOptions,
-        IDateTimeProvider dateTimeProvider)
+        ICurrentTenant currentTenant,
+        ILogger<TenantResolutionMiddleware> logger)
     {
-        // Platform backoffice endpoints are tenant-agnostic.
-        if (context.Request.Path.StartsWithSegments("/api/platform", StringComparison.OrdinalIgnoreCase))
+        // Explicit exemptions: endpoint metadata ([HostOnly], [AllowAnonymous]) and
+        // configured path prefixes. Tenant resolution is the default for everything else.
+        if (!IsTenantResolutionRequired(context, options.Value))
         {
-            await next.Invoke(context);
+            await next(context);
             return;
         }
 
-        string? subdomain = ExtractSubdomain(context.Request.Host.Host, tenancyOptions.Value.BaseDomain);
-
-        // Bare base domain (or www / foreign host): no tenant context. Tenant-specific
-        // endpoints fail fast later when they access ITenantContext.
-        if (subdomain is null)
+        // Public entry points (login, landing) are unauthenticated and have no tenant yet.
+        ClaimsPrincipal user = context.User;
+        if (user.Identity?.IsAuthenticated != true)
         {
-            await next.Invoke(context);
+            await next(context);
             return;
         }
 
-        TenantInfo? tenant = await tenantResolver.ResolveAsync(subdomain, context.RequestAborted);
-
-        if (tenant is null)
+        if (!HasTenantClaims(user))
         {
-            await TenantHttpErrors.WriteAsync(context, StatusCodes.Status404NotFound, "Tenant.NotFound", "المتجر غير موجود");
+            logger.LogWarning(
+                "Authenticated request reached tenant resolution without tenant claims. Path: {RequestPath}",
+                context.Request.Path);
+            await TenantProblemDetails.WriteAsync(context, TenantProblemDetails.MissingContext);
             return;
         }
 
-        if (tenant.Status is TenantStatus.Suspended)
+        if (options.Value.RequireHostnameVerification && !await VerifyHostnameAsync(context, options.Value, user))
         {
-            await TenantHttpErrors.WriteAsync(context, StatusCodes.Status403Forbidden, "Tenant.Suspended", "تم تعليق حساب المتجر، يرجى التواصل مع الدعم");
             return;
         }
 
-        tenantContextSetter.Set(tenant, IsReadOnly(tenant, dateTimeProvider.UtcNow));
+        if (!currentTenant.IsAvailable || !currentTenant.IsOperational)
+        {
+            logger.LogWarning(
+                "Tenant is not operational for an authenticated request. Path: {RequestPath}",
+                context.Request.Path);
+            await TenantProblemDetails.WriteAsync(context, TenantProblemDetails.AccessDenied);
+            return;
+        }
 
-        await next.Invoke(context);
+        // Central read-only subscription gate (plan Phase 4 item 7): a cancelled tenant
+        // inside its grace period may read but never write.
+        if (currentTenant.IsReadOnly && !HttpMethods.IsGet(context.Request.Method))
+        {
+            logger.LogWarning(
+                "Read-only tenant attempted a write operation. Path: {RequestPath}, Method: {Method}",
+                context.Request.Path,
+                context.Request.Method);
+            await TenantProblemDetails.WriteAsync(context, TenantProblemDetails.ReadOnly);
+            return;
+        }
+
+        // Structured logging scope: correlate every downstream log entry with the tenant.
+        using (LogContext.PushProperty("TenantId", currentTenant.TenantId))
+        using (LogContext.PushProperty("TenantKey", currentTenant.TenantKey))
+        using (LogContext.PushProperty("UserId", user.FindFirstValue(ClaimTypes.NameIdentifier)))
+        {
+            await next(context);
+        }
     }
 
-    internal static bool IsReadOnly(TenantInfo tenant, DateTime utcNow)
+    private static bool IsTenantResolutionRequired(HttpContext context, TenantHostOptions options)
     {
-        var now = new DateTimeOffset(utcNow, TimeSpan.Zero);
-
-        return tenant.Status switch
+        Endpoint? endpoint = context.GetEndpoint();
+        if (endpoint is not null)
         {
-            TenantStatus.Expired => true,
-            TenantStatus.Trial when tenant.TrialEndsAtUtc <= now => true,
-            TenantStatus.Active when tenant.SubscriptionExpiresAtUtc <= now => true,
-            _ => false
-        };
+            if (endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null
+                || endpoint.Metadata.GetMetadata<HostOnlyAttribute>() is not null)
+            {
+                return false;
+            }
+        }
+
+        string path = context.Request.Path.Value ?? string.Empty;
+
+        return !IsExemptPath(path, options.ExemptPaths);
     }
 
-    internal static string? ExtractSubdomain(string host, string baseDomain)
+    private static bool IsExemptPath(string path, string[] exemptPaths)
     {
-        if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(baseDomain))
+        foreach (string exempt in exemptPaths)
         {
-            return null;
+            if (string.IsNullOrWhiteSpace(exempt))
+            {
+                continue;
+            }
+
+            if (path.StartsWith(exempt, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
         }
 
-        if (host.Equals(baseDomain, StringComparison.OrdinalIgnoreCase) ||
-            host.Equals($"www.{baseDomain}", StringComparison.OrdinalIgnoreCase))
+        return false;
+    }
+
+    private static bool HasTenantClaims(ClaimsPrincipal user) =>
+        Guid.TryParse(user.FindFirstValue(CustomClaims.TenantId), out Guid tenantId)
+        && tenantId != Guid.Empty
+        && !string.IsNullOrWhiteSpace(user.FindFirstValue(CustomClaims.TenantKey));
+
+    private static async Task<bool> VerifyHostnameAsync(
+        HttpContext context,
+        TenantHostOptions options,
+        ClaimsPrincipal user)
+    {
+        string? tenantKey = user.FindFirstValue(CustomClaims.TenantKey);
+        if (string.IsNullOrWhiteSpace(tenantKey))
         {
-            return null;
+            await TenantProblemDetails.WriteAsync(context, TenantProblemDetails.MissingContext);
+            return false;
         }
 
-        if (!host.EndsWith($".{baseDomain}", StringComparison.OrdinalIgnoreCase))
+        string requestHost = context.Request.Host.Host ?? string.Empty;
+        string expectedHost = $"{tenantKey}.{options.BaseDomain}";
+
+        if (string.Equals(requestHost, expectedHost, StringComparison.OrdinalIgnoreCase))
         {
-            return null;
+            return true;
         }
 
-        string prefix = host[..^(baseDomain.Length + 1)];
-
-        // Multi-level subdomains are not supported.
-        if (prefix.Length == 0 || prefix.Contains('.', StringComparison.Ordinal))
+        if (string.Equals(requestHost, options.PublicHost, StringComparison.OrdinalIgnoreCase))
         {
-            return null;
+            // Authenticated on the public login host: move to the tenant's canonical
+            // subdomain so branding and tenant settings are served from the right host.
+            string target = $"{options.Scheme}://{expectedHost}{context.Request.PathBase}{context.Request.Path}{context.Request.QueryString}";
+            context.Response.Redirect(target, permanent: false);
+            return false;
         }
 
-        return prefix.ToLowerInvariant();
+        await TenantProblemDetails.WriteAsync(context, TenantProblemDetails.HostMismatch);
+        return false;
     }
 }

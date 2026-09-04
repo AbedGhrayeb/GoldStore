@@ -1,5 +1,7 @@
+using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Common;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +12,9 @@ namespace Application.Features.StoreOperations.GetKpis;
 
 internal sealed class GetStoreOperationsKpisQueryHandler(
     IApplicationDbContext context,
-    IDateTimeProvider dateTimeProvider)
+    IDateTimeProvider dateTimeProvider,
+    ICurrentTenant currentTenant,
+    ICacheService cache)
     : IQueryHandler<GetStoreOperationsKpisQuery, StoreOperationsKpiResponse>
 {
 
@@ -18,6 +22,30 @@ internal sealed class GetStoreOperationsKpisQueryHandler(
     public async Task<Result<StoreOperationsKpiResponse>> Handle(
         GetStoreOperationsKpisQuery query,
         CancellationToken cancellationToken)
+    {
+        if (!currentTenant.IsAvailable)
+        {
+            return await BuildAsync(cancellationToken);
+        }
+
+        Guid tenantId = currentTenant.TenantId;
+        if (currentTenant is ICurrentTenantSetter setter)
+        {
+            setter.Set(tenantId, currentTenant.TenantKey);
+        }
+
+        string cacheKey = CacheKeys.Kpi(tenantId, "store-operations");
+        StoreOperationsKpiResponse response = await cache.GetOrCreateAsync(
+            cacheKey,
+            [CacheKeys.KpiTenant(tenantId)],
+            (ct) => BuildAsync(ct),
+            CacheKeys.KpiExpiration,
+            cancellationToken);
+
+        return response;
+    }
+
+    private async Task<StoreOperationsKpiResponse> BuildAsync(CancellationToken cancellationToken)
     {
         DateTime todayStart = dateTimeProvider.Now.Date;
 

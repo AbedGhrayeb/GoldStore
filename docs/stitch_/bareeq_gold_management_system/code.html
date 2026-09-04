@@ -1,0 +1,279 @@
+<!DOCTYPE html><html class="light" dir="rtl" lang="ar" style="width: 1280px; height: 1024px; overflow: hidden; position: relative;"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>بريق للذهب - تسجيل الدخول</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Google Fonts: IBM Plex Sans Arabic -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#5f5e5e",
+                        "on-tertiary-fixed": "#002113",
+                        "on-secondary-container": "#636262",
+                        "surface-container-high": "#e8e7f1",
+                        "primary-fixed": "#ffe088",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "on-primary-container": "#554300",
+                        "surface": "#fbf8ff",
+                        "surface-container-highest": "#e3e1ec",
+                        "tertiary-fixed": "#6ffbbe",
+                        "on-primary-fixed": "#241a00",
+                        "surface-dim": "#dad9e3",
+                        "secondary-container": "#e2dfde",
+                        "outline-variant": "#d0c5af",
+                        "secondary-fixed": "#e5e2e1",
+                        "inverse-on-surface": "#f1effa",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#005035",
+                        "on-primary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#7f7663",
+                        "on-error-container": "#93000a",
+                        "surface-tint": "#735c00",
+                        "background": "#fbf8ff",
+                        "surface-container-low": "#f4f2fd",
+                        "tertiary-container": "#33ca90",
+                        "primary-fixed-dim": "#e9c349",
+                        "on-background": "#1a1b22",
+                        "tertiary": "#006c49",
+                        "surface-variant": "#e3e1ec",
+                        "on-primary-fixed-variant": "#574500",
+                        "surface-container": "#eeedf7",
+                        "surface-bright": "#fbf8ff",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "inverse-primary": "#e9c349",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed-variant": "#474746",
+                        "primary-container": "#d4af37",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "inverse-surface": "#2f3038",
+                        "primary": "#735c00",
+                        "on-surface-variant": "#4d4635",
+                        "on-surface": "#1a1b22"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "xs": "4px",
+                        "md": "24px",
+                        "sm": "12px",
+                        "lg": "40px",
+                        "container-max": "1440px",
+                        "xl": "64px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["IBM Plex Sans Arabic"],
+                        "data-mono": ["IBM Plex Sans Arabic"],
+                        "label-md": ["IBM Plex Sans Arabic"],
+                        "body-lg": ["IBM Plex Sans Arabic"],
+                        "headline-lg": ["IBM Plex Sans Arabic"],
+                        "title-lg": ["IBM Plex Sans Arabic"],
+                        "headline-md": ["IBM Plex Sans Arabic"],
+                        "display-lg": ["IBM Plex Sans Arabic"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["40px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Subtle float animation for KPI cards */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex selection:bg-primary-container selection:text-on-primary-container">
+<!-- Main Container: Asymmetric Split Screen -->
+<main class="flex flex-col md:flex-row w-full h-screen">
+<!-- Right Side: Login Form (Primary Interaction in RTL) -->
+<section class="w-full md:w-[450px] lg:w-[500px] flex-shrink-0 bg-surface-container-lowest flex flex-col justify-center px-8 md:px-12 lg:px-16 z-20 shadow-[0px_4px_20px_rgba(0,0,0,0.04)] relative">
+<!-- Brand Logo -->
+<div class="mb-10 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: &quot;FILL&quot; 1;">diamond</span>
+</div>
+<span class="font-title-lg text-title-lg font-bold text-primary">بريق للذهب</span>
+</div>
+<!-- Welcome Text -->
+<div class="mb-8">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface mb-2">مرحباً بك مجدداً</h1>
+<p class="font-body-md text-body-md text-secondary">الرجاء إدخال بيانات الاعتماد للوصول إلى لوحة التحكم.</p>
+</div>
+<!-- Form -->
+<form action="#" class="flex flex-col gap-5" method="POST">
+<!-- Email Field -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2" for="email">البريد الإلكتروني</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute right-4 text-secondary">mail</span>
+<input class="w-full bg-surface text-on-surface border border-outline-variant rounded-lg pl-4 pr-12 py-3 font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-shadow text-left placeholder:text-secondary-fixed-dim" dir="ltr" id="email" name="email" placeholder="name@company.com" type="email">
+</div>
+</div>
+<!-- Password Field -->
+<div>
+<div class="flex justify-between items-center mb-2">
+<label class="block font-label-md text-label-md text-on-surface-variant" for="password">كلمة المرور</label>
+<a class="font-label-md text-label-md text-primary hover:text-primary-fixed-dim transition-colors" href="#">نسيت كلمة المرور؟</a>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute right-4 text-secondary">lock</span>
+<input class="w-full bg-surface text-on-surface border border-outline-variant rounded-lg pl-4 pr-12 py-3 font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-shadow text-left placeholder:text-secondary-fixed-dim" dir="ltr" id="password" name="password" placeholder="••••••••" type="password">
+<button class="absolute left-4 text-secondary hover:text-on-surface transition-colors flex items-center justify-center" type="button">
+<span class="material-symbols-outlined">visibility_off</span>
+</button>
+</div>
+</div>
+<!-- Primary Submit -->
+<button class="mt-2 w-full bg-primary-container text-on-primary-container hover:bg-primary-fixed-dim font-label-md text-label-md py-3 px-4 rounded-lg transition-colors flex justify-center items-center gap-2 shadow-sm" type="submit">
+<span class="">تسجيل الدخول</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</form>
+<!-- Divider -->
+<div class="my-8 flex items-center gap-4">
+<div class="flex-1 h-px bg-outline-variant opacity-50"></div>
+
+<div class="flex-1 h-px bg-outline-variant opacity-50"></div>
+</div>
+<!-- Alternative Logins -->
+<div class="flex flex-col gap-3">
+
+
+</div>
+<!-- Footer text -->
+<p class="mt-auto pt-8 text-center font-label-md text-label-md text-secondary">
+                بتسجيل الدخول، أنت توافق على <a class="text-primary hover:underline" href="#">الشروط والأحكام</a> و <a class="text-primary hover:underline" href="#">سياسة الخصوصية</a>.
+            </p>
+</section>
+<!-- Left Side: Atmospheric & Data Section (Hidden on mobile) -->
+<section class="hidden md:flex flex-1 relative bg-surface-container overflow-hidden">
+<!-- Atmospheric Background Image with Overlay -->
+<div class="absolute inset-0 bg-cover bg-center bg-no-repeat" data-alt="A macro, high-resolution photograph of textured, molten gold swirling elegantly against a stark, pure white background. The lighting is incredibly soft and high-key, creating a modern, minimalist, and luxurious aesthetic suitable for a high-end corporate financial platform. Subtle reflections gleam on the metallic surface, emphasizing value and precision without being overly dark or moody." style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuB0XtxG_dXHk99xmIiQXJdTrSLtQ3PmK1lxDzW67HZLRn6VaEa7Uj45YZyPQ6hgImXVabLb1vSikWmmsPUWl6ILbvgBNzgFMoneS35cSgv0zXGR29QLTBYOek1r2SvbsBXmjs-FMqHCnRlzHTLjAsYCCvV9V5BCMFsR398K9oR2NzG-7O9TOADan-4YoTNskRFhKNSBMPgZ4X9tomfoBSKXvwDiRr4A6aGWxvbz7G4UI-OanWUPsypLo7wxFaiFyZ5unqdyBztp1Ck&quot;);">
+</div>
+<div class="absolute inset-0 bg-surface/60 backdrop-blur-[2px]"></div>
+<!-- Content Container -->
+<div class="relative z-10 w-full h-full flex flex-col justify-center items-center p-12">
+<!-- Glassmorphism Panel for Live Data -->
+<div class="w-full max-w-xl bg-surface-container-lowest/80 backdrop-blur-xl border border-outline-variant/50 rounded-xl p-8 shadow-[0px_10px_32px_rgba(0,0,0,0.08)]">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface">مؤشرات السوق الحية</h2>
+<p class="font-body-md text-body-md text-secondary mt-1">تحديث مباشر لأسعار الذهب العالمية</p>
+</div>
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-primary text-[24px]">trending_up</span>
+</div>
+</div>
+<!-- Bento Grid for Prices -->
+<div class="grid grid-cols-2 gap-4">
+<!-- 24K Card -->
+<div class="bg-surface p-5 rounded-lg border border-outline-variant hover:border-primary/50 transition-colors animate-float">
+<div class="flex items-center gap-2 mb-3">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span>
+<span class="font-label-md text-label-md text-on-surface-variant">عيار 24</span>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-display-lg text-display-lg font-bold text-on-surface">295.40</span>
+<span class="font-label-md text-label-md text-secondary">ر.س / جم</span>
+</div>
+<div class="mt-2 flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+<span class="font-data-mono text-data-mono text-sm">+1.2%</span>
+</div>
+</div>
+<!-- 22K Card -->
+<div class="bg-surface p-5 rounded-lg border border-outline-variant hover:border-primary/50 transition-colors animate-float delay-100">
+<div class="flex items-center gap-2 mb-3">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="font-label-md text-label-md text-on-surface-variant">عيار 22</span>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-display-lg text-display-lg font-bold text-on-surface">270.80</span>
+<span class="font-label-md text-label-md text-secondary">ر.س / جم</span>
+</div>
+<div class="mt-2 flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+<span class="font-data-mono text-data-mono text-sm">+0.8%</span>
+</div>
+</div>
+<!-- 21K Card -->
+<div class="bg-surface p-5 rounded-lg border border-outline-variant hover:border-primary/50 transition-colors animate-float delay-200">
+<div class="flex items-center gap-2 mb-3">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="font-label-md text-label-md text-on-surface-variant">عيار 21</span>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-display-lg text-display-lg font-bold text-on-surface">258.50</span>
+<span class="font-label-md text-label-md text-secondary">ر.س / جم</span>
+</div>
+<div class="mt-2 flex items-center gap-1 text-error">
+<span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+<span class="font-data-mono text-data-mono text-sm">-0.3%</span>
+</div>
+</div>
+<!-- 18K Card -->
+<div class="bg-surface p-5 rounded-lg border border-outline-variant hover:border-primary/50 transition-colors animate-float delay-300">
+<div class="flex items-center gap-2 mb-3">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="font-label-md text-label-md text-on-surface-variant">عيار 18</span>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-display-lg text-display-lg font-bold text-on-surface">221.55</span>
+<span class="font-label-md text-label-md text-secondary">ر.س / جم</span>
+</div>
+<div class="mt-2 flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+<span class="font-data-mono text-data-mono text-sm">+0.5%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+
+
+<div id="snapdom-sandbox" data-snapdom-sandbox="true" aria-hidden="true" style="position: absolute; left: -9999px; top: -9999px; width: 0px; height: 0px; overflow: hidden;"></div></body></html>

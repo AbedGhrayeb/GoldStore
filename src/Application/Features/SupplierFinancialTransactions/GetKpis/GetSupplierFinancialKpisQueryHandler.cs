@@ -1,5 +1,7 @@
+using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Common;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
@@ -8,12 +10,38 @@ using SharedKernel.Result;
 namespace Application.Features.SupplierFinancialTransactions.GetKpis;
 
 internal sealed class GetSupplierFinancialKpisQueryHandler(
-    IApplicationDbContext context)
+    IApplicationDbContext context,
+    ICurrentTenant currentTenant,
+    ICacheService cache)
     : IQueryHandler<GetSupplierFinancialKpisQuery, SupplierFinancialKpiResponse>
 {
 
     public async Task<Result<SupplierFinancialKpiResponse>> Handle(
         GetSupplierFinancialKpisQuery query, CancellationToken cancellationToken)
+    {
+        if (!currentTenant.IsAvailable)
+        {
+            return await BuildAsync(cancellationToken);
+        }
+
+        Guid tenantId = currentTenant.TenantId;
+        if (currentTenant is ICurrentTenantSetter setter)
+        {
+            setter.Set(tenantId, currentTenant.TenantKey);
+        }
+
+        string cacheKey = CacheKeys.Kpi(tenantId, "supplier-financial");
+        SupplierFinancialKpiResponse response = await cache.GetOrCreateAsync(
+            cacheKey,
+            [CacheKeys.KpiTenant(tenantId)],
+            (ct) => BuildAsync(ct),
+            CacheKeys.KpiExpiration,
+            cancellationToken);
+
+        return response;
+    }
+
+    private async Task<SupplierFinancialKpiResponse> BuildAsync(CancellationToken cancellationToken)
     {
         List<SupplierFinancialTransaction> transactions = await context.SupplierFinancialTransactions
             .AsNoTracking()

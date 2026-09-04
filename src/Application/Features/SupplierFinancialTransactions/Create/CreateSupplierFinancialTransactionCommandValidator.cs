@@ -21,7 +21,8 @@ internal sealed class CreateSupplierFinancialTransactionCommandValidator : Abstr
 
         RuleFor(x => x.Currency)
             .NotEmpty()
-            .Must(c => c is "Jod" or "Usd" or "Ils")
+            .Must(currency => Enum.TryParse(currency, ignoreCase: true, out Domain.Common.Currency parsed)
+                && Enum.IsDefined(parsed))
             .WithMessage("العملة غير صالحة");
 
         RuleFor(x => x.AccountId)

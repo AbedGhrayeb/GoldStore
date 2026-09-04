@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Application.Features.StoreOperations.GetKpis;
 using Domain.Common;
 using Domain.Sales;
@@ -11,7 +12,8 @@ namespace Application.Features.StoreOperations.GetTodayEmployeeStats;
 
 internal sealed class GetTodayEmployeeStatsQueryHandler(
     IApplicationDbContext context,
-    IDateTimeProvider dateTimeProvider)
+    IDateTimeProvider dateTimeProvider,
+    ICurrentTenant currentTenant)
     : IQueryHandler<GetTodayEmployeeStatsQuery, List<EmployeeDayStatsResponse>>
 {
     public async Task<Result<List<EmployeeDayStatsResponse>>> Handle(
@@ -22,23 +24,26 @@ internal sealed class GetTodayEmployeeStatsQueryHandler(
 
         var salesHeaders = await context.SalesInvoices
             .AsNoTracking()
+            .Where(s => s.TenantId == currentTenant.TenantId)
             .Where(s => s.Date >= todayStart && s.Status != SalesInvoiceStatus.Cancelled)
             .Select(s => new { s.Id, s.EmployeeId, s.Currency, s.TotalAmount })
             .ToListAsync(cancellationToken);
 
         var purchaseHeaders = await context.CustomerPurchaseInvoices
             .AsNoTracking()
+            .Where(p => p.TenantId == currentTenant.TenantId)
             .Where(p => p.Date >= todayStart)
             .Select(p => new { p.Id, p.EmployeeId, p.Currency, p.TotalAmount })
             .ToListAsync(cancellationToken);
 
-        List<Guid> salesInvoiceIds = salesHeaders.Select(s => s.Id).ToList();
-        List<Guid> purchaseInvoiceIds = purchaseHeaders.Select(p => p.Id).ToList();
+        var salesInvoiceIds = salesHeaders.Select(s => s.Id).ToList();
+        var purchaseInvoiceIds = purchaseHeaders.Select(p => p.Id).ToList();
 
         Dictionary<Guid, decimal> salesItemWeights = salesInvoiceIds.Count == 0
             ? []
             : await context.SalesInvoiceItems
                 .AsNoTracking()
+                .Where(i => i.TenantId == currentTenant.TenantId)
                 .Where(i => salesInvoiceIds.Contains(i.SalesInvoiceId))
                 .GroupBy(i => i.SalesInvoiceId)
                 .Select(g => new { SalesInvoiceId = g.Key, Weight = g.Sum(i => i.Equivalent21KWeightInGrams) })
@@ -48,6 +53,7 @@ internal sealed class GetTodayEmployeeStatsQueryHandler(
             ? []
             : await context.CustomerPurchaseInvoiceItems
                 .AsNoTracking()
+                .Where(i => i.TenantId == currentTenant.TenantId)
                 .Where(i => purchaseInvoiceIds.Contains(i.CustomerPurchaseInvoiceId))
                 .GroupBy(i => i.CustomerPurchaseInvoiceId)
                 .Select(g => new { CustomerPurchaseInvoiceId = g.Key, Weight = g.Sum(i => i.Equivalent21KWeightInGrams) })
@@ -63,6 +69,7 @@ internal sealed class GetTodayEmployeeStatsQueryHandler(
 
         Dictionary<Guid, string> employeeNames = await context.Employees
             .AsNoTracking()
+            .Where(e => e.TenantId == currentTenant.TenantId)
             .Where(e => employeeIds.Contains(e.Id))
             .Select(e => new { e.Id, e.FirstName, e.LastName })
             .ToDictionaryAsync(e => e.Id, e => $"{e.FirstName} {e.LastName}", cancellationToken);

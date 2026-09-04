@@ -29,6 +29,6 @@ internal sealed class CustomerPurchaseInvoiceItemConfiguration : IEntityTypeConf
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
 
-        builder.HasIndex(i => i.CustomerPurchaseInvoiceId);
+        builder.HasIndex(i => new { i.TenantId, i.CustomerPurchaseInvoiceId });
     }
 }

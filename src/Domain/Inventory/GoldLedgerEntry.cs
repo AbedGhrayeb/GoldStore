@@ -4,8 +4,10 @@ using SharedKernel.Result;
 
 namespace Domain.Inventory;
 
-public sealed class GoldLedgerEntry : AuditableEntity
+public sealed class GoldLedgerEntry : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
 
     public Karat Karat { get; private set; }
 

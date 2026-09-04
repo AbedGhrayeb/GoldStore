@@ -32,9 +32,12 @@ public class AuditableEntityInterceptor(IUserContext user, TimeProvider dateTime
             return;
         }
 
-        // Null for system writes with no authenticated user (provisioning, seeders,
-        // background jobs) — audit columns stay null instead of crashing the save.
-        Guid? currentUserId = _user.UserIdOrNull;
+        // Host and background flows (seeding, provisioning, migrations) run without
+        // an authenticated user; audit fields stay unset for those writes.
+        if (!_user.IsAvailable)
+        {
+            return;
+        }
 
         foreach (EntityEntry<AuditableEntity> entry in context.ChangeTracker.Entries<AuditableEntity>())
         {
@@ -44,11 +47,11 @@ public class AuditableEntityInterceptor(IUserContext user, TimeProvider dateTime
 
                 if (entry.State == EntityState.Added)
                 {
-                    entry.Entity.CreatedBy = currentUserId;
+                    entry.Entity.CreatedBy = _user.UserId;
                     entry.Entity.CreatedAtUtc = utcNow;
                 }
 
-                entry.Entity.LastModifiedBy = currentUserId;
+                entry.Entity.LastModifiedBy = _user.UserId;
                 entry.Entity.LastModifiedUtc = utcNow;
 
                 foreach (ReferenceEntry ownedEntry in entry.References)
@@ -57,11 +60,11 @@ public class AuditableEntityInterceptor(IUserContext user, TimeProvider dateTime
                     {
                         if (ownedEntry.TargetEntry.State == EntityState.Added)
                         {
-                            ownedEntity.CreatedBy = currentUserId;
+                            ownedEntity.CreatedBy = _user.UserId;
                             ownedEntity.CreatedAtUtc = utcNow;
                         }
 
-                        ownedEntity.LastModifiedBy = currentUserId;
+                        ownedEntity.LastModifiedBy = _user.UserId;
                         ownedEntity.LastModifiedUtc = utcNow;
                     }
                 }

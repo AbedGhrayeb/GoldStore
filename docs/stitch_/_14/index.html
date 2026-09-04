@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>بريق للذهب - لوحة القيادة</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+
+  <!-- Google Fonts: IBM Plex Sans Arabic -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+  <!-- Custom Tailwind config & CSS -->
+  <link rel="stylesheet" href="style.css" />
+  <script src="tailwind.config.js"></script>
+</head>
+<body class="bg-surface font-arabic text-on-surface h-full">
+
+  <!-- ═══════════════════════════════════════════
+       LAYOUT WRAPPER
+  ════════════════════════════════════════════ -->
+  <div class="flex h-screen overflow-hidden" id="app">
+
+    <!-- ── SIDEBAR ────────────────────────────── -->
+    <aside
+      id="sidebar"
+      class="sidebar fixed inset-y-0 right-0 z-40 w-60 bg-white border-l border-outline-var
+             flex flex-col transition-transform duration-300
+             translate-x-full lg:translate-x-0 lg:static lg:inset-auto lg:z-auto"
+    >
+      <!-- Brand -->
+      <div class="flex flex-col items-center gap-1 py-6 border-b border-outline-var">
+        <div class="w-12 h-12 rounded-xl bg-primary-cont flex items-center justify-center text-on-primary-cont font-bold text-lg">ب</div>
+        <p class="font-semibold text-gold text-sm mt-1">بريق للذهب</p>
+        <p class="text-xs text-muted">نظام إدارة الذهب</p>
+      </div>
+
+      <!-- Nav links -->
+      <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+        <a href="#" class="nav-link active" data-page="dashboard">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          لوحة القيادة
+        </a>
+        <a href="#" class="nav-link" data-page="inventory">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6z"/><path d="M3 10h18"/></svg>
+          المخزون
+        </a>
+        <a href="#" class="nav-link" data-page="sales">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 7h10M7 12h6m-6 5h4"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          المبيعات
+        </a>
+        <a href="#" class="nav-link" data-page="suppliers">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.85"/></svg>
+          الموردين
+        </a>
+        <a href="#" class="nav-link" data-page="finance">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><circle cx="12" cy="14" r="2"/></svg>
+          المالية
+        </a>
+        <a href="#" class="nav-link" data-page="reports">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10m-6 10V4M6 20v-6"/></svg>
+          التقارير
+        </a>
+      </nav>
+
+      <!-- Bottom actions -->
+      <div class="border-t border-outline-var px-3 py-4 space-y-1">
+        <a href="#" class="nav-link">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/><path d="M15.5 8.5l5 5M20.5 8.5l-5 5"/></svg>
+          الإعدادات
+        </a>
+        <a href="#" class="nav-link text-red-500 hover:bg-red-50">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          تسجيل الخروج
+        </a>
+      </div>
+    </aside>
+
+    <!-- Sidebar overlay (mobile) -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-30 hidden lg:hidden" onclick="closeSidebar()"></div>
+
+    <!-- ── MAIN CONTENT ────────────────────────── -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+      <!-- TOP NAV BAR -->
+      <header class="h-14 bg-white border-b border-outline-var flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-20">
+        <!-- Left: hamburger (mobile) + search -->
+        <div class="flex items-center gap-3">
+          <!-- Hamburger (mobile only) -->
+          <button class="lg:hidden p-2 rounded-lg hover:bg-surface text-muted" onclick="openSidebar()" aria-label="القائمة">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+
+          <!-- Search -->
+          <div class="relative hidden sm:flex items-center">
+            <svg class="absolute right-3 w-4 h-4 text-muted pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input
+              type="search"
+              placeholder="بحث..."
+              class="pr-9 pl-4 py-1.5 w-52 lg:w-64 bg-surface border border-outline-var rounded-lg text-sm focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition"
+            />
+          </div>
+        </div>
+
+        <!-- Right: page title + actions -->
+        <div class="flex items-center gap-3">
+          <!-- Notifications -->
+          <button class="relative p-2 rounded-lg hover:bg-surface text-muted" aria-label="الإشعارات">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+          </button>
+
+          <!-- Settings -->
+          <button class="p-2 rounded-lg hover:bg-surface text-muted" aria-label="الإعدادات">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          </button>
+
+          <!-- Page title -->
+          <h1 class="font-bold text-base lg:text-lg text-gold">لوحة القيادة</h1>
+
+          <!-- Avatar -->
+          <div class="w-9 h-9 rounded-full bg-primary-cont overflow-hidden flex items-center justify-center cursor-pointer border-2 border-gold/20 hover:border-gold/50 transition">
+            <svg class="w-6 h-6 text-on-primary-cont" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+          </div>
+        </div>
+      </header>
+
+      <!-- PAGE BODY -->
+      <main class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5 bg-surface">
+
+        <!-- ── KPI CARDS ───────────────────────── -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+
+          <!-- Card: إجمالي رصيد الذهب -->
+          <div class="kpi-card">
+            <div class="kpi-icon bg-primary-cont text-on-primary-cont">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>
+            </div>
+            <div class="flex-1 text-right">
+              <p class="kpi-label">إجمالي رصيد الذهب</p>
+              <p class="kpi-value">4,520 <span class="kpi-unit">جم</span></p>
+            </div>
+            <span class="badge-up">↑ 2.4%</span>
+          </div>
+
+          <!-- Card: معادل عيار 21 -->
+          <div class="kpi-card">
+            <div class="kpi-icon bg-amber-100 text-amber-700">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <div class="flex-1 text-right">
+              <p class="kpi-label">معادل عيار 21</p>
+              <p class="kpi-value">3,980 <span class="kpi-unit">جم</span></p>
+            </div>
+          </div>
+
+          <!-- Card: أرصدة النقدية -->
+          <div class="kpi-card">
+            <div class="kpi-icon bg-blue-100 text-blue-600">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+            </div>
+            <div class="flex-1 text-right">
+              <p class="kpi-label">أرصدة النقدية (JOD)</p>
+              <p class="kpi-value">125,400 <span class="kpi-unit">د.أ</span></p>
+              <p class="text-xs text-muted mt-0.5">ILS: ₪80K &nbsp;·&nbsp; USD: $45K</p>
+            </div>
+          </div>
+
+          <!-- Card: أرصدة البنوك -->
+          <div class="kpi-card">
+            <div class="kpi-icon bg-green-100 text-green-600">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3m4-3v3m4-3v3"/></svg>
+            </div>
+            <div class="flex-1 text-right">
+              <p class="kpi-label">أرصدة البنوك</p>
+              <p class="kpi-value">450,000 <span class="kpi-unit">د.أ</span></p>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ── CHART + STATS ROW ──────────────── -->
+        <section class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+
+          <!-- Gold Price Chart (spans 3 cols on lg) -->
+          <div class="lg:col-span-3 card">
+            <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+              <h2 class="section-title">مؤشر أسعار الذهب</h2>
+              <div class="flex gap-1.5">
+                <button class="tab-btn active" data-period="day">اليوم</button>
+                <button class="tab-btn" data-period="week">أسبوع</button>
+                <button class="tab-btn" data-period="month">شهر</button>
+              </div>
+            </div>
+            <div class="relative h-52 sm:h-64">
+              <canvas id="goldChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Today's Stats (spans 2 cols on lg) -->
+          <div class="lg:col-span-2 card flex flex-col gap-4">
+            <h2 class="section-title">إحصائيات اليوم</h2>
+
+            <!-- Sales -->
+            <div>
+              <div class="flex justify-between items-center mb-1.5">
+                <span class="stat-label">مبيعات اليوم</span>
+                <span class="stat-value text-gold font-semibold">150 جم</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar bg-gold" style="width: 75%"></div>
+              </div>
+            </div>
+
+            <!-- Purchases -->
+            <div>
+              <div class="flex justify-between items-center mb-1.5">
+                <span class="stat-label">مشتريات الذهب</span>
+                <span class="stat-value text-gray-500 font-semibold">80 جم</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar bg-gray-400" style="width: 40%"></div>
+              </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="border-t border-outline-var pt-3 mt-auto">
+              <p class="stat-label text-right">أجور التصنيع المستحقة</p>
+              <p class="text-xl font-bold text-on-surface text-right mt-1">4,200 <span class="text-sm font-normal text-muted">د.أ</span></p>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ── RECENT TRANSACTIONS ────────────── -->
+        <section class="card">
+          <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h2 class="section-title">أحدث العمليات</h2>
+            <a href="#" class="text-sm text-gold hover:underline flex items-center gap-1">
+              عرض الكل
+              <svg class="w-3.5 h-3.5 rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+          </div>
+
+          <!-- Table wrapper: scroll on mobile -->
+          <div class="overflow-x-auto -mx-4 lg:-mx-6 px-4 lg:px-6">
+            <table class="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr class="border-b border-outline-var text-muted text-right">
+                  <th class="pb-2.5 font-medium">رقم المرجع</th>
+                  <th class="pb-2.5 font-medium">النوع</th>
+                  <th class="pb-2.5 font-medium">العميل / المورد</th>
+                  <th class="pb-2.5 font-medium">الوزن (جم)</th>
+                  <th class="pb-2.5 font-medium">القيمة</th>
+                  <th class="pb-2.5 font-medium">التاريخ</th>
+                  <th class="pb-2.5 font-medium">الحالة</th>
+                </tr>
+              </thead>
+              <tbody id="tx-table-body" class="divide-y divide-outline-var/50">
+                <!-- Rows injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </main>
+    </div><!-- /main content -->
+  </div><!-- /app -->
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -22,7 +22,9 @@ internal static class ValidationDecorator
                 return await innerHandler.Handle(command, cancellationToken);
             }
 
-            return Error.Validation();
+            return validationFailures
+                .Select(failure => Error.Validation(failure.PropertyName, failure.ErrorMessage))
+                .ToList();
         }
     }
 

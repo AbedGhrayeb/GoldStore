@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Application.Features.StoreOperations.Shared;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ using SharedKernel.Result;
 
 namespace Application.Features.StoreOperations.GetPaged;
 
-internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext context)
+internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetStoreOperationsQuery, PagedStoreOperationsResponse>
 {
 
@@ -24,9 +25,12 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
         GetStoreOperationsQuery query,
         CancellationToken cancellationToken)
     {
-        Dictionary<Guid, string> employees = await context.Employees.Select(e => new { e.Id, e.FullName }).ToDictionaryAsync(e => e.Id, e => e.FullName, cancellationToken);
+        Dictionary<Guid, string> employees = await context.Employees
+            .Where(e => e.TenantId == currentTenant.TenantId)
+            .Select(e => new { e.Id, e.FullName }).ToDictionaryAsync(e => e.Id, e => e.FullName, cancellationToken);
         IQueryable<StoreOperationRow> salesQuery = context.SalesInvoices
             .AsNoTracking()
+            .Where(s => s.TenantId == currentTenant.TenantId)
             .Select(s => new StoreOperationRow
             {
                 Id = s.Id,
@@ -48,6 +52,7 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
 
         IQueryable<StoreOperationRow> purchasesQuery = context.CustomerPurchaseInvoices
             .AsNoTracking()
+            .Where(p => p.TenantId == currentTenant.TenantId)
             .Select(p => new StoreOperationRow
             {
                 Id = p.Id,
@@ -125,6 +130,7 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
 
         Dictionary<Guid, int> saleItemCounts = await context.SalesInvoiceItems
             .AsNoTracking()
+            .Where(i => i.TenantId == currentTenant.TenantId)
             .Where(i => saleIds.Contains(i.SalesInvoiceId))
             .GroupBy(i => i.SalesInvoiceId)
             .Select(g => new { Id = g.Key, Count = g.Count() })
@@ -132,6 +138,7 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
 
         Dictionary<Guid, int> purchaseItemCounts = await context.CustomerPurchaseInvoiceItems
             .AsNoTracking()
+            .Where(i => i.TenantId == currentTenant.TenantId)
             .Where(i => purchaseIds.Contains(i.CustomerPurchaseInvoiceId))
             .GroupBy(i => i.CustomerPurchaseInvoiceId)
             .Select(g => new { Id = g.Key, Count = g.Count() })
@@ -139,6 +146,7 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
 
         Dictionary<Guid, string> accountNames = await context.FinancialAccounts
             .AsNoTracking()
+            .Where(a => a.TenantId == currentTenant.TenantId)
             .Where(a => accountIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id, a => a.Name, cancellationToken);
 

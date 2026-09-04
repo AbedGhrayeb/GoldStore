@@ -1,12 +1,14 @@
-﻿using System.Text;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Json;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Configuration;
+using Microsoft.OpenApi;
+using WebUI.Endpoints;
 using WebUI.Infrastructure;
-using WebUI.OpenApi.Transformers;
+using WebUI.Infrastructure.Authentication;
+using WebUI.Infrastructure.OpenApi;
 namespace WebUI;
 
 public static class DependencyInjection
@@ -14,20 +16,32 @@ public static class DependencyInjection
 
     public static IServiceCollection AddPresentation(this IServiceCollection services, IConfiguration configuration)
     {
-        //API
-        services.AddControllers();
-        // MVC
-        services.AddControllersWithViews();
+        services.AddScoped<JwtCookieManager>();
 
+        // Host admin surface authenticates via a JWT cookie (host flow); the Angular client
+        // attaches the request token through its XSRF interceptor (XSRF-TOKEN cookie
+        // + X-XSRF-TOKEN header), validated on host mutations by AntiforgeryEndpointFilter.
+        // The antiforgery cookie (.AspNetCore.Antiforgery.*) stays HttpOnly; the readable
+        // XSRF-TOKEN cookie holding the RequestToken is set manually in HostEndpoints.Login.
+        services.AddAntiforgery(options =>
+        {
+            options.HeaderName = "X-XSRF-TOKEN";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Strict;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            options.Cookie.IsEssential = true;
+        });
+        services.AddScoped<AntiforgeryEndpointFilter>();
+
+        // API only — no MVC/Razor views. Minimal APIs + Angular SPA.
         services.AddAuthorization()
-            .AddIdentityInfrastructure(configuration)
                 .AddExceptionHandling()
-                .AddControllerWithJsonConfiguration()
+                .AddApiJsonConfiguration()
                 .AddValidation()
                 .AddAppRateLimiting()
                 .AddAppOutputCaching()
-                .AddApiDocumentation();
-        ;
+                .AddOpenApiDocumentation()
+                .AddAngularCors();
         // ─── HTTP security headers ─────────────────────────────────────────────────────
         services.AddHsts(opts =>
         {
@@ -38,7 +52,71 @@ public static class DependencyInjection
         return services;
     }
 
-    private static IServiceCollection AddAppOutputCaching(this IServiceCollection services)
+    /// <summary>
+    /// Built-in OpenAPI document (plan Phase 7a) with the JWT bearer security scheme and
+    /// document metadata. Served through the Scalar API reference UI in Program.cs.
+    /// </summary>
+    public static IServiceCollection AddOpenApiDocumentation(this IServiceCollection services)
+    {
+        services.AddOpenApi(options =>
+        {
+            options.AddDocumentTransformer((document, _, _) =>
+            {
+                document.Info = new OpenApiInfo
+                {
+                    Title = "GoldStore API",
+                    Version = ApiRoutes.Version,
+                    Description = "Tenant-isolated API for the GoldStore ERP. " +
+                        "Tenant endpoints require a bearer token from POST /api/v1/auth/login; " +
+                        "endpoints never accept a tenant id — the tenant is resolved from the token claims."
+                };
+                return Task.CompletedTask;
+            });
+
+            options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+        });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Cross-origin policy for the Angular client. The production client is served from
+    /// the same tenant subdomain as the API (same-origin, no CORS needed), so this mainly
+    /// enables the local Angular dev server and tenant subdomains of the public domain.
+    /// </summary>
+    public static IServiceCollection AddAngularCors(this IServiceCollection services)
+    {
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowAngularApp", policy =>
+            {
+                policy.SetIsOriginAllowed(IsAllowedAngularOrigin)
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials();
+            });
+        });
+
+        return services;
+    }
+
+    private static bool IsAllowedAngularOrigin(string origin)
+    {
+        if (!Uri.TryCreate(origin, UriKind.Absolute, out Uri? uri))
+        {
+            return false;
+        }
+
+        if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) && uri.Port == 4200)
+        {
+            return true;
+        }
+
+        return uri.Host.Equals("goldstore.app", StringComparison.OrdinalIgnoreCase)
+            || uri.Host.EndsWith(".goldstore.app", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static IServiceCollection AddAppOutputCaching(this IServiceCollection services)
     {
         services.AddOutputCache(options =>
         {
@@ -50,7 +128,7 @@ public static class DependencyInjection
         return services;
     }
 
-    private static IServiceCollection AddAppRateLimiting(this IServiceCollection services)
+    public static IServiceCollection AddAppRateLimiting(this IServiceCollection services)
     {
         services.AddRateLimiter(options =>
         {
@@ -64,119 +142,60 @@ public static class DependencyInjection
                 limiterOptions.AutoReplenishment = true;
             });
 
+            // Strict, IP-partitioned policy for authentication endpoints (M7-B2). The
+            // permit/window limits are read per-request from the *runtime* configuration
+            // (not the bootstrap builder.Configuration snapshot) so tests can shrink them
+            // and the deployment can tune them without a rebuild. The app trusts only its
+            // own reverse proxy (ForwardedHeaders KnownProxies = loopback), so the key is
+            // the real client address when nginx fronts it.
+            options.AddPolicy("LoginLimiter", context =>
+            {
+                IConfiguration runtime = context.RequestServices.GetRequiredService<IConfiguration>();
+                int permitLimit = runtime.GetValue("RateLimiting:Login:PermitLimit", 10);
+                int windowSeconds = runtime.GetValue("RateLimiting:Login:WindowSeconds", 60);
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = permitLimit,
+                        Window = TimeSpan.FromSeconds(windowSeconds),
+                        QueueLimit = 0,
+                        AutoReplenishment = true,
+                    });
+            });
+
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.OnRejected = (context, _) =>
+            {
+                IConfiguration runtime = context.HttpContext.RequestServices.GetRequiredService<IConfiguration>();
+                context.HttpContext.Response.Headers.RetryAfter =
+                    runtime.GetValue("RateLimiting:Login:WindowSeconds", 60).ToString();
+                return ValueTask.CompletedTask;
+            };
         });
 
         return services;
     }
 
 
-    private static IServiceCollection AddExceptionHandling(this IServiceCollection services)
+    public static IServiceCollection AddExceptionHandling(this IServiceCollection services)
     {
         services.AddExceptionHandler<GlobalExceptionHandler>();
+        services.AddProblemDetails();
         return services;
     }
-    private static IServiceCollection AddApiDocumentation(this IServiceCollection services)
+
+    public static IServiceCollection AddApiJsonConfiguration(this IServiceCollection services)
     {
-        string[] versions = ["v1"];
+        services.Configure<JsonOptions>(options =>
+            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
 
-        foreach (var version in versions)
-        {
-            services.AddOpenApi(version, options =>
-            {
-                // Versioning config
-                options.AddDocumentTransformer<VersionInfoTransformer>();
-
-                // Security Scheme config
-                options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
-
-                // Security Operation config
-                options.AddOperationTransformer<BearerSecurityOperationTransformer>();
-            });
-        }
+        services.ConfigureHttpJsonOptions(options =>
+            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
 
         return services;
     }
 
-    private static IServiceCollection AddControllerWithJsonConfiguration(this IServiceCollection services)
-    {
-        services.AddControllers().AddJsonOptions(options => options
-            .JsonSerializerOptions
-            .DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
-
-        return services;
-    }
-    private static IServiceCollection AddIdentityInfrastructure(this IServiceCollection services, IConfiguration configuration)
-    {
-        services.AddHttpContextAccessor();
-        services.AddAuthentication(options =>
-         {
-             options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-         })
-.AddJwtBearer(options =>
-            {
-                var jwtSettings = configuration.GetSection("Jwt");
-
-                options.TokenValidationParameters = new()
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtSettings["Issuer"],
-                    ValidAudience = jwtSettings["Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtSettings["Secret"]!)
-                    )
-                };
-            })
-            .AddJwtBearer(AuthConstants.PlatformBearerScheme, options =>
-            {
-                var jwtSettings = configuration.GetSection("Jwt");
-
-                options.TokenValidationParameters = new()
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtSettings["Issuer"],
-                    ValidAudience = jwtSettings["PlatformAudience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtSettings["Secret"]!)
-                    )
-                };
-            });
-
-        services.AddAuthorization(options =>
-        {
-            options.AddPolicy("MvcPolicy", policy =>
-            {
-                policy.AuthenticationSchemes.Add(
-                    CookieAuthenticationDefaults.AuthenticationScheme);
-
-                policy.RequireAuthenticatedUser();
-            });
-
-            options.AddPolicy("ApiPolicy", policy =>
-            {
-                policy.AuthenticationSchemes.Add(
-                    JwtBearerDefaults.AuthenticationScheme);
-
-                policy.RequireAuthenticatedUser();
-            });
-
-            options.AddPolicy(AuthConstants.PlatformApiPolicy, policy =>
-            {
-                policy.AuthenticationSchemes.Add(AuthConstants.PlatformBearerScheme);
-
-                policy.RequireAuthenticatedUser();
-                policy.RequireRole(AuthConstants.PlatformAdminRole);
-            });
-        });
-        return services;
-    }
 
 }

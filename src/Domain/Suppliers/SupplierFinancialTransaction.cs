@@ -4,8 +4,10 @@ using SharedKernel;
 
 namespace Domain.Suppliers;
 
-public sealed class SupplierFinancialTransaction : AuditableEntity
+public sealed class SupplierFinancialTransaction : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
     public Guid SupplierId { get; private set; }
 
     public SupplierFinancialTransactionDirection Direction { get; private set; }
@@ -38,6 +40,12 @@ public sealed class SupplierFinancialTransaction : AuditableEntity
     public static SupplierFinancialTransaction Create(Guid supplierId, SupplierFinancialTransactionDirection direction,
         decimal amount, Currency currency, Guid accountId, string? notes)
     {
-        return new SupplierFinancialTransaction(Guid.CreateVersion7(), supplierId, direction, amount, currency, accountId, notes);
+        return Create(Guid.CreateVersion7(), supplierId, direction, amount, currency, accountId, notes);
+    }
+
+    public static SupplierFinancialTransaction Create(Guid id, Guid supplierId, SupplierFinancialTransactionDirection direction,
+        decimal amount, Currency currency, Guid accountId, string? notes)
+    {
+        return new SupplierFinancialTransaction(id, supplierId, direction, amount, currency, accountId, notes);
     }
 }

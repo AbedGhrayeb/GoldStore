@@ -25,7 +25,7 @@ internal sealed class SupplierManufacturingLedgerEntryConfiguration : IEntityTyp
             .HasForeignKey(entry => entry.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(entry => new { entry.SupplierId, entry.CreatedAtUtc });
+        builder.HasIndex(entry => new { entry.TenantId, entry.SupplierId, entry.CreatedAtUtc });
 
     }
 }

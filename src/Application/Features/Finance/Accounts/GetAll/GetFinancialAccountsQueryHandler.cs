@@ -1,17 +1,18 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Result;
 
 namespace Application.Finance.Accounts.GetAll;
 
-internal sealed class GetFinancialAccountsQueryHandler(IApplicationDbContext context)
+internal sealed class GetFinancialAccountsQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetFinancialAccountsQuery, List<FinancialAccountResponse>>
 {
     public async Task<Result<List<FinancialAccountResponse>>> Handle(GetFinancialAccountsQuery query, CancellationToken cancellationToken)
     {
-        IQueryable<FinancialAccount> accounts = context.FinancialAccounts.AsNoTracking();
+        IQueryable<FinancialAccount> accounts = context.FinancialAccounts.AsNoTracking().Where(a => a.TenantId == currentTenant.TenantId);
 
         if (query.ActiveOnly)
         {

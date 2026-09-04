@@ -182,6 +182,9 @@ publish/
 # Publish Web Output
 *.[Pp]ublish.xml
 *.azurePubxml
+# Deployment credentials (user + password) — never commit
+*.publishSettings
+*.PublishSettings
 # Note: Comment the next line if you want to checkin your web deploy settings,
 # but database connection strings (with potential passwords) will be unencrypted
 *.pubxml
@@ -398,4 +401,8 @@ FodyWeavers.xsd
 *.sln.iml
 
 .containers/
-/docs
+
+# Firebase service account keys - never commit secrets
+**/*firebase-adminsdk*.json
+**/goldstore-f2729-fireb*.json
+*.bak

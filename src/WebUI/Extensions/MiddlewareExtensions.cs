@@ -18,10 +18,9 @@ public static class MiddlewareExtensions
         return app;
     }
 
-    public static IApplicationBuilder UseReadOnlyTenantEnforcement(this IApplicationBuilder app)
+    public static IApplicationBuilder UseTwoFactorEnforcement(this IApplicationBuilder app)
     {
-        app.UseMiddleware<ReadOnlyTenantMiddleware>();
-
+        app.UseMiddleware<TwoFactorEnforcementMiddleware>();
         return app;
     }
 }

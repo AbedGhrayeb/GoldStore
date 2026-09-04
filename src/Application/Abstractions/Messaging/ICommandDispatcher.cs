@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using SharedKernel.Result;
 
 namespace Application.Abstractions.Messaging;
 
 public interface ICommandDispatcher
 {
-    Task<TResult> DispatchAsync<TResult>(
-        ICommand<TResult> command,
-        CancellationToken cancellationToken = default);
+    Task<Result<TResult>> DispatchAsync<TCommand, TResult>(
+        TCommand command,
+        CancellationToken cancellationToken = default)
+        where TCommand : ICommand<TResult>;
 }

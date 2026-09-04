@@ -1,9 +1,13 @@
 using Application;
+using HealthChecks.UI.Client;
 using Infrastructure;
 using Infrastructure.Data;
-using Infrastructure.Platform;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
 using Serilog;
+using WebUI;
+using WebUI.Endpoints;
 using WebUI.Extensions;
 
 namespace WebUI
@@ -19,7 +23,8 @@ namespace WebUI
             builder.Services
                 .AddApplication()
                 .AddPresentation(builder.Configuration)
-                .AddInfrastructure(builder.Configuration);
+                .AddInfrastructure(builder.Configuration)
+                .AddEndpoints();
 
             builder.Services.AddResponseCompression(options =>
             {
@@ -42,35 +47,52 @@ namespace WebUI
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
-                app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnet-hsts.
                 app.UseHsts();
-                //app.ApplyMigrations();
             }
+
+            // Route exceptions through the registered IExceptionHandler
+            // (GlobalExceptionHandler) so tenant failures return consistent ProblemDetails.
+            app.UseExceptionHandler();
+
+            // Trust only the deployment reverse proxy (nginx on loopback, see
+            // deploy/nginx/nginx.conf) for X-Forwarded-* so IP-partitioned rate limiting
+            // sees the real client address and HSTS/HTTPS redirect honor the proxy scheme.
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+                KnownProxies = { System.Net.IPAddress.Loopback }
+            });
 
             app.UseHttpsRedirection();
 
-            if (app.Environment.IsDevelopment())
+            // Migrate + seed on startup. Always in Development; in other environments only
+            // when explicitly enabled via App:MigrateOnStartup (or the App__MigrateOnStartup
+            // environment variable) so operators control when production DDL runs. Seeding is
+            // idempotent, so the first boot after a fresh deploy is a safe no-op on re-runs.
+            bool migrateOnStartup = app.Environment.IsDevelopment() ||
+                app.Configuration.GetValue<bool>("App:MigrateOnStartup");
+
+            if (migrateOnStartup)
             {
-                // Tenant schemas are no longer created here — Phase 4 (provisioning)
-                // creates tenant schemas and Phase 5 (migration runner) keeps them current.
-                await app.InitializePlatformDatabaseAsync();
-                app.MapOpenApi();
-                app.MapScalarApiReference(static options =>
-                {
-                    options.Title = "Gold Store API";
-                    options.Theme = ScalarTheme.BluePlanet;
-
-                    options.ShowSidebar = true;
-                    options.HideModels = false;
-                });
-
+                await app.InitializeDatabaseAsync();
             }
 
-            //app.MapHealthChecks("health", new HealthCheckOptions
-            //{
-            //    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-            //});
+            // Health probes: /health (all checks), /health/ready (database), /health/live
+            // (process liveness — always healthy). These paths are exempt from tenant
+            // resolution via Tenancy:ExemptPaths.
+            app.MapHealthChecks("health", new HealthCheckOptions
+            {
+                ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+            });
+            app.MapHealthChecks("health/ready", new HealthCheckOptions
+            {
+                Predicate = check => check.Tags.Contains("ready")
+            });
+            app.MapHealthChecks("health/live", new HealthCheckOptions
+            {
+                Predicate = _ => false
+            });
 
             app.UseRequestContextLogging();
 
@@ -82,31 +104,34 @@ namespace WebUI
             }
             app.UseCors("AllowAngularApp");
 
-            // UseExceptionHandler is already configured above for non-development environments:
-            // app.UseExceptionHandler("/Home/Error");
-            // Do not call the parameterless overload here because it requires configuration in services.
             app.UseRouting();
-            app.MapStaticAssets();
 
-            // Resolve the tenant from the subdomain before authentication so login
-            // and all tenant endpoints run inside the correct tenant context.
-            app.UseTenantResolution();
-
-            // Block writes on expired tenants (read-only mode) while still allowing
-            // reads and authentication.
-            app.UseReadOnlyTenantEnforcement();
+            // Rate limiting applies only to endpoints opted in via [EnableRateLimiting]
+            // (login/refresh); health probes are never throttled.
+            app.UseRateLimiter();
 
             app.UseAuthentication();
 
+            // Resolve and enforce the ambient tenant before authorization and
+            // endpoints run (plan Phase 2). Exemptions are explicit.
+            app.UseTenantResolution();
+
+            // Enforce mandatory phone 2FA after authentication (Firebase Phone Auth)
+            app.UseTwoFactorEnforcement();
+
             app.UseAuthorization();
 
-            // REMARK: If you want to use Controllers, you'll need this.
-            app.MapControllers();
+            // Auto-discovered minimal API endpoint groups (plan Phase 7a). Tenant
+            // endpoints live under /api/v1 (JWT), host endpoints under /host/api/v1
+            // (host cookie). Adding a new group never changes this file.
+            app.MapEndpoints();
 
-            app.MapControllerRoute(
-                name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}")
-                .WithStaticAssets();
+            // Built-in OpenAPI document + Scalar API reference UI (plan Phase 7a).
+            if (app.Environment.IsDevelopment())
+            {
+                app.MapOpenApi();
+                app.MapScalarApiReference();
+            }
 
             await app.RunAsync();
         }

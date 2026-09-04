@@ -1,12 +1,13 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Result;
 
 namespace Application.Suppliers.GetAll;
 
-internal sealed class GetSuppliersQueryHandler(IApplicationDbContext context)
+internal sealed class GetSuppliersQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetSuppliersQuery, List<SupplierResponse>>
 {
     public async Task<Result<List<SupplierResponse>>> Handle(GetSuppliersQuery query, CancellationToken cancellationToken)
@@ -16,6 +17,7 @@ internal sealed class GetSuppliersQueryHandler(IApplicationDbContext context)
             .Include(s => s.SupplierManufacturingLedgerEntries)
             .Include(s => s.SupplierFinancialTransactions)
             .AsNoTracking().AsNoTracking()
+            .Where(s => s.TenantId == currentTenant.TenantId)
             .OrderByDescending(s => s.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
@@ -34,13 +36,13 @@ internal sealed class GetSuppliersQueryHandler(IApplicationDbContext context)
             .ToDictionary(x => x.SupplierId, x => x.Balance);
 
         var lastTransactions = suppliers.SelectMany(s => s.SupplierGoldLedgerEntries)
-            .Where(e => supplierIds.Contains(e.SupplierId))
+            .Where(e => supplierIds.Contains(e.SupplierId) && e.CreatedAtUtc is not null)
             .GroupBy(e => e.SupplierId)
             .Select(g => new TransactionDate { SupplierId = g.Key, Date = g.Max(e => e.CreatedAtUtc!.Value.LocalDateTime) })
             .ToList();
 
         var lastMfgTransactions = suppliers.SelectMany(s => s.SupplierManufacturingLedgerEntries)
-            .Where(e => supplierIds.Contains(e.SupplierId))
+            .Where(e => supplierIds.Contains(e.SupplierId) && e.CreatedAtUtc is not null)
             .GroupBy(e => e.SupplierId)
             .Select(g => new TransactionDate { SupplierId = g.Key, Date = g.Max(e => e.CreatedAtUtc!.Value.LocalDateTime) })
             .ToList();
@@ -57,7 +59,7 @@ internal sealed class GetSuppliersQueryHandler(IApplicationDbContext context)
             PrimaryPhone = s.PrimaryPhone,
             SecondaryPhone = s.SecondaryPhone,
             BankAccountNumber = s.BankAccountNumber,
-            CreatedAt = s.CreatedAtUtc!.Value.LocalDateTime,
+            CreatedAt = s.CreatedAtUtc?.LocalDateTime ?? default,
             IsActive = s.IsActive,
             Notes = s.Notes,
             GoldBalance = goldBalances.TryGetValue(s.Id, out decimal goldBalance) ? goldBalance : 0,

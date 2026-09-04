@@ -12,6 +12,6 @@ internal sealed class ExpenseCategoryConfiguration : IEntityTypeConfiguration<Ex
 
         builder.Property(c => c.Name).HasMaxLength(200);
 
-        builder.HasIndex(c => c.Name).IsUnique();
+        builder.HasIndex(c => new { c.TenantId, c.Name }).IsUnique();
     }
 }

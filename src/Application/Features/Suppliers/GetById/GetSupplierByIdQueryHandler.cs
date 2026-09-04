@@ -1,12 +1,13 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Result;
 
 namespace Application.Suppliers.GetById;
 
-internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
+internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetSupplierByIdQuery, SupplierDetailResponse>
 {
     public async Task<Result<SupplierDetailResponse>> Handle(GetSupplierByIdQuery query, CancellationToken cancellationToken)
@@ -17,6 +18,7 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
             .Include(s => s.SupplierFinancialTransactions)
             .Where(s => s.Id == query.Id)
             .AsNoTracking()
+            .Where(s => s.TenantId == currentTenant.TenantId)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (supplier is null)
@@ -39,6 +41,7 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
         if (financialTxIds.Count != 0)
         {
             Dictionary<Guid, decimal> financialBalances = await context.SupplierFinancialLedgerEntries
+                .Where(e => e.TenantId == currentTenant.TenantId)
                 .Where(e => financialTxIds.Contains(e.SupplierFinancialTransactionId))
                 .GroupBy(e => e.SupplierFinancialTransactionId)
                 .Select(g => new { TransactionId = g.Key, Balance = g.Sum(e => e.MovementType == SupplierBalanceMovementType.Increase ? e.Amount : -e.Amount) })
@@ -68,7 +71,7 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
             BankAccountNumber = supplier.BankAccountNumber,
             Notes = supplier.Notes,
             IsActive = supplier.IsActive,
-            CreatedAt = supplier.CreatedAtUtc!.Value.LocalDateTime,
+            CreatedAt = supplier.CreatedAtUtc.HasValue ? supplier.CreatedAtUtc!.Value.LocalDateTime : DateTime.UtcNow.ToLocalTime(),
             GoldBalance = goldBalance,
             ManufacturingBalance = manufacturingBalance,
             FinancialBalancesByCurrency = financialBalancesByCurrency,
@@ -117,6 +120,7 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context)
             .ToList();
 
         List<SupplierTransactionResponse> financialEntries = await context.SupplierFinancialLedgerEntries
+            .Where(e => e.TenantId == currentTenant.TenantId)
             .Where(e => financialTxIds.Contains(e.SupplierFinancialTransactionId))
             .OrderByDescending(e => e.CreatedAtUtc)
             .Take(5)

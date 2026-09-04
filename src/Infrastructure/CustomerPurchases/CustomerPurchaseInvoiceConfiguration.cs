@@ -42,8 +42,8 @@ internal sealed class CustomerPurchaseInvoiceConfiguration : IEntityTypeConfigur
             .HasForeignKey(i => i.EmployeeId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(i => i.InvoiceNumber).IsUnique();
+        builder.HasIndex(i => new { i.TenantId, i.InvoiceNumber }).IsUnique();
 
-        builder.HasIndex(i => i.Date);
+        builder.HasIndex(i => new { i.TenantId, i.Date });
     }
 }

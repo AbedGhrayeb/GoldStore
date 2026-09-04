@@ -20,7 +20,7 @@ internal sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
 
         builder.Property(supplier => supplier.Notes).HasMaxLength(1000);
 
-        builder.HasIndex(supplier => supplier.Name).IsUnique();
+        builder.HasIndex(supplier => new { supplier.TenantId, supplier.Name }).IsUnique();
 
 
         builder.HasMany(supplier => supplier.SupplierFinancialTransactions)

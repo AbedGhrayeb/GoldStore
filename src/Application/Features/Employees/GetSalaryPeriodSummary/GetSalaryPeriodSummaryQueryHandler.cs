@@ -1,12 +1,13 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Employees;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Result;
 
 namespace Application.Employees.GetSalaryPeriodSummary;
 
-internal sealed class GetSalaryPeriodSummaryQueryHandler(IApplicationDbContext context)
+internal sealed class GetSalaryPeriodSummaryQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetSalaryPeriodSummaryQuery, SalaryPeriodSummaryResponse>
 {
     public async Task<Result<SalaryPeriodSummaryResponse>> Handle(
@@ -15,6 +16,7 @@ internal sealed class GetSalaryPeriodSummaryQueryHandler(IApplicationDbContext c
     {
         Employee? employee = await context.Employees
             .AsNoTracking()
+            .Where(e => e.TenantId == currentTenant.TenantId)
             .FirstOrDefaultAsync(e => e.Id == query.EmployeeId, cancellationToken);
 
         if (employee is null)
@@ -36,6 +38,7 @@ internal sealed class GetSalaryPeriodSummaryQueryHandler(IApplicationDbContext c
 
         List<SalaryPayment> periodPayments = await context.SalaryPayments
             .AsNoTracking()
+            .Where(p => p.TenantId == currentTenant.TenantId)
             .Where(p => p.EmployeeId == query.EmployeeId && p.ScheduledDate == scheduledDate)
             .ToListAsync(cancellationToken);
 

@@ -5,8 +5,10 @@ using SharedKernel.Result;
 
 namespace Domain.Employees;
 
-public sealed class SalaryPayment : AuditableEntity
+public sealed class SalaryPayment : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
     public const int DiscountRatePercentPerDay = 1;
 
     public Guid EmployeeId { get; private set; }

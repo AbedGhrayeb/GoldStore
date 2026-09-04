@@ -13,7 +13,8 @@ internal sealed class PaySalaryCommandHandler(IApplicationDbContext context)
 {
     public async Task<Result<Guid>> Handle(PaySalaryCommand command, CancellationToken cancellationToken)
     {
-        Employee? employee = await context.Employees.FindAsync([command.EmployeeId], cancellationToken);
+        Employee? employee = await context.Employees
+            .FirstOrDefaultAsync(e => e.Id == command.EmployeeId, cancellationToken);
         if (employee is null)
         {
             return SalaryPaymentErrors.EmployeeNotFound(command.EmployeeId);
@@ -34,7 +35,9 @@ internal sealed class PaySalaryCommandHandler(IApplicationDbContext context)
             return SalaryPaymentErrors.SalaryNotSet;
         }
 
-        FinancialAccount? account = await context.FinancialAccounts.FindAsync([command.AccountId], cancellationToken);
+        FinancialAccount? account = await context.FinancialAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == command.AccountId, cancellationToken);
         if (account is null)
         {
             return SalaryPaymentErrors.AccountNotFound(command.AccountId);

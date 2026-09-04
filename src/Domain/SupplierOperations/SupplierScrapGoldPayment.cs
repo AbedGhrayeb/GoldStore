@@ -4,8 +4,10 @@ using SharedKernel;
 
 namespace Domain.SupplierOperations;
 
-public sealed class SupplierScrapGoldPayment : AuditableEntity
+public sealed class SupplierScrapGoldPayment : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
 
     public Guid SupplierId { get; private set; }
 

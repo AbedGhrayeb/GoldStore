@@ -240,9 +240,9 @@ internal sealed class UpdateDebtCommandHandler(
 
             await context.SaveChangesAsync(cancellationToken);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return ApplicationErrors.DatabaseError(ex);
+            return ApplicationErrors.DatabaseError;
         }
 
 

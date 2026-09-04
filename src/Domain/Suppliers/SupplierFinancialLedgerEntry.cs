@@ -2,8 +2,10 @@ using SharedKernel;
 
 namespace Domain.Suppliers;
 
-public sealed class SupplierFinancialLedgerEntry : AuditableEntity
+public sealed class SupplierFinancialLedgerEntry : AuditableEntity, ITenantEntity
 {
+    public Guid TenantId { get; private set; }
+
 
     public Guid SupplierFinancialTransactionId { get; set; }
 

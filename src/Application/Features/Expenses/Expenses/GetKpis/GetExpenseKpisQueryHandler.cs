@@ -1,5 +1,7 @@
+using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Tenants;
 using Domain.Common;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -7,10 +9,34 @@ using SharedKernel.Result;
 
 namespace Application.Features.Expenses.Expenses.GetKpis;
 
-internal sealed class GetExpenseKpisQueryHandler(IApplicationDbContext context, IDateTimeProvider dateTimeProvider)
+internal sealed class GetExpenseKpisQueryHandler(IApplicationDbContext context, IDateTimeProvider dateTimeProvider, ICurrentTenant currentTenant, ICacheService cache)
     : IQueryHandler<GetExpenseKpisQuery, ExpenseKpiResponse>
 {
     public async Task<Result<ExpenseKpiResponse>> Handle(GetExpenseKpisQuery query, CancellationToken cancellationToken)
+    {
+        if (!currentTenant.IsAvailable)
+        {
+            return await BuildAsync(cancellationToken);
+        }
+
+        Guid tenantId = currentTenant.TenantId;
+        if (currentTenant is ICurrentTenantSetter setter)
+        {
+            setter.Set(tenantId, currentTenant.TenantKey);
+        }
+
+        string cacheKey = CacheKeys.Kpi(tenantId, "expenses");
+        ExpenseKpiResponse response = await cache.GetOrCreateAsync(
+            cacheKey,
+            [CacheKeys.KpiTenant(tenantId)],
+            (ct) => BuildAsync(ct),
+            CacheKeys.KpiExpiration,
+            cancellationToken);
+
+        return response;
+    }
+
+    private async Task<ExpenseKpiResponse> BuildAsync(CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(dateTimeProvider.Now);
         var monthStart = new DateOnly(today.Year, today.Month, 1);
