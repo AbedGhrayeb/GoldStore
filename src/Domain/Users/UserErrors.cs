@@ -24,7 +24,7 @@ public static class UserErrors
         "Users.NotFound",
         $"المستخدم بـ Id = '{userId}' غير موجود");
 
-    public static Error Unauthorized() => Error.Failure(
+    public static Error Unauthorized() => Error.Forbidden(
         "Users.Unauthorized",
         "المستخدم غير مصرح له بتنفيذ هذه العملية");
 

@@ -21,7 +21,7 @@ public class FinancialAccountsController(
     IQueryHandler<GetRecentTransactionsQuery, List<RecentTransactionResponse>> getRecentTransactionsHandler,
     ICommandHandler<CreateFinancialAccountCommand, Guid> createFinancialAccountHandler,
     IQueryHandler<GetAccountBalanceQuery, AccountBalanceResponse> getAccountBalanceHandler,
-    ICommandHandler<SetAccountBalanceCommand, Updated> setAccountBalanceHandler) : Controller
+    ICommandHandler<SetAccountBalanceCommand, Updated> setAccountBalanceHandler) : BaseController
 {
     public IActionResult Index()
     {

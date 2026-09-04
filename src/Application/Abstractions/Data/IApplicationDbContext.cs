@@ -9,6 +9,7 @@ using Domain.Sales;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
 using Domain.Users;
+using Domain.Users.RefreshToken;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Abstractions.Data;
@@ -46,6 +47,7 @@ public interface IApplicationDbContext
     DbSet<CustomerPurchaseInvoice> CustomerPurchaseInvoices { get; }
 
     DbSet<CustomerPurchaseInvoiceItem> CustomerPurchaseInvoiceItems { get; }
+    DbSet<RefreshToken> RefreshTokens { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -1,8 +1,9 @@
 using Application;
 using Infrastructure;
 using Infrastructure.Data;
+using Infrastructure.Platform;
+using Scalar.AspNetCore;
 using Serilog;
-using WebUI;
 using WebUI.Extensions;
 
 namespace WebUI
@@ -51,7 +52,19 @@ namespace WebUI
 
             if (app.Environment.IsDevelopment())
             {
-                await app.InitializeDatabaseAsync();
+                // Tenant schemas are no longer created here — Phase 4 (provisioning)
+                // creates tenant schemas and Phase 5 (migration runner) keeps them current.
+                await app.InitializePlatformDatabaseAsync();
+                app.MapOpenApi();
+                app.MapScalarApiReference(static options =>
+                {
+                    options.Title = "Gold Store API";
+                    options.Theme = ScalarTheme.BluePlanet;
+
+                    options.ShowSidebar = true;
+                    options.HideModels = false;
+                });
+
             }
 
             //app.MapHealthChecks("health", new HealthCheckOptions
@@ -74,6 +87,15 @@ namespace WebUI
             // Do not call the parameterless overload here because it requires configuration in services.
             app.UseRouting();
             app.MapStaticAssets();
+
+            // Resolve the tenant from the subdomain before authentication so login
+            // and all tenant endpoints run inside the correct tenant context.
+            app.UseTenantResolution();
+
+            // Block writes on expired tenants (read-only mode) while still allowing
+            // reads and authentication.
+            app.UseReadOnlyTenantEnforcement();
+
             app.UseAuthentication();
 
             app.UseAuthorization();

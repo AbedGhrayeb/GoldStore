@@ -10,7 +10,7 @@ using WebUI.Models.Account;
 
 namespace WebUI.Controllers;
 
-public class AccountController(ICommandHandler<LoginUserCommand, Guid> loginCommandHandler, IAuthSessionManager authSessionManager) : Controller
+public class AccountController(ICommandHandler<LoginUserCommand, Guid> loginCommandHandler, IAuthSessionManager authSessionManager) : BaseController
 {
     [HttpGet]
     [AllowAnonymous]

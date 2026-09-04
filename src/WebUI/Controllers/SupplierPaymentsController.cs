@@ -23,7 +23,7 @@ public class SupplierPaymentsController(
     IQueryHandler<GetFinancialAccountsQuery, List<FinancialAccountResponse>> getFinancialAccountsHandler,
     ICommandHandler<CreateSupplierScrapGoldPaymentCommand, Guid> createScrapGoldPaymentHandler,
     ICommandHandler<CreateSupplierManufacturingPaymentCommand, Guid> createManufacturingPaymentHandler)
-    : Controller
+    : BaseController
 {
     public IActionResult Index()
     {

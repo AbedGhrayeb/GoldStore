@@ -1,0 +1,30 @@
+@baseUrl = https://localhost:44337/api
+@token = eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJkZXZlbG9wZXJzIiwiaXNzIjoiY2xlYW4tYXJjaGl0ZWN0dXJlIiwiZXhwIjoxNzg1ODU1OTg5LCJzdWIiOiIwMTlmYjc2MC03ZjM2LTcwMDAtOTNjMi0xN2IwYTc2NzI3OWEiLCJlbWFpbCI6ImFkbWluQGdvbGRzdG9yZSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiaWF0IjoxNzg1ODUyMzg5LCJuYmYiOjE3ODU4NTIzODl9.Li_ne--Dw939Rk4OvBcTLVzJ5kdk-XAxy5gAQGzK0tc
+@refreshToken = 5B5ZIP2NrlHVvYvXRBYp2YGBgVttNclu4EIePHp5/FXlNybvIsHcJtBiEUSEnO7S8oqbI7OGKp++1t+0DWDA6Q==
+
+### Login As Admin
+POST {{baseUrl}}/identity/token
+Content-Type: application/json
+
+{
+    "email": "admin@goldstore",
+    "password": "GoldStore@321!"
+}
+### refresh token
+POST {{baseUrl}}/identity/refresh-token
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+
+{
+    "refreshToken": "5B5ZIP2NrlHVvYvXRBYp2YGBgVttNclu4EIePHp5/FXlNybvIsHcJtBiEUSEnO7S8oqbI7OGKp++1t+0DWDA6Q==",
+    "expiredAccessToken": "eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJkZXZlbG9wZXJzIiwiaXNzIjoiY2xlYW4tYXJjaGl0ZWN0dXJlIiwiZXhwIjoxNzg1ODU1OTg5LCJzdWIiOiIwMTlmYjc2MC03ZjM2LTcwMDAtOTNjMi0xN2IwYTc2NzI3OWEiLCJlbWFpbCI6ImFkbWluQGdvbGRzdG9yZSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiaWF0IjoxNzg1ODUyMzg5LCJuYmYiOjE3ODU4NTIzODl9.Li_ne--Dw939Rk4OvBcTLVzJ5kdk-XAxy5gAQGzK0tc"
+}
+
+###
+GET {{baseUrl}}/identity/test
+Authorization: Bearer {{token}}
+
+###
+GET {{baseUrl}}/identity/current-user
+Authorization: Bearer {{token}}

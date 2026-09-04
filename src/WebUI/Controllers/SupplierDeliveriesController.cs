@@ -17,7 +17,7 @@ public class SupplierDeliveriesController(
     IQueryHandler<GetSuppliersQuery, List<SupplierResponse>> getSuppliersHandler,
     IQueryHandler<GetSupplierByIdQuery, SupplierDetailResponse> getSupplierByIdHandler,
     ICommandHandler<CreateSupplierDeliveryCommand, string> createDeliveryHandler)
-    : Controller
+    : BaseController
 {
     public IActionResult Index()
     {

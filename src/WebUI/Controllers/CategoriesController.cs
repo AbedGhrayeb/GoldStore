@@ -16,7 +16,7 @@ public class CategoriesController(
     IQueryHandler<GetCategoriesQuery, List<CategoryResponse>> getCategoriesHandler,
     ICommandHandler<CreateCategoryCommand, Guid> createCategoryHandler,
     ICommandHandler<UpdateCategoryCommand, Updated> updateCategoryHandler,
-    ICommandHandler<ToggleActiveCategoryCommand, Updated> toggleActiveHandler) : Controller
+    ICommandHandler<ToggleActiveCategoryCommand, Updated> toggleActiveHandler) : BaseController
 {
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {

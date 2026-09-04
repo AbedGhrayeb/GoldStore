@@ -20,7 +20,7 @@ public class UsersController(
     ICommandHandler<CreateUserCommand, Guid> createUserHandler,
     ICommandHandler<UpdateUserCommand, bool> updateUserHandler,
     ICommandHandler<DeleteUserCommand, bool> deleteUserHandler,
-    IUserContext userContext) : Controller
+    IUserContext userContext) : BaseController
 {
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
@@ -104,7 +104,7 @@ public class UsersController(
         }
 
         Result<Guid> result = await createUserHandler.Handle(
-            new CreateUserCommand(model.Email, model.FirstName, model.LastName, model.Password),
+            new CreateUserCommand(model.Email, model.FirstName, model.LastName, model.Password, model.Role),
             cancellationToken);
 
         if (!result.IsSuccess)

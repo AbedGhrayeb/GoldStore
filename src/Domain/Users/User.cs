@@ -9,21 +9,22 @@ public sealed class User : Entity
     public string FirstName { get; private set; }
     public string LastName { get; private set; }
     public string PasswordHash { get; private set; }
-
-    public User()
+    public string? Role { get; set; }
+    private User()
     {
 
     }
-    public User(Guid id, string email, string firstName, string lastName, string passwordHash) : base(id)
+    private User(Guid id, string email, string firstName, string lastName, string passwordHash, string role) : base(id)
     {
         Email = email;
         FirstName = firstName;
         LastName = lastName;
         PasswordHash = passwordHash;
+        Role = role;
 
     }
 
-    public static Result<User> Create(Guid id, string email, string firstName, string lastName, string passwordHash)
+    public static Result<User> Create(Guid id, string email, string firstName, string lastName, string passwordHash, string role)
     {
         if (id == Guid.Empty)
         {
@@ -46,7 +47,7 @@ public sealed class User : Entity
             return UserErrors.LastNameRequired;
         }
 
-        return new User(id, email, firstName, lastName, passwordHash);
+        return new User(id, email, firstName, lastName, passwordHash, role);
     }
     public Result<Updated> Update(string firstName, string lastName, string? passwordHash)
     {

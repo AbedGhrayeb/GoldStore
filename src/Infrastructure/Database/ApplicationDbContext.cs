@@ -1,16 +1,19 @@
 ﻿using Application.Abstractions.Data;
+using Application.Abstractions.Tenancy;
 using Domain.Catalog;
 using Domain.CustomerPurchases;
 using Domain.Debts;
+using Domain.Employees;
 using Domain.Expenses;
 using Domain.Finance;
 using Domain.Inventory;
 using Domain.Sales;
 using Domain.SupplierOperations;
 using Domain.Suppliers;
-using Domain.Employees;
 using Domain.Users;
+using Domain.Users.RefreshToken;
 using Infrastructure.DomainEvents;
+using Infrastructure.Platform;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 
@@ -18,9 +21,20 @@ namespace Infrastructure.Database;
 
 public sealed class ApplicationDbContext(
     DbContextOptions<ApplicationDbContext> options,
+    ITenantContext tenantContext,
     IDomainEventsDispatcher domainEventsDispatcher)
     : DbContext(options), IApplicationDbContext
 {
+    /// <summary>
+    /// Schema baked into tenant migrations at design time (no tenant resolved).
+    /// The migration runner replaces it with the real tenant schema when executing scripts.
+    /// </summary>
+    internal const string PlaceholderSchema = "$tenant";
+
+    /// <summary>The schema this context instance maps to — the resolved tenant's schema,
+    /// or <see cref="PlaceholderSchema"/> at design time / when no tenant is resolved.</summary>
+    internal string SchemaName => tenantContext.IsResolved ? tenantContext.SchemaName : PlaceholderSchema;
+
     public DbSet<User> Users { get; set; }
 
     public DbSet<Employee> Employees { get; set; }
@@ -71,10 +85,19 @@ public sealed class ApplicationDbContext(
 
     public DbSet<CustomerPurchaseInvoiceItem> CustomerPurchaseInvoiceItems { get; set; }
 
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+        // Schema-per-tenant: every tenant entity lives in the resolved tenant's schema.
+        // Combined with TenantModelCacheKeyFactory, EF caches one model per schema.
+        modelBuilder.HasDefaultSchema(SchemaName);
 
+        // Exclude platform configurations (Infrastructure.Platform) — catalog entities
+        // (Tenant, Plan, Subscription, PlatformAdmin) belong only to PlatformDbContext.
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(ApplicationDbContext).Assembly,
+            type => type.Namespace != typeof(PlatformDbContext).Namespace);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

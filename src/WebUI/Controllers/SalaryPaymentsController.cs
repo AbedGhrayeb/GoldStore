@@ -10,7 +10,7 @@ namespace WebUI.Controllers;
 
 [Authorize]
 public class SalaryPaymentsController(
-    IQueryHandler<GetSalaryPaymentsQuery, PaginatedList<SalaryPaymentResponse>> getSalaryPaymentsHandler) : Controller
+    IQueryHandler<GetSalaryPaymentsQuery, PaginatedList<SalaryPaymentResponse>> getSalaryPaymentsHandler) : BaseController
 {
     public IActionResult Index() => View();
 
