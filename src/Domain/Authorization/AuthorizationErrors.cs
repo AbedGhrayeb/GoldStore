@@ -1,3 +1,7 @@
+// <copyright file="AuthorizationErrors.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel.Result;
 
 namespace Domain.Authorization;

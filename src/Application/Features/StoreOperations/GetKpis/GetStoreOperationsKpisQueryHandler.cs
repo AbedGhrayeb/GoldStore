@@ -1,3 +1,7 @@
+// <copyright file="GetStoreOperationsKpisQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -17,15 +21,13 @@ internal sealed class GetStoreOperationsKpisQueryHandler(
     ICacheService cache)
     : IQueryHandler<GetStoreOperationsKpisQuery, StoreOperationsKpiResponse>
 {
-
-
     public async Task<Result<StoreOperationsKpiResponse>> Handle(
         GetStoreOperationsKpisQuery query,
         CancellationToken cancellationToken)
     {
         if (!currentTenant.IsAvailable)
         {
-            return await BuildAsync(cancellationToken);
+            return await this.BuildAsync(cancellationToken);
         }
 
         Guid tenantId = currentTenant.TenantId;
@@ -38,7 +40,7 @@ internal sealed class GetStoreOperationsKpisQueryHandler(
         StoreOperationsKpiResponse response = await cache.GetOrCreateAsync(
             cacheKey,
             [CacheKeys.KpiTenant(tenantId)],
-            (ct) => BuildAsync(ct),
+            (ct) => this.BuildAsync(ct),
             CacheKeys.KpiExpiration,
             cancellationToken);
 
@@ -47,7 +49,7 @@ internal sealed class GetStoreOperationsKpisQueryHandler(
 
     private async Task<StoreOperationsKpiResponse> BuildAsync(CancellationToken cancellationToken)
     {
-        DateTime todayStart = dateTimeProvider.Now.Date;
+        DateTime todayStart = DateTime.SpecifyKind(dateTimeProvider.UtcNow.Date, DateTimeKind.Utc);
 
         var sales = await context.SalesInvoices
             .AsNoTracking()
@@ -84,7 +86,7 @@ internal sealed class GetStoreOperationsKpisQueryHandler(
             TodaySalesCount = sales.Count,
             TodayPurchasesCount = purchases.Count,
             TodaySalesTotals = salesTotals,
-            TodayPurchasesTotals = purchaseTotals
+            TodayPurchasesTotals = purchaseTotals,
         };
     }
 }

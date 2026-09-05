@@ -1,3 +1,7 @@
+// <copyright file="TenantSettings.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -26,24 +30,25 @@ public sealed class TenantSettings : Entity, ITenantEntity
 
     private TenantSettings()
     {
-        DisplayName = string.Empty;
-        TimeZoneId = string.Empty;
-        Locale = DefaultLocale;
-        Theme = DefaultTheme;
-        EnabledFeatures = [];
+        this.DisplayName = string.Empty;
+        this.TimeZoneId = string.Empty;
+        this.Locale = DefaultLocale;
+        this.Theme = DefaultTheme;
+        this.EnabledFeatures = [];
     }
 
     private TenantSettings(Guid id, Guid tenantId, string displayName, string? logoUrl, string timeZoneId,
-        string locale, string theme, string? invoiceNumberPrefix, List<string> enabledFeatures) : base(id)
+        string locale, string theme, string? invoiceNumberPrefix, List<string> enabledFeatures)
+        : base(id)
     {
-        TenantId = tenantId;
-        DisplayName = displayName;
-        LogoUrl = logoUrl;
-        TimeZoneId = timeZoneId;
-        Locale = locale;
-        Theme = theme;
-        InvoiceNumberPrefix = invoiceNumberPrefix;
-        EnabledFeatures = enabledFeatures;
+        this.TenantId = tenantId;
+        this.DisplayName = displayName;
+        this.LogoUrl = logoUrl;
+        this.TimeZoneId = timeZoneId;
+        this.Locale = locale;
+        this.Theme = theme;
+        this.InvoiceNumberPrefix = invoiceNumberPrefix;
+        this.EnabledFeatures = enabledFeatures;
     }
 
     public static Result<TenantSettings> Create(Guid tenantId, string displayName, string? logoUrl, string timeZoneId,
@@ -84,13 +89,13 @@ public sealed class TenantSettings : Entity, ITenantEntity
             return TenantErrors.TimeZoneRequired;
         }
 
-        DisplayName = displayName.Trim();
-        LogoUrl = logoUrl?.Trim();
-        TimeZoneId = timeZoneId.Trim();
-        Locale = string.IsNullOrWhiteSpace(locale) ? DefaultLocale : locale.Trim();
-        Theme = string.IsNullOrWhiteSpace(theme) ? DefaultTheme : theme.Trim();
-        InvoiceNumberPrefix = invoiceNumberPrefix?.Trim();
-        EnabledFeatures = enabledFeatures ?? [];
+        this.DisplayName = displayName.Trim();
+        this.LogoUrl = logoUrl?.Trim();
+        this.TimeZoneId = timeZoneId.Trim();
+        this.Locale = string.IsNullOrWhiteSpace(locale) ? DefaultLocale : locale.Trim();
+        this.Theme = string.IsNullOrWhiteSpace(theme) ? DefaultTheme : theme.Trim();
+        this.InvoiceNumberPrefix = invoiceNumberPrefix?.Trim();
+        this.EnabledFeatures = enabledFeatures ?? [];
 
         return Result.Updated;
     }

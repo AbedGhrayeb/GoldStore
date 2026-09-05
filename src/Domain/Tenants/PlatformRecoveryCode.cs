@@ -1,3 +1,7 @@
+// <copyright file="PlatformRecoveryCode.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 
 namespace Domain.Tenants;
@@ -12,12 +16,16 @@ public sealed class PlatformRecoveryCode : Entity
 
     public DateTimeOffset? UsedAtUtc { get; private set; }
 
-    private PlatformRecoveryCode() { CodeHash = string.Empty; }
-
-    private PlatformRecoveryCode(Guid id, Guid platformUserId, string codeHash) : base(id)
+    private PlatformRecoveryCode()
     {
-        PlatformUserId = platformUserId;
-        CodeHash = codeHash;
+        this.CodeHash = string.Empty;
+    }
+
+    private PlatformRecoveryCode(Guid id, Guid platformUserId, string codeHash)
+        : base(id)
+    {
+        this.PlatformUserId = platformUserId;
+        this.CodeHash = codeHash;
     }
 
     public static PlatformRecoveryCode Create(Guid platformUserId, string codeHash)
@@ -25,7 +33,7 @@ public sealed class PlatformRecoveryCode : Entity
 
     public void MarkUsed(DateTimeOffset utcNow)
     {
-        IsUsed = true;
-        UsedAtUtc = utcNow;
+        this.IsUsed = true;
+        this.UsedAtUtc = utcNow;
     }
 }

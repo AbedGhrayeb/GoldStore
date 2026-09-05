@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿// <copyright file="BearerSecuritySchemeTransformer.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -23,7 +27,7 @@ internal sealed class BearerSecuritySchemeTransformer
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
                 Name = "Authorization",
-                Description = "JWT Authorization header using Bearer scheme."
+                Description = "JWT Authorization header using Bearer scheme.",
             };
 
         return Task.CompletedTask;

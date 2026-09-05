@@ -1,3 +1,7 @@
+// <copyright file="InvoiceNumberService.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.Globalization;
 using Application.Abstractions.Services;
 using Domain.Common;
@@ -27,7 +31,7 @@ internal sealed class InvoiceNumberService(ApplicationDbContext context) : IInvo
             int allocatedNumber;
             if (sequence is null)
             {
-                allocatedNumber = await GetNextNumberFromInvoicesAsync(documentType, period, cancellationToken);
+                allocatedNumber = await this.GetNextNumberFromInvoicesAsync(documentType, period, cancellationToken);
                 sequence = InvoiceNumberSequence.Create(documentType, period, allocatedNumber + 1);
                 context.InvoiceNumberSequences.Add(sequence);
             }
@@ -71,7 +75,7 @@ internal sealed class InvoiceNumberService(ApplicationDbContext context) : IInvo
             .SingleOrDefaultAsync(cancellationToken);
 
         int number = nextNumber
-            ?? await GetNextNumberFromInvoicesAsync(documentType, period, cancellationToken);
+            ?? await this.GetNextNumberFromInvoicesAsync(documentType, period, cancellationToken);
 
         return Format(documentType, period, number);
     }

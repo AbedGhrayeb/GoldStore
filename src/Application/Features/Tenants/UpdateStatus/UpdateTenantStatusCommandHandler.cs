@@ -1,3 +1,7 @@
+// <copyright file="UpdateTenantStatusCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Tenants;
@@ -73,7 +77,7 @@ internal sealed class UpdateTenantStatusCommandHandler(IApplicationDbContext con
                 return cancel.Errors;
             }
 
-            await CancelActiveSubscriptionAsync(tenant.Id, cancellationToken);
+            await this.CancelActiveSubscriptionAsync(tenant.Id, cancellationToken);
         }
         else
         {

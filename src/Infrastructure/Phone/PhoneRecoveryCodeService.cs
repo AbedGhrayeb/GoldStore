@@ -1,3 +1,7 @@
+// <copyright file="PhoneRecoveryCodeService.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.Security.Cryptography;
 using System.Text;
 using Application.Abstractions.Phone;
@@ -21,7 +25,7 @@ internal sealed class PhoneRecoveryCodeService : IPhoneRecoveryCodeService
 
     public bool Verify(string plainCode, string hash)
     {
-        string computed = Hash(plainCode);
+        string computed = this.Hash(plainCode);
         return CryptographicOperations.FixedTimeEquals(
             Encoding.UTF8.GetBytes(computed),
             Encoding.UTF8.GetBytes(hash));

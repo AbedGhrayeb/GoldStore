@@ -1,3 +1,7 @@
+// <copyright file="GetGoldLedgerTrendQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -17,12 +21,13 @@ internal sealed class GetGoldLedgerTrendQueryHandler(
     public async Task<Result<List<GoldTrendPoint>>> Handle(GetGoldLedgerTrendQuery query, CancellationToken cancellationToken)
     {
         int days = Math.Clamp(query.Days, 1, 90);
-        DateTime todayStart = dateTimeProvider.Now.Date;
+        DateTime todayStart = DateTime.SpecifyKind(dateTimeProvider.UtcNow.Date, DateTimeKind.Utc);
         DateTime fromDate = todayStart.AddDays(-(days - 1));
+        DateTimeOffset fromDateOffset = new DateTimeOffset(fromDate, TimeSpan.Zero);
 
         var entries = await context.GoldLedgerEntries
             .AsNoTracking()
-            .Where(e => e.TenantId == currentTenant.TenantId && e.CreatedAtUtc >= fromDate)
+            .Where(e => e.TenantId == currentTenant.TenantId && e.CreatedAtUtc >= fromDateOffset)
             .Select(e => new { e.CreatedAtUtc!.Value.Date, e.MovementType, e.Equivalent21KWeightInGrams })
             .ToListAsync(cancellationToken);
 
@@ -32,7 +37,7 @@ internal sealed class GetGoldLedgerTrendQueryHandler(
             {
                 Date = g.Key,
                 In21K = g.Where(e => e.MovementType == GoldMovementType.Increase).Sum(e => e.Equivalent21KWeightInGrams),
-                Out21K = g.Where(e => e.MovementType == GoldMovementType.Decrease).Sum(e => e.Equivalent21KWeightInGrams)
+                Out21K = g.Where(e => e.MovementType == GoldMovementType.Decrease).Sum(e => e.Equivalent21KWeightInGrams),
             })
             .ToDictionary(a => a.Date);
 
@@ -50,7 +55,7 @@ internal sealed class GetGoldLedgerTrendQueryHandler(
                 Label = GetDayLabel(day),
                 In21K = in21K,
                 Out21K = out21K,
-                Net21K = in21K - out21K
+                Net21K = in21K - out21K,
             });
         }
 
@@ -66,6 +71,6 @@ internal sealed class GetGoldLedgerTrendQueryHandler(
         DayOfWeek.Wednesday => "الأربعاء",
         DayOfWeek.Thursday => "الخميس",
         DayOfWeek.Friday => "الجمعة",
-        _ => day.ToString("dd/MM")
+        _ => day.ToString("dd/MM"),
     };
 }

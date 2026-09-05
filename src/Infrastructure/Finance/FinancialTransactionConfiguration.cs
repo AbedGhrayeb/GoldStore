@@ -1,3 +1,7 @@
+// <copyright file="FinancialTransactionConfiguration.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Finance;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -28,7 +32,6 @@ internal sealed class FinancialTransactionConfiguration : IEntityTypeConfigurati
             .WithMany()
             .HasForeignKey(transaction => transaction.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
-
 
         builder.HasIndex(transaction => new { transaction.TenantId, transaction.AccountId, transaction.CreatedAtUtc });
 

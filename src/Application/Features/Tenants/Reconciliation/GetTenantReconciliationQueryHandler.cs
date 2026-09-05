@@ -1,3 +1,7 @@
+// <copyright file="GetTenantReconciliationQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Common;
@@ -68,7 +72,7 @@ internal sealed class GetTenantReconciliationQueryHandler(
             ["RefreshTokens"] = await CountByTenantAsync(context.RefreshTokens, cancellationToken),
             ["UserRoles"] = await CountByTenantAsync(context.UserRoles, cancellationToken),
             ["TenantSettings"] = await CountByTenantAsync(context.TenantSettings, cancellationToken),
-            ["TenantSubscriptions"] = await CountByTenantAsync(context.TenantSubscriptions, cancellationToken)
+            ["TenantSubscriptions"] = await CountByTenantAsync(context.TenantSubscriptions, cancellationToken),
         };
 
         var validTenantIds = allTenantIds.ToHashSet();
@@ -78,14 +82,14 @@ internal sealed class GetTenantReconciliationQueryHandler(
         List<TenantReconciliationBlock> blocks = [];
         foreach (Tenant tenant in tenants)
         {
-            blocks.Add(await BuildBlockAsync(tenant, tableCounts, cancellationToken));
+            blocks.Add(await this.BuildBlockAsync(tenant, tableCounts, cancellationToken));
         }
 
         return new TenantReconciliationResponse
         {
             GeneratedAtUtc = new DateTimeOffset(dateTimeProvider.UtcNow),
             Anomalies = anomalies,
-            Tenants = blocks
+            Tenants = blocks,
         };
     }
 
@@ -191,7 +195,7 @@ internal sealed class GetTenantReconciliationQueryHandler(
                 accountBalances.GetValueOrDefault(account.Id)))
             .ToList();
 
-        List<DebtTotals> debtTotals = await ComputeDebtTotalsAsync(tenantId, cancellationToken);
+        List<DebtTotals> debtTotals = await this.ComputeDebtTotalsAsync(tenantId, cancellationToken);
 
         Dictionary<Guid, string> supplierNames = await context.Suppliers
             .IgnoreQueryFilters()
@@ -210,7 +214,7 @@ internal sealed class GetTenantReconciliationQueryHandler(
             {
                 group.Key.SupplierId,
                 group.Key.Karat,
-                Net = group.Sum(entry => entry.MovementType == SupplierBalanceMovementType.Increase ? entry.WeightInGrams : -entry.WeightInGrams)
+                Net = group.Sum(entry => entry.MovementType == SupplierBalanceMovementType.Increase ? entry.WeightInGrams : -entry.WeightInGrams),
             })
             .Select(balance => new SupplierGoldBalance(
                 balance.SupplierId,
@@ -231,7 +235,7 @@ internal sealed class GetTenantReconciliationQueryHandler(
             {
                 group.Key.SupplierId,
                 group.Key.Currency,
-                Net = group.Sum(entry => entry.MovementType == SupplierBalanceMovementType.Increase ? entry.Amount : -entry.Amount)
+                Net = group.Sum(entry => entry.MovementType == SupplierBalanceMovementType.Increase ? entry.Amount : -entry.Amount),
             })
             .Select(balance => new SupplierManufacturingBalance(
                 balance.SupplierId,
@@ -254,7 +258,7 @@ internal sealed class GetTenantReconciliationQueryHandler(
             FinancialTotals = financialTotals,
             DebtTotals = debtTotals,
             SupplierGoldBalances = supplierGoldBalances,
-            SupplierManufacturingBalances = supplierManufacturingBalances
+            SupplierManufacturingBalances = supplierManufacturingBalances,
         };
     }
 
@@ -283,7 +287,7 @@ internal sealed class GetTenantReconciliationQueryHandler(
                 .Select(group => new
                 {
                     DebtId = group.Key,
-                    Balance = group.Sum(entry => entry.MovementType == DebtBalanceMovementType.Increase ? entry.Amount : -entry.Amount)
+                    Balance = group.Sum(entry => entry.MovementType == DebtBalanceMovementType.Increase ? entry.Amount : -entry.Amount),
                 })
                 .ToDictionaryAsync(balance => balance.DebtId, balance => balance.Balance, cancellationToken);
 

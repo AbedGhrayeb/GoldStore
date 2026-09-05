@@ -1,3 +1,7 @@
+// <copyright file="SupplierFinancialTransaction.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Common;
 using Domain.Finance;
 using SharedKernel;
@@ -21,22 +25,25 @@ public sealed class SupplierFinancialTransaction : AuditableEntity, ITenantEntit
     public string? Notes { get; private set; }
 
     public Supplier Supplier { get; set; }
+
     public FinancialAccount FinancialAccount { get; set; }
 
     private SupplierFinancialTransaction()
     {
+    }
 
-    }
     private SupplierFinancialTransaction(Guid id, Guid supplierId, SupplierFinancialTransactionDirection direction,
-        decimal amount, Currency currency, Guid accountId, string? notes) : base(id)
+        decimal amount, Currency currency, Guid accountId, string? notes)
+        : base(id)
     {
-        SupplierId = supplierId;
-        Direction = direction;
-        Amount = amount;
-        Currency = currency;
-        AccountId = accountId;
-        Notes = notes;
+        this.SupplierId = supplierId;
+        this.Direction = direction;
+        this.Amount = amount;
+        this.Currency = currency;
+        this.AccountId = accountId;
+        this.Notes = notes;
     }
+
     public static SupplierFinancialTransaction Create(Guid supplierId, SupplierFinancialTransactionDirection direction,
         decimal amount, Currency currency, Guid accountId, string? notes)
     {

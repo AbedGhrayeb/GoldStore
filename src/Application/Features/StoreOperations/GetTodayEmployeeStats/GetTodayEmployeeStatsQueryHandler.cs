@@ -1,3 +1,7 @@
+// <copyright file="GetTodayEmployeeStatsQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -20,7 +24,7 @@ internal sealed class GetTodayEmployeeStatsQueryHandler(
         GetTodayEmployeeStatsQuery query,
         CancellationToken cancellationToken)
     {
-        DateTime todayStart = dateTimeProvider.Now.Date;
+        DateTime todayStart = DateTime.SpecifyKind(dateTimeProvider.UtcNow.Date, DateTimeKind.Utc);
 
         var salesHeaders = await context.SalesInvoices
             .AsNoTracking()
@@ -123,7 +127,7 @@ internal sealed class GetTodayEmployeeStatsQueryHandler(
                 SalesTotals = ToCurrencyTotals(kv.Value.SalesMoney),
                 PurchasesCount = kv.Value.PurchasesCount,
                 PurchasesWeight21K = kv.Value.PurchasesWeight21K,
-                PurchasesTotals = ToCurrencyTotals(kv.Value.PurchasesMoney)
+                PurchasesTotals = ToCurrencyTotals(kv.Value.PurchasesMoney),
             })
             .ToList();
 
@@ -144,10 +148,15 @@ internal sealed class GetTodayEmployeeStatsQueryHandler(
     private sealed class EmployeeAccumulator
     {
         public int SalesCount { get; set; }
+
         public decimal SalesWeight21K { get; set; }
+
         public Dictionary<Currency, decimal> SalesMoney { get; } = [];
+
         public int PurchasesCount { get; set; }
+
         public decimal PurchasesWeight21K { get; set; }
+
         public Dictionary<Currency, decimal> PurchasesMoney { get; } = [];
     }
 }

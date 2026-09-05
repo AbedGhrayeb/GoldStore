@@ -1,3 +1,7 @@
+// <copyright file="BearerSecuritySchemeTransformer.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OpenApi;
@@ -46,7 +50,7 @@ internal sealed class BearerSecuritySchemeTransformer(
             Type = SecuritySchemeType.Http,
             Scheme = "bearer",
             BearerFormat = "JWT",
-            Description = "JWT access token issued by POST /api/v1/auth/login."
+            Description = "JWT access token issued by POST /api/v1/auth/login.",
         };
 
         if (document.Paths is null)
@@ -67,7 +71,7 @@ internal sealed class BearerSecuritySchemeTransformer(
 
                 operation.Security.Add(new OpenApiSecurityRequirement
                 {
-                    [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+                    [new OpenApiSecuritySchemeReference("Bearer", document)] = [],
                 });
             }
         }

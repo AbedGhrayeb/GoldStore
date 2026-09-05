@@ -1,3 +1,7 @@
+// <copyright file="GetExpenseCategoriesQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -22,7 +26,7 @@ internal sealed class GetExpenseCategoriesQueryHandler(IApplicationDbContext con
             {
                 Id = c.Id,
                 Name = c.Name,
-                IsActive = c.IsActive
+                IsActive = c.IsActive,
             })
             .ToListAsync(cancellationToken);
 

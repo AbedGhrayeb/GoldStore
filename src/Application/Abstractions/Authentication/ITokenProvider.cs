@@ -1,4 +1,8 @@
-﻿namespace Application.Abstractions.Authentication;
+﻿// <copyright file="ITokenProvider.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+namespace Application.Abstractions.Authentication;
 
 /// <summary>A short-lived access token (JWT) bound to a user and one tenant.</summary>
 public sealed record AccessTokenResponse(string Value, DateTimeOffset ExpiresAtUtc);
@@ -12,6 +16,7 @@ public interface ITokenProvider
     /// Creates an access token carrying immutable claims: user id, tenant id and key,
     /// roles, permissions, and the user's current security stamp (plan Phase 4 items 3-4).
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
     Task<AccessTokenResponse> CreateAccessTokenAsync(Guid userId, CancellationToken cancellationToken);
 }
 

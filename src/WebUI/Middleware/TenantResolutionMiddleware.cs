@@ -1,3 +1,7 @@
+// <copyright file="TenantResolutionMiddleware.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.Security.Claims;
 using Application.Abstractions.Tenants;
 using Infrastructure.Authentication;

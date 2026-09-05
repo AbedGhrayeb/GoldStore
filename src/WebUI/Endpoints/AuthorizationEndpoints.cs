@@ -1,3 +1,7 @@
+// <copyright file="AuthorizationEndpoints.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Messaging;
 using Application.Authorization.GetPermissions;
 using Application.Authorization.GetRoles;
@@ -94,4 +98,5 @@ public sealed class AuthorizationEndpoints : IEndpoint
 }
 
 public sealed record SetUserRolesRequest(List<Guid> RoleIds);
+
 public sealed record SetUserPermissionsRequest(List<string> PermissionKeys);

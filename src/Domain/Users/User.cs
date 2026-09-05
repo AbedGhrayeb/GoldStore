@@ -1,4 +1,8 @@
-﻿using System.Security.Cryptography;
+﻿// <copyright file="User.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using System.Security.Cryptography;
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -9,10 +13,15 @@ public sealed class User : Entity, ITenantEntity
     public Guid TenantId { get; private set; }
 
     public string Email { get; }
+
     public string FirstName { get; private set; }
+
     public string LastName { get; private set; }
+
     public string PasswordHash { get; private set; }
+
     public string? PhoneNumber { get; private set; }
+
     public string? WhatsappNumber { get; private set; }
 
     public bool TwoFactorEnabled { get; private set; }
@@ -22,16 +31,16 @@ public sealed class User : Entity, ITenantEntity
     public DateTimeOffset? TwoFactorEnabledAtUtc { get; private set; }
 
     /// <summary>
-    /// Session/token version (plan Phase 4). Every issued cookie, access token, and
+    /// Gets session/token version (plan Phase 4). Every issued cookie, access token, and
     /// refresh token carries this value; changing it invalidates all previously
     /// issued sessions. Regenerate on password change and on account disable.
     /// </summary>
     public string SecurityStamp { get; private set; }
 
-    /// <summary>Consecutive failed sign-in attempts since the last success (M7 lockout).</summary>
+    /// <summary>Gets consecutive failed sign-in attempts since the last success (M7 lockout).</summary>
     public int FailedLoginAttempts { get; private set; }
 
-    /// <summary>Instant until which the account is locked out (M7 lockout). Null = not locked.</summary>
+    /// <summary>Gets instant until which the account is locked out (M7 lockout). Null = not locked.</summary>
     public DateTimeOffset? LockedUntilUtc { get; private set; }
 
     public const int MaxFailedLoginAttempts = 5;
@@ -40,26 +49,27 @@ public sealed class User : Entity, ITenantEntity
 
     public User()
     {
-        Email = string.Empty;
-        FirstName = string.Empty;
-        LastName = string.Empty;
-        PasswordHash = string.Empty;
-        SecurityStamp = string.Empty;
+        this.Email = string.Empty;
+        this.FirstName = string.Empty;
+        this.LastName = string.Empty;
+        this.PasswordHash = string.Empty;
+        this.SecurityStamp = string.Empty;
     }
-    public User(Guid id, Guid tenantId, string email, string firstName, string lastName, string passwordHash, string? phoneNumber = null, string? whatsappNumber = null) : base(id)
+
+    public User(Guid id, Guid tenantId, string email, string firstName, string lastName, string passwordHash, string? phoneNumber = null, string? whatsappNumber = null)
+        : base(id)
     {
-        TenantId = tenantId;
-        Email = email;
-        FirstName = firstName;
-        LastName = lastName;
-        PasswordHash = passwordHash;
-        PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
-        WhatsappNumber = string.IsNullOrWhiteSpace(whatsappNumber) ? null : whatsappNumber.Trim();
-        SecurityStamp = NewSecurityStamp();
-
+        this.TenantId = tenantId;
+        this.Email = email;
+        this.FirstName = firstName;
+        this.LastName = lastName;
+        this.PasswordHash = passwordHash;
+        this.PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+        this.WhatsappNumber = string.IsNullOrWhiteSpace(whatsappNumber) ? null : whatsappNumber.Trim();
+        this.SecurityStamp = NewSecurityStamp();
     }
 
-    public bool IsLockedOut(DateTimeOffset utcNow) => LockedUntilUtc is not null && LockedUntilUtc > utcNow;
+    public bool IsLockedOut(DateTimeOffset utcNow) => this.LockedUntilUtc is not null && this.LockedUntilUtc > utcNow;
 
     /// <summary>
     /// Records a failed sign-in. After <paramref name="maxAttempts"/> consecutive failures
@@ -68,49 +78,49 @@ public sealed class User : Entity, ITenantEntity
     /// </summary>
     public void RecordFailedLoginAttempt(int maxAttempts, TimeSpan lockoutDuration, DateTimeOffset utcNow)
     {
-        if (IsLockedOut(utcNow))
+        if (this.IsLockedOut(utcNow))
         {
             return;
         }
 
-        FailedLoginAttempts++;
+        this.FailedLoginAttempts++;
 
-        if (FailedLoginAttempts < maxAttempts)
+        if (this.FailedLoginAttempts < maxAttempts)
         {
             return;
         }
 
-        FailedLoginAttempts = 0;
-        LockedUntilUtc = utcNow + lockoutDuration;
+        this.FailedLoginAttempts = 0;
+        this.LockedUntilUtc = utcNow + lockoutDuration;
     }
 
     public void ResetLoginAttempts()
     {
-        FailedLoginAttempts = 0;
-        LockedUntilUtc = null;
+        this.FailedLoginAttempts = 0;
+        this.LockedUntilUtc = null;
     }
 
     /// <summary>Rotates the security stamp, invalidating previously issued sessions.</summary>
-    public void RegenerateSecurityStamp() => SecurityStamp = NewSecurityStamp();
+    public void RegenerateSecurityStamp() => this.SecurityStamp = NewSecurityStamp();
 
     public void EnableTwoFactor(string verifiedPhoneE164, DateTimeOffset utcNow)
     {
-        PhoneNumber = verifiedPhoneE164;
-        PhoneNumberVerified = true;
-        TwoFactorEnabled = true;
-        TwoFactorEnabledAtUtc = utcNow;
+        this.PhoneNumber = verifiedPhoneE164;
+        this.PhoneNumberVerified = true;
+        this.TwoFactorEnabled = true;
+        this.TwoFactorEnabledAtUtc = utcNow;
     }
 
     public void DisableTwoFactor()
     {
-        TwoFactorEnabled = false;
-        TwoFactorEnabledAtUtc = null;
+        this.TwoFactorEnabled = false;
+        this.TwoFactorEnabledAtUtc = null;
     }
 
     public void SetPhoneNumberVerified(string verifiedPhoneE164)
     {
-        PhoneNumber = verifiedPhoneE164;
-        PhoneNumberVerified = true;
+        this.PhoneNumber = verifiedPhoneE164;
+        this.PhoneNumberVerified = true;
     }
 
     private static string NewSecurityStamp() => Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
@@ -121,22 +131,27 @@ public sealed class User : Entity, ITenantEntity
         {
             return UserErrors.IdRequired;
         }
+
         if (tenantId == Guid.Empty)
         {
             return UserErrors.TenantRequired;
         }
+
         if (string.IsNullOrWhiteSpace(email))
         {
             return UserErrors.EmailRequired;
         }
+
         if (string.IsNullOrWhiteSpace(passwordHash))
         {
             return UserErrors.PasswordRequired;
         }
+
         if (string.IsNullOrWhiteSpace(firstName))
         {
             return UserErrors.FirstNameRequired;
         }
+
         if (string.IsNullOrWhiteSpace(lastName))
         {
             return UserErrors.LastNameRequired;
@@ -148,25 +163,28 @@ public sealed class User : Entity, ITenantEntity
 
         return user;
     }
+
     public Result<Updated> Update(string firstName, string lastName, string? passwordHash, string? phoneNumber = null, string? whatsappNumber = null)
     {
-
         if (string.IsNullOrWhiteSpace(firstName))
         {
             return UserErrors.FirstNameRequired;
         }
+
         if (string.IsNullOrWhiteSpace(lastName))
         {
             return UserErrors.LastNameRequired;
         }
+
         if (!string.IsNullOrWhiteSpace(passwordHash))
         {
-            PasswordHash = passwordHash;
+            this.PasswordHash = passwordHash;
         }
-        FirstName = firstName;
-        LastName = lastName;
-        PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
-        WhatsappNumber = string.IsNullOrWhiteSpace(whatsappNumber) ? null : whatsappNumber.Trim();
+
+        this.FirstName = firstName;
+        this.LastName = lastName;
+        this.PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+        this.WhatsappNumber = string.IsNullOrWhiteSpace(whatsappNumber) ? null : whatsappNumber.Trim();
         return Result.Updated;
     }
 }

@@ -1,3 +1,7 @@
+// <copyright file="CategoryErrors.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel.Result;
 
 namespace Domain.Catalog;
@@ -7,9 +11,11 @@ public static class CategoryErrors
     public static Error IdRequired => Error.Validation(
         "Categories.IdRequired",
         $"The category Id is required");
+
     public static Error NameRequired => Error.Validation(
         "Categories.NameRequired",
         $"اسم الفئة مطلوب");
+
     public static Error NotFound(Guid categoryId) => Error.NotFound(
         "Categories.NotFound",
         $"الفئة بـ Id = '{categoryId}' غير موجودة");

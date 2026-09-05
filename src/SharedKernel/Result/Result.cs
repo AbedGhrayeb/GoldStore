@@ -1,4 +1,8 @@
-﻿using System.ComponentModel;
+﻿// <copyright file="Result.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 
 namespace SharedKernel.Result;
@@ -6,19 +10,25 @@ namespace SharedKernel.Result;
 public class Result
 {
     public static Success Success => default;
+
     public static Created Created => default;
+
     public static Deleted Deleted => default;
+
     public static Updated Updated => default;
+
     public bool IsSuccess { get; }
-    public bool IsFailure => !IsSuccess;
+
+    public bool IsFailure => !this.IsSuccess;
+
     public Error? Error { get; }
 }
 
 public sealed class Result<TValue> : Abstractions.IResult<TValue>
 {
-    private readonly TValue? _value = default;
+    private readonly TValue? value = default;
 
-    private readonly List<Error>? _errors = null;
+    private readonly List<Error>? errors = null;
 
     public bool IsSuccess { get; }
 
@@ -29,9 +39,9 @@ public sealed class Result<TValue> : Abstractions.IResult<TValue>
     {
         if (isSuccess)
         {
-            _value = value ?? throw new ArgumentNullException(nameof(value));
-            _errors = [];
-            IsSuccess = true;
+            this.value = value ?? throw new ArgumentNullException(nameof(value));
+            this.errors = [];
+            this.IsSuccess = true;
         }
         else
         {
@@ -40,15 +50,15 @@ public sealed class Result<TValue> : Abstractions.IResult<TValue>
                 throw new ArgumentException("Provide at least one error.", nameof(errors));
             }
 
-            _errors = errors;
-            _value = default!;
-            IsSuccess = false;
+            this.errors = errors;
+            this.value = default!;
+            this.IsSuccess = false;
         }
     }
 
     private Result(Error error)
     {
-        _errors = [error];
+        this.errors = [error];
     }
 
     private Result(List<Error> errors)
@@ -58,9 +68,9 @@ public sealed class Result<TValue> : Abstractions.IResult<TValue>
             throw new ArgumentException("Cannot create an ErrorOr<TValue> from an empty collection of errors. Provide at least one error.", nameof(errors));
         }
 
-        _errors = errors;
+        this.errors = errors;
 
-        IsSuccess = false;
+        this.IsSuccess = false;
     }
 
     private Result(TValue value)
@@ -70,21 +80,21 @@ public sealed class Result<TValue> : Abstractions.IResult<TValue>
             throw new ArgumentNullException(nameof(value));
         }
 
-        _value = value;
+        this.value = value;
 
-        IsSuccess = true;
+        this.IsSuccess = true;
     }
 
-    public bool IsError => !IsSuccess;
+    public bool IsError => !this.IsSuccess;
 
-    public List<Error> Errors => IsError ? _errors! : [];
+    public List<Error> Errors => this.IsError ? this.errors! : [];
 
-    public TValue Value => IsSuccess ? _value! : default!;
+    public TValue Value => this.IsSuccess ? this.value! : default!;
 
-    public Error TopError => (_errors?.Count > 0) ? _errors[0] : default;
+    public Error TopError => (this.errors?.Count > 0) ? this.errors[0] : default;
 
     public TNextValue Match<TNextValue>(Func<TValue, TNextValue> onValue, Func<List<Error>, TNextValue> onError)
-        => IsSuccess ? onValue(Value!) : onError(Errors);
+        => this.IsSuccess ? onValue(this.Value!) : onError(this.Errors);
 
     public static implicit operator Result<TValue>(TValue value)
         => new(value);
@@ -97,6 +107,9 @@ public sealed class Result<TValue> : Abstractions.IResult<TValue>
 }
 
 public readonly record struct Success;
+
 public readonly record struct Created;
+
 public readonly record struct Deleted;
+
 public readonly record struct Updated;

@@ -1,3 +1,7 @@
+// <copyright file="GoldPricesEndpoints.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Messaging;
 using Application.Features.GoldPrices.GetCurrent;
 using Microsoft.AspNetCore.Builder;

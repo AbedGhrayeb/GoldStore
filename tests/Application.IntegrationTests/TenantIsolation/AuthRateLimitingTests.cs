@@ -1,4 +1,8 @@
-﻿using System.Net;
+﻿// <copyright file="AuthRateLimitingTests.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using System.Net;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Xunit;
@@ -28,26 +32,28 @@ public sealed class AuthRateLimitingWebApplicationFactory : MultiTenantWebApplic
 
 public sealed class AuthRateLimitingTests : IClassFixture<AuthRateLimitingWebApplicationFactory>
 {
-    private readonly AuthRateLimitingWebApplicationFactory _factory;
+    private readonly AuthRateLimitingWebApplicationFactory factory;
 
     public AuthRateLimitingTests(AuthRateLimitingWebApplicationFactory factory)
     {
-        _factory = factory;
+        this.factory = factory;
     }
 
     [Fact]
     public async Task Login_ExceedingPermitLimit_Returns429WithRetryAfter()
     {
-        using HttpClient client = _factory.CreateClient();
+        using HttpClient client = this.factory.CreateClient();
 
         for (int attempt = 0; attempt < 3; attempt++)
         {
-            HttpResponseMessage denied = await client.PostAsJsonAsync("/api/v1/auth/login",
+            HttpResponseMessage denied = await client.PostAsJsonAsync(
+                "/api/v1/auth/login",
                 new { email = "nobody@goldstore.test", password = "wrong-password" });
             Assert.Equal(HttpStatusCode.Unauthorized, denied.StatusCode);
         }
 
-        HttpResponseMessage limited = await client.PostAsJsonAsync("/api/v1/auth/login",
+        HttpResponseMessage limited = await client.PostAsJsonAsync(
+            "/api/v1/auth/login",
             new { email = "nobody@goldstore.test", password = "wrong-password" });
 
         Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
@@ -57,7 +63,7 @@ public sealed class AuthRateLimitingTests : IClassFixture<AuthRateLimitingWebApp
     [Fact]
     public async Task HealthProbe_IsNeverThrottled()
     {
-        using HttpClient client = _factory.CreateClient();
+        using HttpClient client = this.factory.CreateClient();
 
         // Exceeds the login window on purpose: health endpoints carry no rate-limit
         // policy, so all probes must pass regardless of the login budget.

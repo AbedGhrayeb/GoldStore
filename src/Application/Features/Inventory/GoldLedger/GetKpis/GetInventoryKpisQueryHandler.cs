@@ -1,3 +1,7 @@
+// <copyright file="GetInventoryKpisQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -26,14 +30,14 @@ internal sealed class GetInventoryKpisQueryHandler(
         24 => "عيار 24",
         21 => "عيار 21",
         18 => "عيار 18",
-        _ => $"عيار {karat}"
+        _ => $"عيار {karat}",
     };
 
     public async Task<Result<InventoryKpiResponse>> Handle(GetInventoryKpisQuery query, CancellationToken cancellationToken)
     {
         if (!currentTenant.IsAvailable)
         {
-            return await BuildAsync(cancellationToken);
+            return await this.BuildAsync(cancellationToken);
         }
 
         Guid tenantId = currentTenant.TenantId;
@@ -46,7 +50,7 @@ internal sealed class GetInventoryKpisQueryHandler(
         InventoryKpiResponse response = await cache.GetOrCreateAsync(
             cacheKey,
             [CacheKeys.KpiTenant(tenantId)],
-            (ct) => BuildAsync(ct),
+            (ct) => this.BuildAsync(ct),
             CacheKeys.KpiExpiration,
             cancellationToken);
 
@@ -62,7 +66,7 @@ internal sealed class GetInventoryKpisQueryHandler(
             {
                 Karat = g.Key,
                 NetWeight = g.Sum(e => e.MovementType == GoldMovementType.Increase ? e.WeightInGrams : -e.WeightInGrams),
-                NetEquivalent21K = g.Sum(e => e.MovementType == GoldMovementType.Increase ? e.Equivalent21KWeightInGrams : -e.Equivalent21KWeightInGrams)
+                NetEquivalent21K = g.Sum(e => e.MovementType == GoldMovementType.Increase ? e.Equivalent21KWeightInGrams : -e.Equivalent21KWeightInGrams),
             })
             .ToListAsync(cancellationToken);
 
@@ -85,7 +89,7 @@ internal sealed class GetInventoryKpisQueryHandler(
                     TotalWeightGrams = totalWeight,
                     TotalWeightDisplay = FormatWeight(totalWeight),
                     Unit = "جم",
-                    IsPrimary = (int)k == 21
+                    IsPrimary = (int)k == 21,
                 };
             }).ToList();
 
@@ -94,7 +98,7 @@ internal sealed class GetInventoryKpisQueryHandler(
         GoldPriceData? priceData = null;
         try
         {
-            //priceData = await goldPriceService.GetCurrentPricesAsync(Currency.JOD, cancellationToken);
+            // priceData = await goldPriceService.GetCurrentPricesAsync(Currency.JOD, cancellationToken);
         }
         catch
         {
@@ -110,7 +114,7 @@ internal sealed class GetInventoryKpisQueryHandler(
             TotalEquivalent21KUnit = "جم",
             EstimatedValueJod = estimatedValue,
             EstimatedValueDisplay = priceData is not null ? FormatCurrency(estimatedValue) : "—",
-            KaratBreakdowns = breakdowns
+            KaratBreakdowns = breakdowns,
         };
     }
 }

@@ -1,3 +1,7 @@
+// <copyright file="UpdateCategoryCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Catalog;
@@ -30,6 +34,7 @@ internal sealed class UpdateCategoryCommandHandler(IApplicationDbContext context
         {
             return CategoryErrors.CircularReference;
         }
+
         Result<Updated> updatedCategory = category.Update(command.ParentCategoryId, command.Name, command.Description, command.IsActive);
 
         if (updatedCategory.IsError)

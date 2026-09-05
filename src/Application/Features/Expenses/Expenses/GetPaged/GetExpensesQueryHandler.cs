@@ -1,3 +1,7 @@
+// <copyright file="GetExpensesQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -16,7 +20,7 @@ internal sealed class GetExpensesQueryHandler(IApplicationDbContext context, ICu
         "Jod" => "د.إ",
         "Usd" => "$",
         "Ils" => "₪",
-        _ => currency
+        _ => currency,
     };
 
     public async Task<Result<PaginatedList<ExpenseResponse>>> Handle(GetExpensesQuery query, CancellationToken cancellationToken)
@@ -74,7 +78,6 @@ internal sealed class GetExpensesQueryHandler(IApplicationDbContext context, ICu
             .Distinct()
             .ToListAsync(cancellationToken);
 
-
         Dictionary<Guid, string> accountNames = await context.FinancialAccounts
             .AsNoTracking()
             .Where(a => a.TenantId == currentTenant.TenantId)
@@ -106,10 +109,9 @@ internal sealed class GetExpensesQueryHandler(IApplicationDbContext context, ICu
             Currency = accountCurrencies.GetValueOrDefault(e.AccountId!.Value, string.Empty),
             CurrencySymbol = GetCurrencySymbol(accountCurrencies.GetValueOrDefault(e.AccountId!.Value, string.Empty)),
             AccountId = e.AccountId!.Value,
-            AccountName = accountNames.GetValueOrDefault(e.AccountId!.Value, string.Empty)
+            AccountName = accountNames.GetValueOrDefault(e.AccountId!.Value, string.Empty),
         });
 
         return await PaginatedList<ExpenseResponse>.CreateAsync(items, page, pageSize);
-
     }
 }

@@ -1,3 +1,7 @@
+// <copyright file="GetInventoryAdjustmentsQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -21,13 +25,13 @@ internal sealed class GetInventoryAdjustmentsQueryHandler(IApplicationDbContext 
 
         if (query.FromDate.HasValue)
         {
-            DateTime fromDate = query.FromDate.Value.ToUniversalTime();
+            DateTime fromDate = DateTime.SpecifyKind(query.FromDate.Value, DateTimeKind.Utc);
             adjustments = adjustments.Where(a => a.CreatedAtUtc >= fromDate);
         }
 
         if (query.ToDate.HasValue)
         {
-            DateTime toDate = query.ToDate.Value.ToUniversalTime();
+            DateTime toDate = DateTime.SpecifyKind(query.ToDate.Value, DateTimeKind.Utc);
             adjustments = adjustments.Where(a => a.CreatedAtUtc <= toDate);
         }
 
@@ -36,7 +40,6 @@ internal sealed class GetInventoryAdjustmentsQueryHandler(IApplicationDbContext 
         {
             adjustments = adjustments.Where(a => a.Type == adjType);
         }
-
 
         int page = Math.Max(query.Page, 1);
         int pageSize = Math.Clamp(query.PageSize, 1, 100);
@@ -70,7 +73,7 @@ internal sealed class GetInventoryAdjustmentsQueryHandler(IApplicationDbContext 
             Equivalent21KWeightInGrams = a.Equivalent21KWeightInGrams,
             Reason = a.Reason,
             Notes = a.Notes,
-            UserName = userNames.GetValueOrDefault(a.CreatedBy!.Value, "Unknown")
+            UserName = userNames.GetValueOrDefault(a.CreatedBy!.Value, "Unknown"),
         });
 
         return await PaginatedList<InventoryAdjustmentResponse>.CreateAsync(items, query.Page, query.PageSize);

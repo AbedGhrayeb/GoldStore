@@ -1,3 +1,7 @@
+// <copyright file="VerifyPlatformPhoneTwoFactorCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Phone;
@@ -40,7 +44,9 @@ internal sealed class VerifyPlatformPhoneTwoFactorCommandHandler(
 
         VerifiedPhone verified;
         try
-        { verified = await phoneVerifier.VerifyAsync(command.IdToken, cancellationToken); }
+        {
+            verified = await phoneVerifier.VerifyAsync(command.IdToken, cancellationToken);
+        }
         catch (Exception ex)
         {
             user.RecordFailedLoginAttempt(PlatformUser.MaxFailedLoginAttempts, PlatformUser.LockoutDuration, utcNow);

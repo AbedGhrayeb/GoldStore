@@ -1,11 +1,16 @@
+// <copyright file="Currency.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Domain.Common;
 
 public enum Currency
 {
     JOD = 1,
     USD = 2,
-    ILS = 3
+    ILS = 3,
 }
+
 public static class CurrencyExtensions
 {
     public static string ToCurrencyString(this Currency currency)
@@ -15,13 +20,14 @@ public static class CurrencyExtensions
             Currency.JOD => "JOD",
             Currency.USD => "USD",
             Currency.ILS => "ILS",
-            _ => currency.ToString()
+            _ => currency.ToString(),
         };
     }
+
     public static readonly Dictionary<Currency, (string Code, string Symbol)> CurrencyLabels = new()
     {
         [Currency.JOD] = ("Jod", "د.أ"),
         [Currency.USD] = ("Usd", "$"),
-        [Currency.ILS] = ("Ils", "₪")
+        [Currency.ILS] = ("Ils", "₪"),
     };
 }

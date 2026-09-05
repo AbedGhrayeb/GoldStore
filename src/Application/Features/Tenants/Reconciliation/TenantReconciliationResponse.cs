@@ -1,3 +1,7 @@
+// <copyright file="TenantReconciliationResponse.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Application.Tenants.Reconciliation;
 
 /// <summary>

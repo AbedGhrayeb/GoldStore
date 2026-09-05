@@ -370,27 +370,33 @@ function firstValidationMessage(error: ApiError): string | null {
                   />
                   <p class="mt-1 text-xs text-gray-500">الرصيد المتبقي يُسجل ديناً على العميل.</p>
                 </div>
-                @if (paymentMethod() === '2') {
-                  <div class="space-y-3 rounded-input bg-gray-50 p-3">
-                    @if (accountsError(); as message) {
-                      <p class="rounded-input bg-error/10 px-2 py-1.5 text-xs text-red-700">{{ message }}</p>
+                <div class="space-y-3 rounded-input bg-gray-50 p-3">
+                  @if (accountsError(); as message) {
+                    <p class="rounded-input bg-error/10 px-2 py-1.5 text-xs text-red-700">{{ message }}</p>
+                  }
+                  <div>
+                    <label class="mb-1.5 block text-xs font-medium text-gray-600" for="invoice-account"
+                      >حساب الدفع <span class="text-error">*</span></label
+                    >
+                    <select
+                      id="invoice-account"
+                      [value]="accountId()"
+                      (change)="accountId.set($any($event.target).value)"
+                      class="w-full rounded-input border border-gray-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
+                    >
+                      <option value="">اختر الحساب</option>
+                      @for (account of matchingAccounts(); track account.id) {
+                        <option [value]="account.id">{{ account.name }} ({{ account.currency }})</option>
+                      }
+                    </select>
+                    @if (matchingAccounts().length === 0 && !accountsError()) {
+                      <p class="mt-1 text-xs text-gray-500">
+                        لا يوجد حساب {{ paymentMethod() === '2' ? 'بنكي' : 'نقدي' }} مطابق لعملة
+                        {{ currency() }} — أضف حساباً في المالية.
+                      </p>
                     }
-                    <div>
-                      <label class="mb-1.5 block text-xs font-medium text-gray-600" for="invoice-account"
-                        >حساب الاستلام <span class="text-error">*</span></label
-                      >
-                      <select
-                        id="invoice-account"
-                        [value]="accountId()"
-                        (change)="accountId.set($any($event.target).value)"
-                        class="w-full rounded-input border border-gray-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
-                      >
-                        <option value="">اختر الحساب</option>
-                        @for (account of bankAccounts(); track account.id) {
-                          <option [value]="account.id">{{ account.name }} ({{ account.currency }})</option>
-                        }
-                      </select>
-                    </div>
+                  </div>
+                  @if (paymentMethod() === '2') {
                     <div>
                       <label class="mb-1.5 block text-xs font-medium text-gray-600" for="invoice-buyer-account"
                         >رقم حساب المشتري <span class="text-error">*</span></label
@@ -406,8 +412,8 @@ function firstValidationMessage(error: ApiError): string | null {
                         class="w-full rounded-input border border-gray-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
                       />
                     </div>
-                  </div>
-                }
+                  }
+                </div>
               </div>
             </div>
           } @else {
@@ -653,6 +659,12 @@ export class InvoiceDialog {
       (account) => account.currency === this.currency() && account.accountType === 'Bank',
     ),
   );
+  readonly matchingAccounts = computed(() => {
+    const method = this.paymentMethod() === '2' ? 'Bank' : 'Cash';
+    return (this.accounts() ?? []).filter(
+      (account) => account.currency === this.currency() && account.accountType === method,
+    );
+  });
 
   readonly items = signal<InvoiceItemDraft[]>([]);
   readonly itemsError = signal('');
@@ -682,8 +694,26 @@ export class InvoiceDialog {
   constructor() {
     void this.reference.ensureLoaded();
     void this.store.loadNextNumber();
+    void this.store.ensureEmployees();
+    void this.store.ensureCategories();
+    void this.store.ensureAccounts();
+    // Auto-select first matching account when currency/method/accounts change (single-payment mode)
+    effect(() => {
+      if (this.paymentLegsEnabled()) return;
+      const matching = this.matchingAccounts();
+      const current = this.accountId();
+      if (matching.length > 0 && !matching.some((a) => a.id === current)) {
+        this.accountId.set(matching[0]?.id ?? '');
+      } else if (matching.length === 0 && current !== '') {
+        this.accountId.set('');
+      }
+    });
     effect(() => {
       if (this.open()) {
+        void this.store.ensureEmployees();
+        void this.store.ensureCategories();
+        void this.store.ensureAccounts();
+        void this.store.loadNextNumber();
         this.draft.set({ customerName: '', customerPhone: '', notes: '' });
         this.items.set([
           { categoryId: '', karat: 21, weight: '', pricePerGram: '' },
@@ -896,12 +926,17 @@ export class InvoiceDialog {
           this.formError.set('مجموع الدفعات يتجاوز المبلغ المستحق.');
           return;
         }
-      } else if (this.paymentMethod() === '2' && paid > 0) {
+      } else {
+        // Single-payment: account is required for both cash and bank (based on currency + method)
         if (this.accountId() === '') {
-          this.formError.set('اختر حساب الاستلام للتحويل البنكي.');
+          this.formError.set(
+            this.accountsError() !== null
+              ? 'تعذّر تحميل الحسابات المالية — يلزم اختيار حساب الدفع.'
+              : 'اختر حساب الدفع المطابق لعملة وطريقة الدفع.',
+          );
           return;
         }
-        if (this.buyerAccountNumber().trim() === '') {
+        if (this.paymentMethod() === '2' && this.buyerAccountNumber().trim() === '') {
           this.formError.set('أدخل رقم حساب المشتري للتحويل البنكي.');
           return;
         }

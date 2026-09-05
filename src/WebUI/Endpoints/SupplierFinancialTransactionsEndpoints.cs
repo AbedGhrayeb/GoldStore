@@ -1,3 +1,7 @@
+// <copyright file="SupplierFinancialTransactionsEndpoints.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Messaging;
 using Application.Common.Ledger;
 using Application.Features.SupplierFinancialTransactions.Create;

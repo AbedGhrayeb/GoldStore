@@ -1,3 +1,7 @@
+// <copyright file="SetupPlatformPhoneTwoFactorCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Phone;
@@ -18,8 +22,13 @@ internal sealed class SetupPlatformPhoneTwoFactorCommandHandler(
     {
         VerifiedPhone verified;
         try
-        { verified = await phoneVerifier.VerifyAsync(command.IdToken, cancellationToken); }
-        catch (Exception ex) { return ApplicationErrors.InvalidPhoneVerification; }
+        {
+            verified = await phoneVerifier.VerifyAsync(command.IdToken, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            return ApplicationErrors.InvalidPhoneVerification;
+        }
 
         PlatformUser? user = await context.PlatformUsers.SingleOrDefaultAsync(u => u.Id == command.PlatformUserId, cancellationToken);
         if (user is null)

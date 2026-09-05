@@ -1,3 +1,7 @@
+// <copyright file="TenantHostOptions.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Infrastructure.Tenancy;
 
 /// <summary>
@@ -11,30 +15,30 @@ public sealed class TenantHostOptions
 {
     public const string SectionName = "Tenancy";
 
-    /// <summary>The host serving public login and onboarding, e.g. <c>goldstore.app</c>.</summary>
+    /// <summary>Gets or sets the host serving public login and onboarding, e.g. <c>goldstore.app</c>.</summary>
     public string PublicHost { get; set; } = "goldstore.app";
 
-    /// <summary>The parent domain tenant subdomains live under, e.g. <c>goldstore.app</c>.</summary>
+    /// <summary>Gets or sets the parent domain tenant subdomains live under, e.g. <c>goldstore.app</c>.</summary>
     public string BaseDomain { get; set; } = "goldstore.app";
 
-    /// <summary>The scheme used to build canonical tenant URLs.</summary>
+    /// <summary>Gets or sets the scheme used to build canonical tenant URLs.</summary>
     public string Scheme { get; set; } = "https";
 
     /// <summary>
-    /// True to verify the request hostname against the claimed tenant key and redirect
+    /// Gets or sets a value indicating whether true to verify the request hostname against the claimed tenant key and redirect
     /// public-host requests to the tenant subdomain. Disabled during local development.
     /// </summary>
     public bool RequireHostnameVerification { get; set; }
 
     /// <summary>
-    /// When set, the authentication cookie is scoped to this parent domain (e.g.
+    /// Gets or sets when set, the authentication cookie is scoped to this parent domain (e.g.
     /// <c>.goldstore.app</c>) so a session created on the public host works on every
     /// tenant subdomain. Left null/empty for single-host development.
     /// </summary>
     public string? CookieDomain { get; set; }
 
     /// <summary>
-    /// Explicit path prefixes exempt from tenant resolution. Non-endpoint paths, health
+    /// Gets or sets explicit path prefixes exempt from tenant resolution. Non-endpoint paths, health
     /// checks, and authentication flows are listed here rather than excluded by convention.
     /// Endpoints may also opt out explicitly with <c>[HostOnly]</c> or <c>[AllowAnonymous]</c>.
     /// </summary>

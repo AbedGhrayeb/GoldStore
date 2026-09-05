@@ -1,3 +1,7 @@
+// <copyright file="EndpointExtensions.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace WebUI.Endpoints;
 
 /// <summary>

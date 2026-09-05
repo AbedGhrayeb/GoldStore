@@ -1,3 +1,7 @@
+// <copyright file="CreateCategoryCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Catalog;
@@ -25,6 +29,7 @@ internal sealed class CreateCategoryCommandHandler(IApplicationDbContext context
         {
             return category.Errors;
         }
+
         context.Categories.Add(category.Value);
         await context.SaveChangesAsync(cancellationToken);
 

@@ -1,3 +1,7 @@
+// <copyright file="GetSupplierFinancialKpisQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -15,13 +19,12 @@ internal sealed class GetSupplierFinancialKpisQueryHandler(
     ICacheService cache)
     : IQueryHandler<GetSupplierFinancialKpisQuery, SupplierFinancialKpiResponse>
 {
-
     public async Task<Result<SupplierFinancialKpiResponse>> Handle(
         GetSupplierFinancialKpisQuery query, CancellationToken cancellationToken)
     {
         if (!currentTenant.IsAvailable)
         {
-            return await BuildAsync(cancellationToken);
+            return await this.BuildAsync(cancellationToken);
         }
 
         Guid tenantId = currentTenant.TenantId;
@@ -34,7 +37,7 @@ internal sealed class GetSupplierFinancialKpisQueryHandler(
         SupplierFinancialKpiResponse response = await cache.GetOrCreateAsync(
             cacheKey,
             [CacheKeys.KpiTenant(tenantId)],
-            (ct) => BuildAsync(ct),
+            (ct) => this.BuildAsync(ct),
             CacheKeys.KpiExpiration,
             cancellationToken);
 
@@ -66,7 +69,9 @@ internal sealed class GetSupplierFinancialKpisQueryHandler(
         {
             decimal balance = balances.GetValueOrDefault(tx.Id, 0m);
             if (balance <= 0)
-            { continue; }
+            {
+                continue;
+            }
 
             if (!byCurrency.TryGetValue(tx.Currency, out (decimal From, decimal To, int Count) cur))
             {
@@ -74,10 +79,13 @@ internal sealed class GetSupplierFinancialKpisQueryHandler(
             }
 
             if (tx.Direction == SupplierFinancialTransactionDirection.FromSupplier)
-
-            { cur = (cur.From + balance, cur.To, cur.Count + 1); }
+            {
+                cur = (cur.From + balance, cur.To, cur.Count + 1);
+            }
             else
-            { cur = (cur.From, cur.To + balance, cur.Count + 1); }
+            {
+                cur = (cur.From, cur.To + balance, cur.Count + 1);
+            }
 
             byCurrency[tx.Currency] = cur;
         }
@@ -98,14 +106,14 @@ internal sealed class GetSupplierFinancialKpisQueryHandler(
                     TransactionCount = x.Value.Count,
                     TotalFromSupplierDisplay = x.Value.From.ToString("N3"),
                     TotalToSupplierDisplay = x.Value.To.ToString("N3"),
-                    NetBalanceDisplay = net.ToString("N3")
+                    NetBalanceDisplay = net.ToString("N3"),
                 };
             })
             .ToList();
 
         return new SupplierFinancialKpiResponse
         {
-            ByCurrency = byCurrencyList
+            ByCurrency = byCurrencyList,
         };
     }
 }

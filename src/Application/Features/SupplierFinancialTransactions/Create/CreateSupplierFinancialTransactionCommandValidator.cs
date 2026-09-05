@@ -1,3 +1,7 @@
+// <copyright file="CreateSupplierFinancialTransactionCommandValidator.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Suppliers;
 using FluentValidation;
 
@@ -7,33 +11,33 @@ internal sealed class CreateSupplierFinancialTransactionCommandValidator : Abstr
 {
     public CreateSupplierFinancialTransactionCommandValidator()
     {
-        RuleFor(x => x.SupplierId)
+        this.RuleFor(x => x.SupplierId)
             .NotEmpty()
             .WithMessage("المورد مطلوب");
 
-        RuleFor(x => x.Direction)
+        this.RuleFor(x => x.Direction)
             .Must(d => Enum.IsDefined(typeof(SupplierFinancialTransactionDirection), d))
             .WithMessage("اتجاه المعاملة غير صالح");
 
-        RuleFor(x => x.Amount)
+        this.RuleFor(x => x.Amount)
             .GreaterThan(0)
             .WithMessage("المبلغ يجب أن يكون أكبر من صفر");
 
-        RuleFor(x => x.Currency)
+        this.RuleFor(x => x.Currency)
             .NotEmpty()
             .Must(currency => Enum.TryParse(currency, ignoreCase: true, out Domain.Common.Currency parsed)
                 && Enum.IsDefined(parsed))
             .WithMessage("العملة غير صالحة");
 
-        RuleFor(x => x.AccountId)
+        this.RuleFor(x => x.AccountId)
             .NotEmpty()
             .WithMessage("الحساب المالي مطلوب");
 
-        RuleFor(x => x.Date)
+        this.RuleFor(x => x.Date)
             .NotEmpty()
             .WithMessage("التاريخ مطلوب");
 
-        RuleFor(x => x.Notes)
+        this.RuleFor(x => x.Notes)
             .MaximumLength(1000)
             .When(x => x.Notes is not null);
     }

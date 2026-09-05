@@ -1,3 +1,7 @@
+// <copyright file="ExpenseCategory.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -8,16 +12,18 @@ public sealed class ExpenseCategory : AuditableEntity, ITenantEntity
     public Guid TenantId { get; private set; }
 
     public string Name { get; private set; }
-    private readonly List<Expense> _expenses = new();
-    public IReadOnlyCollection<Expense> Expenses => _expenses.AsReadOnly();
+
+    private readonly List<Expense> expenses = new();
+
+    public IReadOnlyCollection<Expense> Expenses => this.expenses.AsReadOnly();
 
     private ExpenseCategory()
     {
-
     }
+
     private ExpenseCategory(string name)
     {
-        Name = name;
+        this.Name = name;
     }
 
     public static Result<ExpenseCategory> Create(string name)
@@ -26,15 +32,18 @@ public sealed class ExpenseCategory : AuditableEntity, ITenantEntity
         {
             return ExpenseCategoryErrors.NameRequired;
         }
+
         return new ExpenseCategory(name);
     }
+
     public Result<Updated> Update(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
             return ExpenseCategoryErrors.NameRequired;
         }
-        Name = name;
+
+        this.Name = name;
         return Result.Updated;
     }
 }

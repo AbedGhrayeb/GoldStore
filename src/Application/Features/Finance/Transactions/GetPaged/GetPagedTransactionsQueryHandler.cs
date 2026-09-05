@@ -1,3 +1,7 @@
+// <copyright file="GetPagedTransactionsQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -16,7 +20,6 @@ internal sealed class GetPagedTransactionsQueryHandler(IApplicationDbContext con
         GetPagedTransactionsQuery query,
         CancellationToken cancellationToken)
     {
-
         IQueryable<FinancialTransaction> transactionsQuery = context.FinancialTransactions.OrderByDescending(f => f.CreatedAtUtc).AsNoTracking().Where(t => t.TenantId == currentTenant.TenantId);
 
         if (!string.IsNullOrWhiteSpace(query.Currency)
@@ -24,6 +27,7 @@ internal sealed class GetPagedTransactionsQueryHandler(IApplicationDbContext con
         {
             transactionsQuery = transactionsQuery.Where(t => t.Currency == currency);
         }
+
         IQueryable<FinancialAccount> financialAccountsQuery = context.FinancialAccounts.AsNoTracking().Where(a => a.TenantId == currentTenant.TenantId);
         if (!string.IsNullOrWhiteSpace(query.AccountType)
             && Enum.TryParse<FinancialAccountType>(query.AccountType, ignoreCase: true, out FinancialAccountType accountType))
@@ -60,7 +64,6 @@ internal sealed class GetPagedTransactionsQueryHandler(IApplicationDbContext con
         }
 
         // int totalCount = await transactionsQuery.CountAsync(cancellationToken);
-
         List<Guid> allAccountIds = await transactionsQuery
             .Select(t => t.AccountId)
             .Distinct()
@@ -80,10 +83,9 @@ internal sealed class GetPagedTransactionsQueryHandler(IApplicationDbContext con
             Amount = t.Amount,
             Currency = t.Currency.ToString(),
             TransactionType = t.TransactionType.ToString(),
-            ReferenceType = t.ReferenceType.ToString()
+            ReferenceType = t.ReferenceType.ToString(),
         });
 
         return await PaginatedList<RecentTransactionResponse>.CreateAsync(items, query.Page, query.PageSize);
     }
-
 }

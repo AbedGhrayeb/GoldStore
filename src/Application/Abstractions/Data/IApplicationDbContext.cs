@@ -1,4 +1,8 @@
-﻿using Domain.Authorization;
+﻿// <copyright file="IApplicationDbContext.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Domain.Authorization;
 using Domain.Catalog;
 using Domain.Common;
 using Domain.CustomerPurchases;
@@ -19,24 +23,43 @@ namespace Application.Abstractions.Data;
 public interface IApplicationDbContext
 {
     DbSet<User> Users { get; }
+
     DbSet<Employee> Employees { get; }
+
     DbSet<SalaryPayment> SalaryPayments { get; }
+
     DbSet<FinancialTransaction> FinancialTransactions { get; }
+
     DbSet<FinancialAccount> FinancialAccounts { get; }
+
     DbSet<Category> Categories { get; }
+
     DbSet<InvoiceNumberSequence> InvoiceNumberSequences { get; }
+
     DbSet<GoldLedgerEntry> GoldLedgerEntries { get; }
+
     DbSet<InventoryAdjustment> InventoryAdjustments { get; }
+
     DbSet<Supplier> Suppliers { get; }
+
     DbSet<SupplierGoldLedgerEntry> SupplierGoldLedgerEntries { get; }
+
     DbSet<SupplierManufacturingLedgerEntry> SupplierManufacturingLedgerEntries { get; }
+
     DbSet<SupplierDelivery> SupplierDeliveries { get; }
+
     DbSet<SupplierScrapGoldPayment> SupplierScrapGoldPayments { get; }
+
     DbSet<SupplierManufacturingPayment> SupplierManufacturingPayments { get; }
+
     DbSet<SupplierFinancialTransaction> SupplierFinancialTransactions { get; }
+
     DbSet<SupplierFinancialLedgerEntry> SupplierFinancialLedgerEntries { get; }
+
     DbSet<SupplierFinancialPayment> SupplierFinancialPayments { get; }
+
     DbSet<Expense> Expenses { get; }
+
     DbSet<ExpenseCategory> ExpenseCategories { get; }
 
     DbSet<Debt> Debts { get; }

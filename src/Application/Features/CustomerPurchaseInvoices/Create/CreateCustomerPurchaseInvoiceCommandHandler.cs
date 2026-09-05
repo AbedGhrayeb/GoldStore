@@ -1,4 +1,8 @@
-﻿using Application.Abstractions.Authentication;
+﻿// <copyright file="CreateCustomerPurchaseInvoiceCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Services;
@@ -120,8 +124,10 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
                 {
                     return itemResult.Errors;
                 }
+
                 items.Add(itemResult.Value);
             }
+
             Result<CustomerPurchaseInvoice> invoiceResult = CustomerPurchaseInvoice.Create(
                 invoiceId,
                 invoiceNumber,
@@ -139,13 +145,12 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
                 accountId,
                 command.SellerAccountNumber,
                 command.Notes,
-                items
-
-            );
+                items);
             if (invoiceResult.IsError)
             {
                 return invoiceResult.Errors;
             }
+
             context.CustomerPurchaseInvoices.Add(invoiceResult.Value);
 
             foreach (CustomerPurchaseInvoiceItem item in items)
@@ -183,8 +188,10 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
                 {
                     return financialTransactionResult.Errors;
                 }
+
                 context.FinancialTransactions.Add(financialTransactionResult.Value);
             }
+
             // Add debt record for the remaining balance if any
             if (remainingBalance > 0)
             {
@@ -194,7 +201,6 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
                 if (existingDebt != null)
                 {
                     debtId = existingDebt.Id;
-
                 }
                 else
                 {
@@ -214,15 +220,14 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
                     context.Debts.Add(debtResult.Value);
                 }
 
-
                 // Add debt ledger entry for the remaining balance
-
                 Result<DebtLedgerEntry> debtLedgerEntryResult = DebtLedgerEntry.Create(debtId, remainingBalance, DebtBalanceMovementType.Increase,
                     $"رصيد متبقي من فاتورة شراء ذهب {invoiceNumber}");
                 if (debtLedgerEntryResult.IsError)
                 {
                     return debtLedgerEntryResult.Errors;
                 }
+
                 context.DebtLedgerEntries.Add(debtLedgerEntryResult.Value);
             }
 
@@ -236,5 +241,4 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
 
         return invoiceId;
     }
-
 }

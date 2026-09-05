@@ -1,3 +1,7 @@
+// <copyright file="UpdateUserCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -20,7 +24,7 @@ internal sealed class UpdateUserCommandHandler(
         {
             return UserErrors.Unauthorized();
         }
-        ;
+
         User user = await context.Users.FirstOrDefaultAsync(u => u.Id == command.Id, cancellationToken);
 
         if (user is null)

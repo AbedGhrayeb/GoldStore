@@ -1,3 +1,7 @@
+// <copyright file="FirebasePhoneVerifier.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Phone;
 using FirebaseAdmin;
 using FirebaseAdmin.Auth;

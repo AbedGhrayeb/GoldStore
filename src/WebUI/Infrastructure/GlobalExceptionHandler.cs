@@ -1,4 +1,8 @@
-﻿using Infrastructure.Authentication;
+﻿// <copyright file="GlobalExceptionHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Infrastructure.Authentication;
 using Infrastructure.Tenants;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -22,14 +26,14 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
                 Status = StatusCodes.Status401Unauthorized,
                 Type = "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.2",
                 Title = "Authentication required",
-                Detail = "This operation requires an authenticated user."
+                Detail = "This operation requires an authenticated user.",
             },
             _ => new ProblemDetails
             {
                 Status = StatusCodes.Status500InternalServerError,
                 Type = "https://datatracker.ietf.org/doc/html/rfc7231#section-6.6.1",
                 Title = "Server failure"
-            }
+            },
         };
 
         if (problemDetails.Status is >= 400 and < 500)

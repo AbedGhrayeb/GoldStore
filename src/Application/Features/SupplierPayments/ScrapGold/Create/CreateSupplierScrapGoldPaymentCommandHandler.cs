@@ -1,3 +1,7 @@
+// <copyright file="CreateSupplierScrapGoldPaymentCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Ledger;
@@ -32,6 +36,7 @@ internal sealed class CreateSupplierScrapGoldPaymentCommandHandler(
         }
 
         var karat = (Karat)command.Karat;
+
         // decimal equivalent21K = GoldWeight.CalculateEquivalent21KWeight(command.WeightInGrams, karat);
         decimal storeStock = await context.GetGoldStockAsync(karat, cancellationToken);
 
@@ -50,7 +55,6 @@ internal sealed class CreateSupplierScrapGoldPaymentCommandHandler(
         DateTime paymentDate = dateTimeProvider.UtcNow;
         var payment = SupplierScrapGoldPayment.Create(command.SupplierId, karat, command.WeightInGrams, command.Notes);
 
-
         context.SupplierScrapGoldPayments.Add(payment);
         var supplierGoldLedgerEntry = SupplierGoldLedgerEntry.Create(command.SupplierId, karat, command.WeightInGrams,
             SupplierBalanceMovementType.Decrease, SupplierGoldReferenceType.SupplierScrapPayment,
@@ -64,8 +68,8 @@ internal sealed class CreateSupplierScrapGoldPaymentCommandHandler(
         {
             return goldLedgerEntry.Errors;
         }
-        context.GoldLedgerEntries.Add(goldLedgerEntry.Value);
 
+        context.GoldLedgerEntries.Add(goldLedgerEntry.Value);
 
         await context.SaveChangesAsync(cancellationToken);
 

@@ -1,3 +1,7 @@
+// <copyright file="KpiCachingTests.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.Net;
 using System.Text.Json;
 using Application.Abstractions.Messaging;
@@ -20,21 +24,21 @@ public sealed class KpiCachingTests : IClassFixture<MultiTenantWebApplicationFac
     private const string TenantAAdmin = "admin@goldstore";
     private const string TenantAAdminPassword = "GoldStore@321!";
 
-    private readonly MultiTenantWebApplicationFactory _factory;
+    private readonly MultiTenantWebApplicationFactory factory;
 
     public KpiCachingTests(MultiTenantWebApplicationFactory factory)
     {
-        _factory = factory;
+        this.factory = factory;
     }
 
     [Fact]
     public async Task InventoryKpi_ReflectsLedgerWriteAfterEviction()
     {
-        using HttpClient client = await _factory.CreateAuthenticatedClientAsync(TenantAAdmin, TenantAAdminPassword);
+        using HttpClient client = await this.factory.CreateAuthenticatedClientAsync(TenantAAdmin, TenantAAdminPassword);
 
-        decimal before = await GetInventoryTotalAsync(client);
+        decimal before = await this.GetInventoryTotalAsync(client);
 
-        (IServiceScope? scope, Infrastructure.Database.ApplicationDbContext _) = await _factory.OpenTenantContextAsync(InitialTenant.Id, InitialTenant.Key);
+        (IServiceScope? scope, Infrastructure.Database.ApplicationDbContext _) = await this.factory.OpenTenantContextAsync(InitialTenant.Id, InitialTenant.Key);
         using (scope)
         {
             ICommandHandler<CreateInventoryAdjustmentCommand, Guid> handler =
@@ -53,7 +57,7 @@ public sealed class KpiCachingTests : IClassFixture<MultiTenantWebApplicationFac
             Assert.True(result.IsSuccess);
         }
 
-        decimal after = await GetInventoryTotalAsync(client);
+        decimal after = await this.GetInventoryTotalAsync(client);
 
         Assert.Equal(before + 10m, after);
     }

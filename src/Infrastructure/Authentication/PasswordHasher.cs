@@ -1,4 +1,8 @@
-﻿using System.Security.Cryptography;
+﻿// <copyright file="PasswordHasher.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using System.Security.Cryptography;
 using Application.Abstractions.Authentication;
 
 namespace Infrastructure.Authentication;

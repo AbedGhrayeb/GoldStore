@@ -1,3 +1,7 @@
+// <copyright file="GetRolesQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Authorization;
@@ -23,7 +27,7 @@ internal sealed class GetRolesQueryHandler(IApplicationDbContext context) : IQue
                 .Where(rp => rp.RoleId == r.Id)
                 .Select(rp => permissions.TryGetValue(rp.PermissionId, out string? key) ? key : string.Empty)
                 .Where(k => !string.IsNullOrEmpty(k))
-                .ToList()
+                .ToList(),
         }).ToList();
 
         return result;

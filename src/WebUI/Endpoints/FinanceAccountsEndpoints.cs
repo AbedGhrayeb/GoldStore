@@ -1,3 +1,7 @@
+// <copyright file="FinanceAccountsEndpoints.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Messaging;
 using Application.Finance.Accounts;
 using Application.Finance.Accounts.Create;

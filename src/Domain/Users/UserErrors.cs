@@ -1,4 +1,8 @@
-﻿using SharedKernel;
+﻿// <copyright file="UserErrors.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using SharedKernel;
 using SharedKernel.Result;
 
 namespace Domain.Users;
@@ -8,21 +12,27 @@ public static class UserErrors
     public static Error IdRequired => Error.Validation(
         "Users.Id.Required",
         $"The user Id is Required");
+
     public static Error TenantRequired => Error.Validation(
         "Users.Tenant.Required",
         "The tenant Id is required");
+
     public static Error EmailRequired => Error.Validation(
         "User.Email.Required",
         $"البريد الإلكتروني مطلوب");
+
     public static Error PasswordRequired => Error.Validation(
         "User.Password.Required",
         $"كلمة المرور مطلوبة");
+
     public static Error FirstNameRequired => Error.Validation(
         "User.FirstName.Required",
         $"الاسم الأول مطلوب");
+
     public static Error LastNameRequired => Error.Validation(
         "User.LastName.Required",
         $"الاسم الأخير مطلوب");
+
     public static Error NotFound(Guid userId) => Error.NotFound(
         "Users.NotFound",
         $"المستخدم بـ Id = '{userId}' غير موجود");

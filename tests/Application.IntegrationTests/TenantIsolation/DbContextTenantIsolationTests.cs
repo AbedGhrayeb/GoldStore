@@ -1,3 +1,7 @@
+// <copyright file="DbContextTenantIsolationTests.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Tenants;
 using Domain.Common;
 using Domain.Inventory;
@@ -19,19 +23,18 @@ namespace Application.IntegrationTests.TenantIsolation;
 /// </summary>
 public sealed class DbContextTenantIsolationTests : IClassFixture<MultiTenantWebApplicationFactory>
 {
-    private readonly MultiTenantWebApplicationFactory _factory;
+    private readonly MultiTenantWebApplicationFactory factory;
 
     public DbContextTenantIsolationTests(MultiTenantWebApplicationFactory factory)
     {
-        _factory = factory;
+        this.factory = factory;
     }
 
     // ─── Global query filters ─────────────────────────────────────────────────
-
     [Fact]
     public async Task QueryFilters_TenantASeesOnlyItsOwnRows()
     {
-        (IServiceScope scope, ApplicationDbContext db) = await _factory.OpenTenantContextAsync(
+        (IServiceScope scope, ApplicationDbContext db) = await this.factory.OpenTenantContextAsync(
             Domain.Tenants.InitialTenant.Id, MultiTenantWebApplicationFactory.TenantAKey);
         using (scope)
         {
@@ -40,38 +43,38 @@ public sealed class DbContextTenantIsolationTests : IClassFixture<MultiTenantWeb
 
             Assert.NotEmpty(suppliers);
             Assert.All(suppliers, supplier => Assert.Equal(Domain.Tenants.InitialTenant.Id, supplier.TenantId));
-            Assert.Contains(suppliers, supplier => supplier.Id == _factory.SupplierA.Id);
-            Assert.DoesNotContain(suppliers, supplier => supplier.Id == _factory.SupplierB.Id);
+            Assert.Contains(suppliers, supplier => supplier.Id == this.factory.SupplierA.Id);
+            Assert.DoesNotContain(suppliers, supplier => supplier.Id == this.factory.SupplierB.Id);
 
-            Assert.Contains(categories, category => category.Id == _factory.CategoryA.Id);
-            Assert.DoesNotContain(categories, category => category.Id == _factory.CategoryB.Id);
+            Assert.Contains(categories, category => category.Id == this.factory.CategoryA.Id);
+            Assert.DoesNotContain(categories, category => category.Id == this.factory.CategoryB.Id);
         }
     }
 
     [Fact]
     public async Task QueryFilters_TenantBCannotReadTenantARows()
     {
-        (IServiceScope scope, ApplicationDbContext db) = await _factory.OpenTenantContextAsync(
-            _factory.TenantBId, MultiTenantWebApplicationFactory.TenantBKey);
+        (IServiceScope scope, ApplicationDbContext db) = await this.factory.OpenTenantContextAsync(
+            this.factory.TenantBId, MultiTenantWebApplicationFactory.TenantBKey);
         using (scope)
         {
             Supplier? foreignSupplier = await db.Suppliers
-                .SingleOrDefaultAsync(supplier => supplier.Id == _factory.SupplierA.Id);
+                .SingleOrDefaultAsync(supplier => supplier.Id == this.factory.SupplierA.Id);
             Domain.Catalog.Category? foreignCategory = await db.Categories
-                .SingleOrDefaultAsync(category => category.Id == _factory.CategoryA.Id);
+                .SingleOrDefaultAsync(category => category.Id == this.factory.CategoryA.Id);
 
             Assert.Null(foreignSupplier);
             Assert.Null(foreignCategory);
 
             List<Supplier> ownSuppliers = await db.Suppliers.ToListAsync();
-            Assert.Contains(ownSuppliers, supplier => supplier.Id == _factory.SupplierB.Id);
+            Assert.Contains(ownSuppliers, supplier => supplier.Id == this.factory.SupplierB.Id);
         }
     }
 
     [Fact]
     public async Task QueryFilters_NoTenantMatchesNothing()
     {
-        (IServiceScope scope, ApplicationDbContext db) = _factory.OpenNoTenantContext();
+        (IServiceScope scope, ApplicationDbContext db) = this.factory.OpenNoTenantContext();
         using (scope)
         {
             // Deny by default: with no ambient tenant the filter matches no rows.
@@ -81,11 +84,10 @@ public sealed class DbContextTenantIsolationTests : IClassFixture<MultiTenantWeb
     }
 
     // ─── Tenant write guard ───────────────────────────────────────────────────
-
     [Fact]
     public async Task WriteGuard_StampsAddedRowsWithCurrentTenant()
     {
-        (IServiceScope scope, ApplicationDbContext db) = await _factory.OpenTenantContextAsync(
+        (IServiceScope scope, ApplicationDbContext db) = await this.factory.OpenTenantContextAsync(
             Domain.Tenants.InitialTenant.Id, MultiTenantWebApplicationFactory.TenantAKey);
         using (scope)
         {
@@ -101,7 +103,7 @@ public sealed class DbContextTenantIsolationTests : IClassFixture<MultiTenantWeb
     [Fact]
     public async Task WriteGuard_RejectsCreateWithoutTenant()
     {
-        (IServiceScope scope, ApplicationDbContext db) = _factory.OpenNoTenantContext();
+        (IServiceScope scope, ApplicationDbContext db) = this.factory.OpenNoTenantContext();
         using (scope)
         {
             db.Suppliers.Add(Supplier.Create("No Tenant", "0791234567", null, null, null).Value);
@@ -115,12 +117,12 @@ public sealed class DbContextTenantIsolationTests : IClassFixture<MultiTenantWeb
     {
         // TenantSettings carries its own TenantId (tenant B). Saving it while the
         // ambient tenant is A must be rejected — client-supplied tenant ids never win.
-        (IServiceScope scope, ApplicationDbContext db) = await _factory.OpenTenantContextAsync(
+        (IServiceScope scope, ApplicationDbContext db) = await this.factory.OpenTenantContextAsync(
             Domain.Tenants.InitialTenant.Id, MultiTenantWebApplicationFactory.TenantAKey);
         using (scope)
         {
             Result<TenantSettings> settings = TenantSettings.Create(
-                _factory.TenantBId, "Foreign", null, "Asia/Amman");
+                this.factory.TenantBId, "Foreign", null, "Asia/Amman");
 
             db.TenantSettings.Add(settings.Value);
 
@@ -131,14 +133,14 @@ public sealed class DbContextTenantIsolationTests : IClassFixture<MultiTenantWeb
     [Fact]
     public async Task WriteGuard_TenantIdIsImmutable()
     {
-        (IServiceScope scope, ApplicationDbContext db) = await _factory.OpenTenantContextAsync(
+        (IServiceScope scope, ApplicationDbContext db) = await this.factory.OpenTenantContextAsync(
             Domain.Tenants.InitialTenant.Id, MultiTenantWebApplicationFactory.TenantAKey);
         using (scope)
         {
-            Supplier supplier = await db.Suppliers.SingleAsync(s => s.Id == _factory.SupplierA.Id);
+            Supplier supplier = await db.Suppliers.SingleAsync(s => s.Id == this.factory.SupplierA.Id);
 
             // Simulate a tenant reassignment (a client cannot set the property directly).
-            db.Entry(supplier).Property(nameof(ITenantEntity.TenantId)).CurrentValue = _factory.TenantBId;
+            db.Entry(supplier).Property(nameof(ITenantEntity.TenantId)).CurrentValue = this.factory.TenantBId;
 
             await Assert.ThrowsAsync<TenantAccessViolationException>(() => db.SaveChangesAsync());
         }
@@ -147,13 +149,13 @@ public sealed class DbContextTenantIsolationTests : IClassFixture<MultiTenantWeb
     [Fact]
     public async Task WriteGuard_RejectsModifyingForeignEntity()
     {
-        (IServiceScope scope, ApplicationDbContext db) = await _factory.OpenTenantContextAsync(
+        (IServiceScope scope, ApplicationDbContext db) = await this.factory.OpenTenantContextAsync(
             Domain.Tenants.InitialTenant.Id, MultiTenantWebApplicationFactory.TenantAKey);
         using (scope)
         {
             Supplier foreign = await db.Suppliers
                 .IgnoreQueryFilters()
-                .SingleAsync(s => s.Id == _factory.SupplierB.Id);
+                .SingleAsync(s => s.Id == this.factory.SupplierB.Id);
 
             foreign.Update(foreign.Id, "Hacked Name", foreign.PrimaryPhone, null, null, null);
 
@@ -162,20 +164,19 @@ public sealed class DbContextTenantIsolationTests : IClassFixture<MultiTenantWeb
     }
 
     // ─── Tenant-aware unique constraints ──────────────────────────────────────
-
     [Fact]
     public async Task UniqueConstraint_SameNameAllowedInDifferentTenants()
     {
         // Both tenants deliberately have a supplier named "Gold House" (seeded).
-        (IServiceScope scope, ApplicationDbContext db) = await _factory.OpenTenantContextAsync(
+        (IServiceScope scope, ApplicationDbContext db) = await this.factory.OpenTenantContextAsync(
             Domain.Tenants.InitialTenant.Id, MultiTenantWebApplicationFactory.TenantAKey);
         using (scope)
         {
             Assert.NotNull(await db.Suppliers.SingleAsync(s => s.Name == "Gold House"));
         }
 
-        (IServiceScope scopeB, ApplicationDbContext dbB) = await _factory.OpenTenantContextAsync(
-            _factory.TenantBId, MultiTenantWebApplicationFactory.TenantBKey);
+        (IServiceScope scopeB, ApplicationDbContext dbB) = await this.factory.OpenTenantContextAsync(
+            this.factory.TenantBId, MultiTenantWebApplicationFactory.TenantBKey);
         using (scopeB)
         {
             Assert.NotNull(await dbB.Suppliers.SingleAsync(s => s.Name == "Gold House"));
@@ -185,7 +186,7 @@ public sealed class DbContextTenantIsolationTests : IClassFixture<MultiTenantWeb
     [Fact]
     public async Task UniqueConstraint_DuplicateWithinTenantIsRejected()
     {
-        (IServiceScope scope, ApplicationDbContext db) = await _factory.OpenTenantContextAsync(
+        (IServiceScope scope, ApplicationDbContext db) = await this.factory.OpenTenantContextAsync(
             Domain.Tenants.InitialTenant.Id, MultiTenantWebApplicationFactory.TenantAKey);
         using (scope)
         {
@@ -196,11 +197,10 @@ public sealed class DbContextTenantIsolationTests : IClassFixture<MultiTenantWeb
     }
 
     // ─── Ledger scoping (plan Phase 5 item 5) ─────────────────────────────────
-
     [Fact]
     public async Task LedgerEntries_AreScopedToTheirTenant()
     {
-        (IServiceScope scopeA, ApplicationDbContext dbA) = await _factory.OpenTenantContextAsync(
+        (IServiceScope scopeA, ApplicationDbContext dbA) = await this.factory.OpenTenantContextAsync(
             Domain.Tenants.InitialTenant.Id, MultiTenantWebApplicationFactory.TenantAKey);
         Guid entryId;
         decimal tenantA21k;
@@ -217,8 +217,8 @@ public sealed class DbContextTenantIsolationTests : IClassFixture<MultiTenantWeb
             tenantA21k = await dbA.GoldLedgerEntries.SumAsync(e => e.Equivalent21KWeightInGrams);
         }
 
-        (IServiceScope scopeB, ApplicationDbContext dbB) = await _factory.OpenTenantContextAsync(
-            _factory.TenantBId, MultiTenantWebApplicationFactory.TenantBKey);
+        (IServiceScope scopeB, ApplicationDbContext dbB) = await this.factory.OpenTenantContextAsync(
+            this.factory.TenantBId, MultiTenantWebApplicationFactory.TenantBKey);
         using (scopeB)
         {
             Assert.Null(await dbB.GoldLedgerEntries.SingleOrDefaultAsync(e => e.Id == entryId));

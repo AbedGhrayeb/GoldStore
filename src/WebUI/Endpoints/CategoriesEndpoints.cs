@@ -1,3 +1,7 @@
+// <copyright file="CategoriesEndpoints.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Messaging;
 using Application.Categories;
 using Application.Categories.Create;
@@ -36,7 +40,6 @@ public sealed class CategoriesEndpoints : IEndpoint
             .WithSummary("List the store's categories.")
             .WithDescription("Returns a list of all categories for the current tenant, including their parent-child relationships.")
             .Produces<List<CategoryResponse>>(StatusCodes.Status200OK);
-
 
         group.MapPost("/", CreateCategory)
             .RequireAuthorization("inventory.manage")

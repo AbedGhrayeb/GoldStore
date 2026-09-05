@@ -1,4 +1,8 @@
-﻿using System.Security.Claims;
+﻿// <copyright file="ClaimsPrincipalExtensions.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using System.Security.Claims;
 
 namespace Infrastructure.Authentication;
 

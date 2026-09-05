@@ -1,3 +1,7 @@
+// <copyright file="SupportedValues.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Domain.Common;
 
 public static class SupportedValues
@@ -5,6 +9,7 @@ public static class SupportedValues
     public static readonly Karat[] Karats = [Karat.K18, Karat.K21, Karat.K24];
 
     public static readonly Currency[] Currencies = [Currency.JOD, Currency.USD, Currency.ILS];
+
     public static bool IsSupported(Karat karat) => Karats.Contains(karat);
 
     public static bool IsSupported(Currency currency) => Currencies.Contains(currency);

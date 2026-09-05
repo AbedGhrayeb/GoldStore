@@ -1,3 +1,7 @@
+// <copyright file="ResetPasswordWithPhoneCommandValidator.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using FluentValidation;
 
 namespace Application.Features.Users.TwoFactor;
@@ -6,8 +10,8 @@ internal sealed class ResetPasswordWithPhoneCommandValidator : AbstractValidator
 {
     public ResetPasswordWithPhoneCommandValidator()
     {
-        RuleFor(x => x.EmailOrPhone).NotEmpty();
-        RuleFor(x => x.IdToken).NotEmpty().MinimumLength(10);
-        RuleFor(x => x.NewPassword).NotEmpty().MinimumLength(8).MaximumLength(100);
+        this.RuleFor(x => x.EmailOrPhone).NotEmpty();
+        this.RuleFor(x => x.IdToken).NotEmpty().MinimumLength(10);
+        this.RuleFor(x => x.NewPassword).NotEmpty().MinimumLength(8).MaximumLength(100);
     }
 }

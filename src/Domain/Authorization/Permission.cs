@@ -1,3 +1,7 @@
+// <copyright file="Permission.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -16,14 +20,15 @@ public sealed class Permission : Entity
 
     private Permission()
     {
-        Key = string.Empty;
-        Name = string.Empty;
+        this.Key = string.Empty;
+        this.Name = string.Empty;
     }
 
-    private Permission(Guid id, string key, string name) : base(id)
+    private Permission(Guid id, string key, string name)
+        : base(id)
     {
-        Key = key;
-        Name = name;
+        this.Key = key;
+        this.Name = name;
     }
 
     public static Result<Permission> Create(string key, string name)

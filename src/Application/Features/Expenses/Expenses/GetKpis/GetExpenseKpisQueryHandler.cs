@@ -1,3 +1,7 @@
+// <copyright file="GetExpenseKpisQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -16,7 +20,7 @@ internal sealed class GetExpenseKpisQueryHandler(IApplicationDbContext context, 
     {
         if (!currentTenant.IsAvailable)
         {
-            return await BuildAsync(cancellationToken);
+            return await this.BuildAsync(cancellationToken);
         }
 
         Guid tenantId = currentTenant.TenantId;
@@ -29,7 +33,7 @@ internal sealed class GetExpenseKpisQueryHandler(IApplicationDbContext context, 
         ExpenseKpiResponse response = await cache.GetOrCreateAsync(
             cacheKey,
             [CacheKeys.KpiTenant(tenantId)],
-            (ct) => BuildAsync(ct),
+            (ct) => this.BuildAsync(ct),
             CacheKeys.KpiExpiration,
             cancellationToken);
 
@@ -113,7 +117,7 @@ internal sealed class GetExpenseKpisQueryHandler(IApplicationDbContext context, 
             TodayTotals = todayByCurrency,
             MonthTotals = monthByCurrency,
             TopCategoryName = topCategoryName,
-            TopCategoryAmounts = topCategoryAmounts
+            TopCategoryAmounts = topCategoryAmounts,
         };
     }
 }

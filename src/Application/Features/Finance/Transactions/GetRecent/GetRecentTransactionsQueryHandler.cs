@@ -1,3 +1,7 @@
+// <copyright file="GetRecentTransactionsQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -34,10 +38,9 @@ internal sealed class GetRecentTransactionsQueryHandler(IApplicationDbContext co
             Amount = t.Amount,
             Currency = t.Currency.ToString(),
             TransactionType = t.TransactionType.ToString(),
-            ReferenceType = t.ReferenceType.ToString()
+            ReferenceType = t.ReferenceType.ToString(),
         })
             .Take(count)
             .ToListAsync();
-
     }
 }

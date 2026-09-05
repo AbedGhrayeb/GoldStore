@@ -1,3 +1,7 @@
+// <copyright file="GetDebtKpisQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -19,14 +23,14 @@ internal sealed class GetDebtKpisQueryHandler(
     {
         [Currency.JOD] = ("JOD", "د.أ"),
         [Currency.USD] = ("USD", "$"),
-        [Currency.ILS] = ("ILS", "₪")
+        [Currency.ILS] = ("ILS", "₪"),
     };
 
     public async Task<Result<DebtKpiResponse>> Handle(GetDebtKpisQuery query, CancellationToken cancellationToken)
     {
         if (!currentTenant.IsAvailable)
         {
-            return await BuildAsync(cancellationToken);
+            return await this.BuildAsync(cancellationToken);
         }
 
         Guid tenantId = currentTenant.TenantId;
@@ -39,7 +43,7 @@ internal sealed class GetDebtKpisQueryHandler(
         DebtKpiResponse response = await cache.GetOrCreateAsync(
             cacheKey,
             [CacheKeys.KpiTenant(tenantId)],
-            (ct) => BuildAsync(ct),
+            (ct) => this.BuildAsync(ct),
             CacheKeys.KpiExpiration,
             cancellationToken);
 
@@ -74,7 +78,9 @@ internal sealed class GetDebtKpisQueryHandler(
         {
             decimal balance = balances.GetValueOrDefault(debt.Id, 0m);
             if (balance <= 0)
-            { continue; }
+            {
+                continue;
+            }
 
             if (!byCurrency.TryGetValue(debt.Currency, out (decimal Rec, decimal Pay, int RecCount, int PayCount) cur))
             {
@@ -114,7 +120,7 @@ internal sealed class GetDebtKpisQueryHandler(
                     PayableCount = x.Value.PayCount,
                     TotalReceivablesDisplay = x.Value.Rec.ToString("N3"),
                     TotalPayablesDisplay = x.Value.Pay.ToString("N3"),
-                    NetBalanceDisplay = net.ToString("N3")
+                    NetBalanceDisplay = net.ToString("N3"),
                 };
             })
             .ToList();
@@ -130,7 +136,7 @@ internal sealed class GetDebtKpisQueryHandler(
             TotalPayablesDisplay = totalPayables.ToString("N3"),
             NetBalanceDisplay = (totalReceivables - totalPayables).ToString("N3"),
             IsNetPositive = totalReceivables >= totalPayables,
-            ByCurrency = byCurrencyList
+            ByCurrency = byCurrencyList,
         };
     }
 }

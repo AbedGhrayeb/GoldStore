@@ -1,3 +1,7 @@
+// <copyright file="ReferenceEndpoints.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Caching;
 using Domain.Common;
 using Microsoft.AspNetCore.Builder;

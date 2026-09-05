@@ -1,3 +1,7 @@
+// <copyright file="GetCustomerPurchaseInvoicesKpisQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -22,7 +26,7 @@ internal sealed class GetCustomerPurchaseInvoicesKpisQueryHandler(
     {
         if (!currentTenant.IsAvailable)
         {
-            return await BuildAsync(cancellationToken);
+            return await this.BuildAsync(cancellationToken);
         }
 
         Guid tenantId = currentTenant.TenantId;
@@ -35,7 +39,7 @@ internal sealed class GetCustomerPurchaseInvoicesKpisQueryHandler(
         CustomerPurchaseInvoiceKpiResponse response = await cache.GetOrCreateAsync(
             cacheKey,
             [CacheKeys.KpiTenant(tenantId)],
-            (ct) => BuildAsync(ct),
+            (ct) => this.BuildAsync(ct),
             CacheKeys.KpiExpiration,
             cancellationToken);
 
@@ -64,7 +68,7 @@ internal sealed class GetCustomerPurchaseInvoicesKpisQueryHandler(
             TotalPaid = totalPaid,
             TotalPaidDisplay = totalPaid.ToString("N3"),
             TotalRemaining = totalRemaining,
-            TotalRemainingDisplay = totalRemaining.ToString("N3")
+            TotalRemainingDisplay = totalRemaining.ToString("N3"),
         };
     }
 }

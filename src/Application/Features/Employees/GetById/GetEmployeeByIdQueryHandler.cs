@@ -1,3 +1,7 @@
+// <copyright file="GetEmployeeByIdQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -32,7 +36,7 @@ internal sealed class GetEmployeeByIdQueryHandler(IApplicationDbContext context,
                 UserId = e.UserId,
                 UserEmail = e.User != null ? e.User.Email : null,
                 IsActive = e.IsActive,
-                CreatedAt = e.CreatedAtUtc.HasValue ? e.CreatedAtUtc.Value.LocalDateTime : default
+                CreatedAt = e.CreatedAtUtc.HasValue ? e.CreatedAtUtc.Value.LocalDateTime : default,
             })
             .FirstOrDefaultAsync(cancellationToken);
 

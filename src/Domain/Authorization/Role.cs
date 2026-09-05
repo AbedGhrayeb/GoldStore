@@ -1,3 +1,7 @@
+// <copyright file="Role.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -18,14 +22,15 @@ public sealed class Role : Entity
 
     private Role()
     {
-        Key = string.Empty;
-        Name = string.Empty;
+        this.Key = string.Empty;
+        this.Name = string.Empty;
     }
 
-    private Role(Guid id, string key, string name) : base(id)
+    private Role(Guid id, string key, string name)
+        : base(id)
     {
-        Key = key;
-        Name = name;
+        this.Key = key;
+        this.Name = name;
     }
 
     public static Result<Role> Create(string key, string name)
@@ -45,11 +50,11 @@ public sealed class Role : Entity
 
     public void AddPermission(Guid permissionId)
     {
-        if (RolePermissions.Any(rolePermission => rolePermission.PermissionId == permissionId))
+        if (this.RolePermissions.Any(rolePermission => rolePermission.PermissionId == permissionId))
         {
             return;
         }
 
-        RolePermissions.Add(new RolePermission(Guid.CreateVersion7(), Id, permissionId));
+        this.RolePermissions.Add(new RolePermission(Guid.CreateVersion7(), this.Id, permissionId));
     }
 }

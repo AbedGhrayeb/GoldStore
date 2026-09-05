@@ -1,3 +1,7 @@
+// <copyright file="ApiResults.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Result;
 
@@ -34,6 +38,7 @@ public static class ApiResults
     /// disabled account, disqualified tenant, invalid refresh token) are Unauthorized
     /// semantics regardless of the error's stored type.
     /// </summary>
+    /// <returns></returns>
     public static IResult UnauthorizedFrom<TValue>(Result<TValue> result)
     {
         Error error = result.TopError;
@@ -44,7 +49,7 @@ public static class ApiResults
             detail: error.Description,
             extensions: new Dictionary<string, object?>
             {
-                ["errorCode"] = error.Code
+                ["errorCode"] = error.Code,
             });
     }
 
@@ -76,7 +81,7 @@ public static class ApiResults
             detail: error.Description,
             extensions: new Dictionary<string, object?>
             {
-                ["errorCode"] = error.Code
+                ["errorCode"] = error.Code,
             });
     }
 

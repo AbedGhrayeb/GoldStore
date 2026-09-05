@@ -1,3 +1,7 @@
+// <copyright file="GetSalaryPaymentsQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -87,7 +91,7 @@ internal sealed class GetSalaryPaymentsQueryHandler(IApplicationDbContext contex
             Amount = p.Amount,
             AccountName = accountNames.GetValueOrDefault(p.AccountId, string.Empty),
             Notes = p.Notes,
-            IsOnSchedule = p.PaymentDate == p.ScheduledDate
+            IsOnSchedule = p.PaymentDate == p.ScheduledDate,
         });
 
         return await PaginatedList<SalaryPaymentResponse>.CreateAsync(items, page, pageSize);

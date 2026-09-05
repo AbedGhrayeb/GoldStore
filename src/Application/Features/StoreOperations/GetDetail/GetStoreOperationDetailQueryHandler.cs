@@ -1,3 +1,7 @@
+// <copyright file="GetStoreOperationDetailQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -11,13 +15,12 @@ namespace Application.Features.StoreOperations.GetDetail;
 internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetStoreOperationDetailQuery, StoreOperationDetailResponse>
 {
-
     private static string GetCurrencySymbol(string currency) => currency switch
     {
         "JOD" => "د.أ",
         "USD" => "$",
         "ILS" => "₪",
-        _ => currency
+        _ => currency,
     };
 
     public async Task<Result<StoreOperationDetailResponse>> Handle(
@@ -26,12 +29,12 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
     {
         if (query.OperationType is "Sale")
         {
-            return await GetSaleDetail(query.Id, cancellationToken);
+            return await this.GetSaleDetail(query.Id, cancellationToken);
         }
 
         if (query.OperationType is "Buy")
         {
-            return await GetPurchaseDetail(query.Id, cancellationToken);
+            return await this.GetPurchaseDetail(query.Id, cancellationToken);
         }
 
         return
@@ -82,7 +85,7 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
             GoldAmount = i.GoldAmount,
             CategoryName = i.CategoryId.HasValue
                 ? categoryNames.GetValueOrDefault(i.CategoryId.Value)
-                : "Unknown Category"
+                : "Unknown Category",
         }).ToList();
 
         return new StoreOperationDetailResponse
@@ -110,7 +113,7 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
             StatusLabel = invoice.Status.ToStatusLabel(),
             Notes = invoice.Notes,
             AccountNumber = invoice.CustomerAccountNumber,
-            Items = itemResponses
+            Items = itemResponses,
         };
     }
 
@@ -149,8 +152,7 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
             Equivalent21KWeightInGrams = i.Equivalent21KWeightInGrams,
             PricePerGram = i.PricePerGram,
             GoldAmount = i.GoldAmount,
-            CategoryName = i.CategoryId.HasValue ? i.Category?.Name : "Unknown Category"
-
+            CategoryName = i.CategoryId.HasValue ? i.Category?.Name : "Unknown Category",
         }).ToList();
 
         return new StoreOperationDetailResponse
@@ -179,7 +181,7 @@ internal sealed class GetStoreOperationDetailQueryHandler(IApplicationDbContext 
             CounterpartyYearOfBirth = invoice.SellerYearOfBirth,
             CounterpartyAddress = invoice.SellerAddress,
             AccountNumber = invoice.SellerAccountNumber,
-            Items = itemResponses
+            Items = itemResponses,
         };
     }
 }

@@ -1,3 +1,7 @@
+// <copyright file="VerifyPhoneTwoFactorCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Phone;
@@ -81,7 +85,7 @@ internal sealed class VerifyPhoneTwoFactorCommandHandler(
             Domain.Tenants.TenantStatus.Active => true,
             Domain.Tenants.TenantStatus.Trial => tenant.TrialEndsAtUtc is null || tenant.TrialEndsAtUtc > utcNow,
             Domain.Tenants.TenantStatus.Cancelled => tenant.CancellationReadOnlyUntilUtc is not null && tenant.CancellationReadOnlyUntilUtc > utcNow,
-            _ => false
+            _ => false,
         };
         if (!allowed)
         {

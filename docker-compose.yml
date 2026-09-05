@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:18.6-alpine
+    container_name: goldstore-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: GoldStoreDb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Postgres-2026!
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d GoldStoreDb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  seq:
+    image: datalust/seq:latest
+    container_name: goldstore-seq
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+    ports:
+      - "5341:80"
+    volumes:
+      - seqdata:/data
+
+  app:
+    build:
+      context: .
+      dockerfile: src/WebUI/Dockerfile
+    container_name: goldstore-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=GoldStoreDb;Username=postgres;Password=Postgres-2026!;Include Error Detail=true
+      Jwt__Secret: super-duper-secret-value-that-should-be-in-user-secrets
+      Jwt__Issuer: clean-architecture
+      Jwt__Audience: developers
+      DefaultUserPassword: GoldStore@321!
+      DefaultPlatformUserPassword: GoldStoreHost@321!
+      Serilog__WriteTo__1__Args__ServerUrl: http://seq:5341
+    ports:
+      - "5000:8080"
+      - "5001:8081"
+
+volumes:
+  pgdata:
+  seqdata:

@@ -1,3 +1,7 @@
+// <copyright file="UserRecoveryCode.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 
 namespace Domain.Users;
@@ -14,13 +18,17 @@ public sealed class UserRecoveryCode : Entity, ITenantEntity
 
     public DateTimeOffset? UsedAtUtc { get; private set; }
 
-    private UserRecoveryCode() { CodeHash = string.Empty; }
-
-    private UserRecoveryCode(Guid id, Guid tenantId, Guid userId, string codeHash) : base(id)
+    private UserRecoveryCode()
     {
-        TenantId = tenantId;
-        UserId = userId;
-        CodeHash = codeHash;
+        this.CodeHash = string.Empty;
+    }
+
+    private UserRecoveryCode(Guid id, Guid tenantId, Guid userId, string codeHash)
+        : base(id)
+    {
+        this.TenantId = tenantId;
+        this.UserId = userId;
+        this.CodeHash = codeHash;
     }
 
     public static UserRecoveryCode Create(Guid tenantId, Guid userId, string codeHash)
@@ -28,7 +36,7 @@ public sealed class UserRecoveryCode : Entity, ITenantEntity
 
     public void MarkUsed(DateTimeOffset utcNow)
     {
-        IsUsed = true;
-        UsedAtUtc = utcNow;
+        this.IsUsed = true;
+        this.UsedAtUtc = utcNow;
     }
 }

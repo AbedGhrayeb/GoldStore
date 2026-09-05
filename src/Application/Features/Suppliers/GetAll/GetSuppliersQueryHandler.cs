@@ -1,3 +1,7 @@
+// <copyright file="GetSuppliersQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -64,13 +68,14 @@ internal sealed class GetSuppliersQueryHandler(IApplicationDbContext context, IC
             Notes = s.Notes,
             GoldBalance = goldBalances.TryGetValue(s.Id, out decimal goldBalance) ? goldBalance : 0,
             ManufacturingBalance = manufacturingBalances.TryGetValue(s.Id, out decimal mfgBalance) ? mfgBalance : 0,
-            LastTransactionDate = allLastDates.TryGetValue(s.Id, out DateTime lastDate) ? lastDate : null
+            LastTransactionDate = allLastDates.TryGetValue(s.Id, out DateTime lastDate) ? lastDate : null,
         }).ToList();
     }
 
     private sealed class TransactionDate
     {
         public Guid SupplierId { get; set; }
+
         public DateTime Date { get; set; }
     }
 }

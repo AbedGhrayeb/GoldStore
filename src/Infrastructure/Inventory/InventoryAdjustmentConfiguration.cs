@@ -1,3 +1,7 @@
+// <copyright file="InventoryAdjustmentConfiguration.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Inventory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -21,8 +25,6 @@ internal sealed class InventoryAdjustmentConfiguration : IEntityTypeConfiguratio
         builder.Property(a => a.Reason).HasMaxLength(200);
 
         builder.Property(a => a.Notes).HasMaxLength(1000);
-
-
 
         builder.HasIndex(a => new { a.TenantId, a.Type, a.CreatedAtUtc });
 

@@ -1,3 +1,7 @@
+// <copyright file="TwoFactorEnforcementMiddleware.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Infrastructure.Authentication;
 using Infrastructure.Phone;
 using Microsoft.Extensions.Options;

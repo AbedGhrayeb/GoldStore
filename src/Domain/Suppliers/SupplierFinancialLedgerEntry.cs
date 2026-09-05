@@ -1,3 +1,7 @@
+// <copyright file="SupplierFinancialLedgerEntry.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 
 namespace Domain.Suppliers;
@@ -5,7 +9,6 @@ namespace Domain.Suppliers;
 public sealed class SupplierFinancialLedgerEntry : AuditableEntity, ITenantEntity
 {
     public Guid TenantId { get; private set; }
-
 
     public Guid SupplierFinancialTransactionId { get; set; }
 
@@ -17,19 +20,19 @@ public sealed class SupplierFinancialLedgerEntry : AuditableEntity, ITenantEntit
 
     private SupplierFinancialLedgerEntry()
     {
-
     }
-    private SupplierFinancialLedgerEntry(Guid id, Guid supplierFinancialTransactionId, decimal amount, SupplierBalanceMovementType movementType, string? notes) : base(id)
+
+    private SupplierFinancialLedgerEntry(Guid id, Guid supplierFinancialTransactionId, decimal amount, SupplierBalanceMovementType movementType, string? notes)
+        : base(id)
     {
-        SupplierFinancialTransactionId = supplierFinancialTransactionId;
-        Amount = amount;
-        MovementType = movementType;
-        Notes = notes;
+        this.SupplierFinancialTransactionId = supplierFinancialTransactionId;
+        this.Amount = amount;
+        this.MovementType = movementType;
+        this.Notes = notes;
     }
 
     public static SupplierFinancialLedgerEntry Create(Guid supplierFinancialTransactionId, decimal amount, SupplierBalanceMovementType movementType, string? notes)
     {
-
         return new SupplierFinancialLedgerEntry(Guid.CreateVersion7(), supplierFinancialTransactionId, amount, movementType, notes);
     }
 }

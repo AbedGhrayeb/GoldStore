@@ -1,3 +1,7 @@
+// <copyright file="RolePermission.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 
 namespace Domain.Authorization;
@@ -16,9 +20,10 @@ public sealed class RolePermission : Entity
     {
     }
 
-    public RolePermission(Guid id, Guid roleId, Guid permissionId) : base(id)
+    public RolePermission(Guid id, Guid roleId, Guid permissionId)
+        : base(id)
     {
-        RoleId = roleId;
-        PermissionId = permissionId;
+        this.RoleId = roleId;
+        this.PermissionId = permissionId;
     }
 }

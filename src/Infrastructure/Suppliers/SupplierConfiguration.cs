@@ -1,3 +1,7 @@
+// <copyright file="SupplierConfiguration.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -21,7 +25,6 @@ internal sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
         builder.Property(supplier => supplier.Notes).HasMaxLength(1000);
 
         builder.HasIndex(supplier => new { supplier.TenantId, supplier.Name }).IsUnique();
-
 
         builder.HasMany(supplier => supplier.SupplierFinancialTransactions)
             .WithOne(transaction => transaction.Supplier)

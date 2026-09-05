@@ -1,4 +1,8 @@
-﻿using System.Collections.Concurrent;
+﻿// <copyright file="DomainEventsDispatcher.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
 using SharedKernel;
 
@@ -52,13 +56,14 @@ internal sealed class DomainEventsDispatcher(IServiceProvider serviceProvider) :
         }
     }
 
-    private sealed class HandlerWrapper<T>(object handler) : HandlerWrapper where T : IDomainEvent
+    private sealed class HandlerWrapper<T>(object handler) : HandlerWrapper
+        where T : IDomainEvent
     {
-        private readonly IDomainEventHandler<T> _handler = (IDomainEventHandler<T>)handler;
+        private readonly IDomainEventHandler<T> handler = (IDomainEventHandler<T>)handler;
 
         public override async Task Handle(IDomainEvent domainEvent, CancellationToken cancellationToken)
         {
-            await _handler.Handle((T)domainEvent, cancellationToken);
+            await this.handler.Handle((T)domainEvent, cancellationToken);
         }
     }
 }

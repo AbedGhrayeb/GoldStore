@@ -1,3 +1,7 @@
+// <copyright file="PlatformAuthSessionManager.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.Security.Claims;
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
@@ -37,7 +41,7 @@ internal sealed class PlatformAuthSessionManager(
             ExpiresUtc = rememberMe
                 ? DateTimeOffset.UtcNow.AddDays(14)
                 : DateTimeOffset.UtcNow.AddHours(8),
-            AllowRefresh = true
+            AllowRefresh = true,
         };
 
         HttpContext httpContext = httpContextAccessor.HttpContext ?? throw new NullReferenceException();

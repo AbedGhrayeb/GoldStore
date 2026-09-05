@@ -1,3 +1,7 @@
+// <copyright file="TenantMigrationLog.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -11,20 +15,26 @@ namespace Domain.Tenants;
 public sealed class TenantMigrationLog : Entity
 {
     public Guid TenantId { get; private set; }
+
     public string MigrationId { get; private set; }
+
     public TenantMigrationStatus Status { get; private set; }
+
     public DateTimeOffset AppliedAtUtc { get; private set; }
+
     public string? Error { get; private set; }
 
-    private TenantMigrationLog() { }
+    private TenantMigrationLog()
+    {
+    }
 
     private TenantMigrationLog(Guid id, Guid tenantId, string migrationId, DateTimeOffset appliedAtUtc)
         : base(id)
     {
-        TenantId = tenantId;
-        MigrationId = migrationId;
-        Status = TenantMigrationStatus.Applied;
-        AppliedAtUtc = appliedAtUtc;
+        this.TenantId = tenantId;
+        this.MigrationId = migrationId;
+        this.Status = TenantMigrationStatus.Applied;
+        this.AppliedAtUtc = appliedAtUtc;
     }
 
     public static Result<TenantMigrationLog> Create(Guid tenantId, string migrationId, DateTimeOffset appliedAtUtc)
@@ -44,17 +54,17 @@ public sealed class TenantMigrationLog : Entity
 
     public void MarkApplied(string migrationId, DateTimeOffset appliedAtUtc)
     {
-        MigrationId = migrationId;
-        Status = TenantMigrationStatus.Applied;
-        AppliedAtUtc = appliedAtUtc;
-        Error = null;
+        this.MigrationId = migrationId;
+        this.Status = TenantMigrationStatus.Applied;
+        this.AppliedAtUtc = appliedAtUtc;
+        this.Error = null;
     }
 
     public void MarkFailed(string migrationId, string error, DateTimeOffset attemptedAtUtc)
     {
-        MigrationId = migrationId;
-        Status = TenantMigrationStatus.Failed;
-        AppliedAtUtc = attemptedAtUtc;
-        Error = error;
+        this.MigrationId = migrationId;
+        this.Status = TenantMigrationStatus.Failed;
+        this.AppliedAtUtc = attemptedAtUtc;
+        this.Error = error;
     }
 }

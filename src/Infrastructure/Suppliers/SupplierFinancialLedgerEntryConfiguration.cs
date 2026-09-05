@@ -1,3 +1,7 @@
+// <copyright file="SupplierFinancialLedgerEntryConfiguration.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -22,6 +26,5 @@ internal sealed class SupplierFinancialLedgerEntryConfiguration : IEntityTypeCon
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(e => new { e.TenantId, e.SupplierFinancialTransactionId, e.CreatedAtUtc });
-
     }
 }

@@ -1,3 +1,7 @@
+// <copyright file="SupplierScrapGoldPayment.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Common;
 using Domain.Suppliers;
 using SharedKernel;
@@ -8,7 +12,6 @@ public sealed class SupplierScrapGoldPayment : AuditableEntity, ITenantEntity
 {
     public Guid TenantId { get; private set; }
 
-
     public Guid SupplierId { get; private set; }
 
     public Karat Karat { get; private set; }
@@ -18,19 +21,21 @@ public sealed class SupplierScrapGoldPayment : AuditableEntity, ITenantEntity
     public decimal Equivalent21KWeightInGrams { get; private set; }
 
     public string? Notes { get; private set; }
+
     public Supplier Supplier { get; set; }
 
     private SupplierScrapGoldPayment()
     {
-
     }
-    private SupplierScrapGoldPayment(Guid id, Guid supplierId, Karat karat, decimal weightInGrams, string? notes) : base(id)
+
+    private SupplierScrapGoldPayment(Guid id, Guid supplierId, Karat karat, decimal weightInGrams, string? notes)
+        : base(id)
     {
-        SupplierId = supplierId;
-        Karat = karat;
-        WeightInGrams = weightInGrams;
-        Equivalent21KWeightInGrams = GoldWeight.CalculateEquivalent21KWeight(weightInGrams, karat);
-        Notes = notes;
+        this.SupplierId = supplierId;
+        this.Karat = karat;
+        this.WeightInGrams = weightInGrams;
+        this.Equivalent21KWeightInGrams = GoldWeight.CalculateEquivalent21KWeight(weightInGrams, karat);
+        this.Notes = notes;
     }
 
     public static SupplierScrapGoldPayment Create(Guid supplierId, Karat karat, decimal weightInGrams, string? notes)

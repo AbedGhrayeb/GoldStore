@@ -1,3 +1,7 @@
+// <copyright file="UpdateSupplierCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Suppliers;
@@ -25,11 +29,13 @@ internal sealed class UpdateSupplierCommandHandler(IApplicationDbContext context
         {
             return SupplierErrors.DuplicateName;
         }
+
         Result<Updated> supplierUpdateResult = supplier.Update(command.Id, command.Name, command.PrimaryPhone, command.SecondaryPhone, command.BankAccountNumber, command.Notes);
         if (supplierUpdateResult.IsError)
         {
             return supplierUpdateResult.Errors;
         }
+
         if (command.IsActive != supplier.IsActive)
         {
             if (!command.IsActive)

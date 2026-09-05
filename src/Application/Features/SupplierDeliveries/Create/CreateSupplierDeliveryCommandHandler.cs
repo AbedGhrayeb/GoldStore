@@ -1,3 +1,7 @@
+// <copyright file="CreateSupplierDeliveryCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -47,26 +51,26 @@ internal sealed class CreateSupplierDeliveryCommandHandler(
                 currency,
                 command.Notes);
 
-
             context.SupplierDeliveries.Add(delivery);
             deliveryIds.Add(delivery.Id);
-            //to calc supplier balance
+
+            // to calc supplier balance
             var supplierGoldLedgerEntry = SupplierGoldLedgerEntry.Create(command.SupplierId, karat, line.WeightInGrams,
                 SupplierBalanceMovementType.Increase, SupplierGoldReferenceType.SupplierDelivery, delivery.Id, command.Notes);
             context.SupplierGoldLedgerEntries.Add(supplierGoldLedgerEntry);
 
-            //to calc our store balance 
+            // to calc our store balance
             Result<GoldLedgerEntry> goldLedgerEntry = GoldLedgerEntry.Create(karat, line.WeightInGrams,
                 GoldMovementType.Increase, GoldReferenceType.SupplierDelivery, delivery.Id, command.Notes);
             if (goldLedgerEntry.IsError)
             {
                 return goldLedgerEntry.Errors;
             }
-            context.GoldLedgerEntries.Add(goldLedgerEntry.Value);
 
+            context.GoldLedgerEntries.Add(goldLedgerEntry.Value);
         }
 
-        //decimal totalEquivalent21K = command.Lines.Sum(l =>
+        // decimal totalEquivalent21K = command.Lines.Sum(l =>
         decimal totalMfgFee = command.ManufacturingFeePerGram * totalEquivalent21K;
 
         if (totalMfgFee > 0)
@@ -74,8 +78,8 @@ internal sealed class CreateSupplierDeliveryCommandHandler(
             var supplierManufacturingLedgerEntry = SupplierManufacturingLedgerEntry.Create(command.SupplierId, totalMfgFee, currency,
                 SupplierBalanceMovementType.Increase, SupplierManufacturingReferenceType.SupplierDelivery, deliveryIds.First(), command.Notes);
             context.SupplierManufacturingLedgerEntries.Add(supplierManufacturingLedgerEntry);
-
         }
+
         await context.SaveChangesAsync(cancellationToken);
 
         return string.Join(",", deliveryIds);

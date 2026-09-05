@@ -1,4 +1,8 @@
-﻿using Domain.CustomerPurchases;
+﻿// <copyright file="CustomerPurchaseInvoiceConfiguration.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Domain.CustomerPurchases;
 using Domain.Employees;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -20,7 +24,6 @@ internal sealed class CustomerPurchaseInvoiceConfiguration : IEntityTypeConfigur
         builder.Property(i => i.SellerYearOfBirth).HasMaxLength(13);
         builder.Property(i => i.SellerAccountNumber).HasMaxLength(20);
         builder.Property(i => i.SellerAddress).HasMaxLength(200);
-
 
         builder.Property(i => i.Currency).HasConversion<string>().HasMaxLength(3);
 

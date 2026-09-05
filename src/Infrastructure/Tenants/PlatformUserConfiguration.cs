@@ -1,3 +1,7 @@
+// <copyright file="PlatformUserConfiguration.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Tenants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -17,6 +21,6 @@ internal sealed class PlatformUserConfiguration : IEntityTypeConfiguration<Platf
         builder.Property(user => user.TwoFactorEnabled).IsRequired();
         builder.Property(user => user.PhoneNumberVerified).IsRequired();
         builder.HasIndex(user => user.Email).IsUnique();
-        builder.HasIndex(user => user.PhoneNumber).IsUnique().HasFilter("[PhoneNumber] IS NOT NULL");
+        builder.HasIndex(user => user.PhoneNumber).IsUnique().HasFilter("\"phone_number\" IS NOT NULL");
     }
 }

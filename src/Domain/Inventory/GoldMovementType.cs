@@ -1,9 +1,13 @@
+// <copyright file="GoldMovementType.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Domain.Inventory;
 
 public enum GoldMovementType
 {
     Increase = 1,
-    Decrease = 2
+    Decrease = 2,
 }
 
 public static class GoldMovementTypeExtensions
@@ -14,21 +18,22 @@ public static class GoldMovementTypeExtensions
         {
             GoldMovementType.Increase => "زيادة",
             GoldMovementType.Decrease => "نقصان",
-            _ => movementType.ToString()
+            _ => movementType.ToString(),
         };
     }
+
     public static string GetMovementColor(this GoldMovementType movement) => movement switch
     {
         GoldMovementType.Increase => "text-tertiary-container",
         GoldMovementType.Decrease => "text-error",
-        _ => "text-secondary"
+        _ => "text-secondary",
     };
 
     public static string GetMovementIcon(this GoldMovementType movement) => movement switch
     {
         GoldMovementType.Increase => "arrow_downward",
         GoldMovementType.Decrease => "arrow_upward",
-        _ => "sync_alt"
+        _ => "sync_alt",
     };
 
     public static string GetReferenceLabel(this GoldReferenceType reference) => reference switch
@@ -38,6 +43,6 @@ public static class GoldMovementTypeExtensions
         GoldReferenceType.Sale => "بيع",
         GoldReferenceType.SupplierScrapPayment => "دفع كسر مورد",
         GoldReferenceType.InventoryAdjustment => "تسوية جردية",
-        _ => reference.ToString()
+        _ => reference.ToString(),
     };
 }

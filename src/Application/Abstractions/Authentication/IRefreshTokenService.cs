@@ -1,3 +1,7 @@
+// <copyright file="IRefreshTokenService.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel.Result;
 
 namespace Application.Abstractions.Authentication;
@@ -10,14 +14,18 @@ namespace Application.Abstractions.Authentication;
 public interface IRefreshTokenService
 {
     /// <summary>Issues a new refresh token for the given user.</summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
     Task<RefreshTokenResponse> IssueAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>Validates and rotates a refresh token, returning a new one-token pair.</summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
     Task<Result<RefreshTokenResponse>> RotateAsync(string refreshToken, CancellationToken cancellationToken);
 
     /// <summary>Revokes the given refresh token (idempotent).</summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
     Task RevokeAsync(string refreshToken, CancellationToken cancellationToken);
 
     /// <summary>Revokes every active refresh token issued to the user (account disable, stamp rotation).</summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
     Task RevokeAllForUserAsync(Guid userId, CancellationToken cancellationToken);
 }

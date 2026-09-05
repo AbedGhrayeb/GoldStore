@@ -1,3 +1,7 @@
+// <copyright file="CreateSupplierFinancialTransactionCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Ledger;
@@ -20,13 +24,11 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
             .FirstOrDefaultAsync(s => s.Id == command.SupplierId, cancellationToken);
 
         if (supplier is null)
-
         {
             return SupplierFinancialErrors.SupplierNotFound(command.SupplierId);
         }
 
         if (!supplier.IsActive)
-
         {
             return SupplierFinancialErrors.SupplierNotActive;
         }
@@ -43,7 +45,7 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
         {
             SupplierFinancialTransactionDirection.FromSupplier => FinancialTransactionType.Inflow,
             SupplierFinancialTransactionDirection.ToSupplier => FinancialTransactionType.Outflow,
-            _ => FinancialTransactionType.Inflow
+            _ => FinancialTransactionType.Inflow,
         };
 
         var transactionId = Guid.CreateVersion7();
@@ -74,14 +76,13 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
             {
                 return SupplierFinancialErrors.AccountNotFound(command.AccountId);
             }
-            ;
+
 
             if (!account.IsActive)
-
             {
                 return SupplierFinancialErrors.AccountNotActive;
             }
-            ;
+
 
             if (account.Currency != currency)
             {
@@ -133,5 +134,4 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
 
         return supplierFinancialTransaction.Id;
     }
-
 }

@@ -1,3 +1,7 @@
+// <copyright file="GetEmployeesQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -34,7 +38,7 @@ internal sealed class GetEmployeesQueryHandler(IApplicationDbContext context, IC
                 LastPaymentDate = e.SalaryPayments.OrderByDescending(p => p.PaymentDate).Select(p => (DateOnly?)p.PaymentDate).FirstOrDefault(),
                 LastPaymentNet = e.SalaryPayments.OrderByDescending(p => p.PaymentDate).Select(p => (decimal?)p.Amount).FirstOrDefault(),
                 IsActive = e.IsActive,
-                CreatedAt = e.CreatedAtUtc.HasValue ? e.CreatedAtUtc.Value.LocalDateTime : default
+                CreatedAt = e.CreatedAtUtc.HasValue ? e.CreatedAtUtc.Value.LocalDateTime : default,
             })
             .ToListAsync(cancellationToken);
 

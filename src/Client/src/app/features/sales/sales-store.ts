@@ -144,10 +144,10 @@ export class SalesStore {
    * so creating an invoice genuinely needs the HR permission).
    */
   ensureEmployees(): Promise<void> {
-    if (this.employeesSignal().length > 0 || this.employeesErrorSignal() !== null) {
-      return Promise.resolve();
-    }
-    this.employeesPromise ??= this.loadEmployees();
+    if (this.employeesSignal().length > 0) return Promise.resolve();
+    if (this.employeesPromise) return this.employeesPromise;
+    this.employeesErrorSignal.set(null);
+    this.employeesPromise = this.loadEmployees();
     return this.employeesPromise;
   }
 
@@ -171,10 +171,10 @@ export class SalesStore {
    * categories and the lines are created without one.
    */
   ensureCategories(): Promise<void> {
-    if (this.categoriesSignal().length > 0 || this.categoriesErrorSignal() !== null) {
-      return Promise.resolve();
-    }
-    this.categoriesPromise ??= this.loadCategories();
+    if (this.categoriesSignal().length > 0) return Promise.resolve();
+    if (this.categoriesPromise) return this.categoriesPromise;
+    this.categoriesErrorSignal.set(null);
+    this.categoriesPromise = this.loadCategories();
     return this.categoriesPromise;
   }
 
@@ -197,10 +197,10 @@ export class SalesStore {
    * a sales-only user sees an inline notice and can still use the cash method with no account.
    */
   ensureAccounts(): Promise<void> {
-    if (this.accountsSignal().length > 0 || this.accountsErrorSignal() !== null) {
-      return Promise.resolve();
-    }
-    this.accountsPromise ??= this.loadAccounts();
+    if (this.accountsSignal().length > 0) return Promise.resolve();
+    if (this.accountsPromise) return this.accountsPromise;
+    this.accountsErrorSignal.set(null);
+    this.accountsPromise = this.loadAccounts();
     return this.accountsPromise;
   }
 

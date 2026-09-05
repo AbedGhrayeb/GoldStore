@@ -6,7 +6,13 @@ import { catchError, from, switchMap, throwError } from 'rxjs';
 import { AuthStore } from '../auth/auth-store';
 import { isHostRequest } from './request.util';
 
-const AUTH_ENDPOINTS = ['/api/v1/auth/login', '/api/v1/auth/refresh', '/api/v1/auth/logout'];
+const AUTH_ENDPOINTS = [
+  '/api/v1/auth/login',
+  '/api/v1/auth/refresh',
+  '/api/v1/auth/logout',
+  '/api/v1/auth/me',
+  '/host/api/v1/auth/me',
+];
 
 /**
  * Single-flight token rotation: on a 401 from a tenant API call, rotate the HttpOnly refresh

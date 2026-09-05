@@ -1,3 +1,7 @@
+// <copyright file="TwoFactorTicketService.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -67,7 +71,7 @@ internal sealed class TwoFactorTicketService(IConfiguration configuration) : ITw
                 ValidIssuer = issuer,
                 ValidAudience = audience,
                 IssuerSigningKey = key,
-                ClockSkew = TimeSpan.FromMinutes(1)
+                ClockSkew = TimeSpan.FromMinutes(1),
             }, out SecurityToken validated);
 
             string? purpose = principal.FindFirst("purpose")?.Value;

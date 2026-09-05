@@ -1,3 +1,7 @@
+// <copyright file="RenewTenantSubscriptionCommandValidator.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using FluentValidation;
 
 namespace Application.Features.Subscriptions.Renew;
@@ -6,9 +10,9 @@ internal sealed class RenewTenantSubscriptionCommandValidator : AbstractValidato
 {
     public RenewTenantSubscriptionCommandValidator()
     {
-        RuleFor(x => x.TenantId).NotEmpty();
-        RuleFor(x => x.BillingCycle).IsInEnum();
-        RuleFor(x => x.StartsAtUtc).NotEmpty();
-        RuleFor(x => x.EndsAtUtc).NotEmpty().GreaterThan(x => x.StartsAtUtc).WithMessage("تاريخ الانتهاء يجب أن يكون بعد تاريخ البداية");
+        this.RuleFor(x => x.TenantId).NotEmpty();
+        this.RuleFor(x => x.BillingCycle).IsInEnum();
+        this.RuleFor(x => x.StartsAtUtc).NotEmpty();
+        this.RuleFor(x => x.EndsAtUtc).NotEmpty().GreaterThan(x => x.StartsAtUtc).WithMessage("تاريخ الانتهاء يجب أن يكون بعد تاريخ البداية");
     }
 }

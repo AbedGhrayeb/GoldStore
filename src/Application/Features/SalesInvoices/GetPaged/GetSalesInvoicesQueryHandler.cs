@@ -1,3 +1,7 @@
+// <copyright file="GetSalesInvoicesQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -92,7 +96,7 @@ internal sealed class GetSalesInvoicesQueryHandler(IApplicationDbContext context
                 Equivalent21KWeightInGrams = ii.Equivalent21KWeightInGrams,
                 PricePerGram = ii.PricePerGram,
                 GoldAmount = ii.GoldAmount
-            }).ToList()
+            }).ToList(),
         }).ToList();
 
         return new PaginatedList<SalesInvoiceResponse>(items, page, pageSize, totalCount);

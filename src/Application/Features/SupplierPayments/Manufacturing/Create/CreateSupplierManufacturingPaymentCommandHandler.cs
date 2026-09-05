@@ -1,3 +1,7 @@
+// <copyright file="CreateSupplierManufacturingPaymentCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -110,6 +114,7 @@ internal sealed class CreateSupplierManufacturingPaymentCommandHandler(
         {
             return financialTransaction.Errors;
         }
+
         context.FinancialTransactions.Add(financialTransaction.Value);
         await context.SaveChangesAsync(cancellationToken);
 

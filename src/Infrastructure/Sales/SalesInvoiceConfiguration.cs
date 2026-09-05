@@ -1,3 +1,7 @@
+// <copyright file="SalesInvoiceConfiguration.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Employees;
 using Domain.Sales;
 using Microsoft.EntityFrameworkCore;
@@ -52,6 +56,5 @@ internal sealed class SalesInvoiceConfiguration : IEntityTypeConfiguration<Sales
         builder.HasIndex(i => new { i.TenantId, i.InvoiceNumber }).IsUnique();
 
         builder.HasIndex(i => new { i.TenantId, i.Date });
-
     }
 }

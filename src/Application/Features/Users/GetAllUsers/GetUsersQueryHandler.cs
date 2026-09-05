@@ -1,3 +1,7 @@
+// <copyright file="GetUsersQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -12,8 +16,6 @@ internal sealed class GetUsersQueryHandler(IApplicationDbContext context, ICurre
 {
     public async Task<Result<List<UserResponse>>> Handle(GetUsersQuery query, CancellationToken cancellationToken)
     {
-
-
         List<UserResponse>? users = await context.Users.AsNoTracking()
              .Where(u => u.TenantId == currentTenant.TenantId)
              .Select(u => new UserResponse
@@ -23,7 +25,7 @@ internal sealed class GetUsersQueryHandler(IApplicationDbContext context, ICurre
                  LastName = u.LastName,
                  Email = u.Email,
                  PhoneNumber = u.PhoneNumber,
-                 WhatsappNumber = u.WhatsappNumber
+                 WhatsappNumber = u.WhatsappNumber,
              })
              .ToListAsync(cancellationToken);
 
@@ -34,5 +36,4 @@ internal sealed class GetUsersQueryHandler(IApplicationDbContext context, ICurre
 
         return users;
     }
-
 }

@@ -1,3 +1,7 @@
+// <copyright file="TenantAccessViolationException.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Infrastructure.Tenants;
 
 /// <summary>
@@ -7,7 +11,8 @@ namespace Infrastructure.Tenants;
 /// </summary>
 public sealed class TenantAccessViolationException : Exception
 {
-    public TenantAccessViolationException(string message) : base(message)
+    public TenantAccessViolationException(string message)
+        : base(message)
     {
     }
 }

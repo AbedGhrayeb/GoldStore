@@ -1,3 +1,7 @@
+// <copyright file="GetStoreOperationsQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -11,14 +15,12 @@ namespace Application.Features.StoreOperations.GetPaged;
 internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext context, ICurrentTenant currentTenant)
     : IQueryHandler<GetStoreOperationsQuery, PagedStoreOperationsResponse>
 {
-
-
     private static string GetCurrencySymbol(string currency) => currency switch
     {
         "JOD" => "د.أ",
         "USD" => "$",
         "ILS" => "₪",
-        _ => currency
+        _ => currency,
     };
 
     public async Task<Result<PagedStoreOperationsResponse>> Handle(
@@ -47,7 +49,7 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
                 PaymentMethodInt = s.PaymentMethod,
                 AccountId = s.AccountId,
                 StatusInt = s.Status,
-                Notes = s.Notes
+                Notes = s.Notes,
             });
 
         IQueryable<StoreOperationRow> purchasesQuery = context.CustomerPurchaseInvoices
@@ -69,7 +71,7 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
                 PaymentMethodInt = p.PaymentMethod,
                 AccountId = p.AccountId,
                 StatusInt = null,
-                Notes = p.Notes
+                Notes = p.Notes,
             });
 
         IQueryable<StoreOperationRow> combined = salesQuery.Concat(purchasesQuery);
@@ -111,7 +113,6 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
                 r.InvoiceNumber.Contains(search) ||
                 r.CounterpartyName.Contains(search));
         }
-
 
         int page = Math.Max(query.Page, 1);
         int pageSize = Math.Clamp(query.PageSize, 1, 100);
@@ -180,15 +181,15 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
                 AmountPaid = row.AmountPaid,
                 RemainingBalance = row.RemainingBalance,
                 PaymentMethod = paymentMethod,
-                PaymentMethodLabel = row.PaymentMethodInt.HasValue ? row.PaymentMethodInt!.Value.ToLabel() : "",
+                PaymentMethodLabel = row.PaymentMethodInt.HasValue ? row.PaymentMethodInt!.Value.ToLabel() : string.Empty,
                 AccountId = row.AccountId,
                 AccountName = row.AccountId.HasValue
                     ? accountNames.GetValueOrDefault(row.AccountId.Value)
                     : null,
                 Status = status,
-                StatusLabel = row.StatusInt.HasValue ? row.StatusInt!.Value.ToStatusLabel() : "",
+                StatusLabel = row.StatusInt.HasValue ? row.StatusInt!.Value.ToStatusLabel() : string.Empty,
                 ItemsCount = itemCount,
-                Notes = row.Notes
+                Notes = row.Notes,
             };
         }).ToList();
 
@@ -197,27 +198,42 @@ internal sealed class GetStoreOperationsQueryHandler(IApplicationDbContext conte
             Items = items,
             TotalCount = totalCount,
             Page = page,
-            PageSize = pageSize
+            PageSize = pageSize,
         };
     }
 
     private sealed record StoreOperationRow
     {
         public Guid Id { get; init; }
+
         public string InvoiceNumber { get; init; } = string.Empty;
+
         public string OperationType { get; init; } = string.Empty;
+
         public DateTime Date { get; init; }
+
         public string CounterpartyName { get; init; } = string.Empty;
+
         public string? CounterpartyPhone { get; init; }
+
         public Guid? EmployeeId { get; init; }
+
         public string? EmployeeName { get; init; }
+
         public string Currency { get; init; } = string.Empty;
+
         public decimal TotalAmount { get; init; }
+
         public decimal AmountPaid { get; init; }
+
         public decimal RemainingBalance { get; init; }
+
         public PaymentMethod? PaymentMethodInt { get; init; }
+
         public Guid? AccountId { get; init; }
+
         public SalesInvoiceStatus? StatusInt { get; init; }
+
         public string? Notes { get; init; }
     }
 }

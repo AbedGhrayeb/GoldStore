@@ -1,3 +1,7 @@
+// <copyright file="CreateInventoryAdjustmentCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Ledger;
@@ -16,7 +20,6 @@ internal sealed class CreateInventoryAdjustmentCommandHandler(
         var adjustmentType = (InventoryAdjustmentType)command.AdjustmentType;
         var karat = (Karat)command.Karat;
 
-
         Result<InventoryAdjustment> adjustmentResult = InventoryAdjustment.Create(adjustmentType, karat, command.WeightInGrams, command.Reason, command.Notes);
         if (adjustmentResult.IsError)
         {
@@ -34,7 +37,7 @@ internal sealed class CreateInventoryAdjustmentCommandHandler(
                 InventoryAdjustmentType.Damage => GoldMovementType.Decrease,
                 InventoryAdjustmentType.Loss => GoldMovementType.Decrease,
                 InventoryAdjustmentType.Correction => GoldMovementType.Decrease,
-                _ => GoldMovementType.Increase
+                _ => GoldMovementType.Increase,
             };
 
             if (movementType == GoldMovementType.Decrease)
@@ -59,6 +62,7 @@ internal sealed class CreateInventoryAdjustmentCommandHandler(
             {
                 return goldLedgerEntryResult.Errors;
             }
+
             context.GoldLedgerEntries.Add(goldLedgerEntryResult.Value);
         }
 

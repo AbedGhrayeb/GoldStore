@@ -1,4 +1,8 @@
-﻿using System.Security.Claims;
+﻿// <copyright file="TokenProvider.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using System.Security.Claims;
 using System.Text;
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
@@ -94,7 +98,7 @@ internal sealed class TokenProvider(
             IssuedAt = dateTimeProvider.UtcNow,
             SigningCredentials = credentials,
             Issuer = configuration["Jwt:Issuer"],
-            Audience = configuration["Jwt:Audience"]
+            Audience = configuration["Jwt:Audience"],
         };
 
         string token = new JsonWebTokenHandler().CreateToken(tokenDescriptor);

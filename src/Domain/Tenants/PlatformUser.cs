@@ -1,3 +1,7 @@
+// <copyright file="PlatformUser.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -21,10 +25,10 @@ public sealed class PlatformUser : Entity
 
     public DateTimeOffset? TwoFactorEnabledAtUtc { get; private set; }
 
-    /// <summary>Consecutive failed sign-in attempts since the last success (M7 lockout).</summary>
+    /// <summary>Gets consecutive failed sign-in attempts since the last success (M7 lockout).</summary>
     public int FailedLoginAttempts { get; private set; }
 
-    /// <summary>Instant until which the account is locked out (M7 lockout). Null = not locked.</summary>
+    /// <summary>Gets instant until which the account is locked out (M7 lockout). Null = not locked.</summary>
     public DateTimeOffset? LockedUntilUtc { get; private set; }
 
     public const int MaxFailedLoginAttempts = 5;
@@ -33,27 +37,29 @@ public sealed class PlatformUser : Entity
 
     private PlatformUser()
     {
-        Email = string.Empty;
-        FirstName = string.Empty;
-        LastName = string.Empty;
-        PasswordHash = string.Empty;
+        this.Email = string.Empty;
+        this.FirstName = string.Empty;
+        this.LastName = string.Empty;
+        this.PasswordHash = string.Empty;
     }
 
-    private PlatformUser(Guid id, string email, string firstName, string lastName, string passwordHash) : base(id)
+    private PlatformUser(Guid id, string email, string firstName, string lastName, string passwordHash)
+        : base(id)
     {
-        Email = email;
-        FirstName = firstName;
-        LastName = lastName;
-        PasswordHash = passwordHash;
+        this.Email = email;
+        this.FirstName = firstName;
+        this.LastName = lastName;
+        this.PasswordHash = passwordHash;
     }
 
-    private PlatformUser(Guid id, string email, string firstName, string lastName, string passwordHash, string? phoneNumber) : base(id)
+    private PlatformUser(Guid id, string email, string firstName, string lastName, string passwordHash, string? phoneNumber)
+        : base(id)
     {
-        Email = email;
-        FirstName = firstName;
-        LastName = lastName;
-        PasswordHash = passwordHash;
-        PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+        this.Email = email;
+        this.FirstName = firstName;
+        this.LastName = lastName;
+        this.PasswordHash = passwordHash;
+        this.PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
     }
 
     public static Result<PlatformUser> Create(string email, string firstName, string lastName, string passwordHash)
@@ -76,54 +82,54 @@ public sealed class PlatformUser : Entity
         return new PlatformUser(Guid.CreateVersion7(), email.Trim().ToLowerInvariant(), firstName.Trim(), lastName.Trim(), passwordHash);
     }
 
-    public bool IsLockedOut(DateTimeOffset utcNow) => LockedUntilUtc is not null && LockedUntilUtc > utcNow;
+    public bool IsLockedOut(DateTimeOffset utcNow) => this.LockedUntilUtc is not null && this.LockedUntilUtc > utcNow;
 
     public void RecordFailedLoginAttempt(int maxAttempts, TimeSpan lockoutDuration, DateTimeOffset utcNow)
     {
-        if (IsLockedOut(utcNow))
+        if (this.IsLockedOut(utcNow))
         {
             return;
         }
 
-        FailedLoginAttempts++;
+        this.FailedLoginAttempts++;
 
-        if (FailedLoginAttempts < maxAttempts)
+        if (this.FailedLoginAttempts < maxAttempts)
         {
             return;
         }
 
-        FailedLoginAttempts = 0;
-        LockedUntilUtc = utcNow + lockoutDuration;
+        this.FailedLoginAttempts = 0;
+        this.LockedUntilUtc = utcNow + lockoutDuration;
     }
 
     public void ResetLoginAttempts()
     {
-        FailedLoginAttempts = 0;
-        LockedUntilUtc = null;
+        this.FailedLoginAttempts = 0;
+        this.LockedUntilUtc = null;
     }
 
     public void EnableTwoFactor(string verifiedPhoneE164, DateTimeOffset utcNow)
     {
-        PhoneNumber = verifiedPhoneE164;
-        PhoneNumberVerified = true;
-        TwoFactorEnabled = true;
-        TwoFactorEnabledAtUtc = utcNow;
+        this.PhoneNumber = verifiedPhoneE164;
+        this.PhoneNumberVerified = true;
+        this.TwoFactorEnabled = true;
+        this.TwoFactorEnabledAtUtc = utcNow;
     }
 
     public void DisableTwoFactor()
     {
-        TwoFactorEnabled = false;
-        TwoFactorEnabledAtUtc = null;
+        this.TwoFactorEnabled = false;
+        this.TwoFactorEnabledAtUtc = null;
     }
 
     public void SetPhoneNumberVerified(string verifiedPhoneE164)
     {
-        PhoneNumber = verifiedPhoneE164;
-        PhoneNumberVerified = true;
+        this.PhoneNumber = verifiedPhoneE164;
+        this.PhoneNumberVerified = true;
     }
 
     public void ChangePassword(string newPasswordHash)
     {
-        PasswordHash = newPasswordHash;
+        this.PasswordHash = newPasswordHash;
     }
 }

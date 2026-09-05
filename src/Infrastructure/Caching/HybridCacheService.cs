@@ -1,3 +1,7 @@
+// <copyright file="HybridCacheService.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Caching;
 using Microsoft.Extensions.Caching.Hybrid;
 
@@ -14,8 +18,8 @@ namespace Infrastructure.Caching;
 /// </summary>
 internal sealed class HybridCacheService(HybridCache cache) : ICacheService
 {
-    private readonly object _gate = new();
-    private readonly Dictionary<string, HashSet<string>> _keysByTag = new(StringComparer.Ordinal);
+    private readonly object gate = new();
+    private readonly Dictionary<string, HashSet<string>> keysByTag = new(StringComparer.Ordinal);
 
     public async Task<T> GetOrCreateAsync<T>(
         string key,
@@ -24,12 +28,12 @@ internal sealed class HybridCacheService(HybridCache cache) : ICacheService
         TimeSpan expiration,
         CancellationToken cancellationToken)
     {
-        Register(key, tags);
+        this.Register(key, tags);
 
         HybridCacheEntryOptions options = new()
         {
             Expiration = expiration,
-            LocalCacheExpiration = expiration
+            LocalCacheExpiration = expiration,
         };
 
         return await cache.GetOrCreateAsync<T>(
@@ -43,9 +47,9 @@ internal sealed class HybridCacheService(HybridCache cache) : ICacheService
     public async Task RemoveByTagAsync(string tag, CancellationToken cancellationToken)
     {
         HashSet<string>? keys;
-        lock (_gate)
+        lock (this.gate)
         {
-            _keysByTag.TryGetValue(tag, out keys);
+            this.keysByTag.TryGetValue(tag, out keys);
         }
 
         if (keys is null)
@@ -66,14 +70,14 @@ internal sealed class HybridCacheService(HybridCache cache) : ICacheService
             return;
         }
 
-        lock (_gate)
+        lock (this.gate)
         {
             foreach (string tag in tags)
             {
-                if (!_keysByTag.TryGetValue(tag, out HashSet<string>? keys))
+                if (!this.keysByTag.TryGetValue(tag, out HashSet<string>? keys))
                 {
                     keys = new HashSet<string>(StringComparer.Ordinal);
-                    _keysByTag.Add(tag, keys);
+                    this.keysByTag.Add(tag, keys);
                 }
 
                 keys.Add(key);

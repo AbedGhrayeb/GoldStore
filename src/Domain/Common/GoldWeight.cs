@@ -1,12 +1,16 @@
+// <copyright file="GoldWeight.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Domain.Common;
 
 public sealed record GoldWeight
 {
     private GoldWeight(decimal weightInGrams, Karat karat)
     {
-        WeightInGrams = weightInGrams;
-        Karat = karat;
-        Equivalent21KWeightInGrams = CalculateEquivalent21KWeight(weightInGrams, karat);
+        this.WeightInGrams = weightInGrams;
+        this.Karat = karat;
+        this.Equivalent21KWeightInGrams = CalculateEquivalent21KWeight(weightInGrams, karat);
     }
 
     public decimal WeightInGrams { get; }
@@ -30,5 +34,5 @@ public sealed record GoldWeight
         return Math.Round(karat == Karat.K24 ? weightInGrams / 875 * 1000 : karat == Karat.K18 ? weightInGrams * 700 / 875 : weightInGrams, 3);
     }
 
-    //weightInGrams * (decimal)karat / (decimal)Karat.K21;
+    // weightInGrams * (decimal)karat / (decimal)Karat.K21;
 }

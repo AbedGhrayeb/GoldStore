@@ -1,3 +1,7 @@
+// <copyright file="CreateFinancialAccountCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Common;
@@ -33,6 +37,7 @@ internal sealed class CreateFinancialAccountCommandHandler(IApplicationDbContext
         {
             return accountResult.Errors;
         }
+
         context.FinancialAccounts.Add(accountResult.Value);
 
         if (command.OpeningBalance > 0m)

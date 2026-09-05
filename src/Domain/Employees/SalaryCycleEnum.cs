@@ -1,11 +1,16 @@
-﻿namespace Domain.Employees;
+﻿// <copyright file="SalaryCycleEnum.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+namespace Domain.Employees;
 
 public enum SalaryCycleEnum
 {
     Daily = 1,
     Weekly = 2,
-    Monthly = 3
+    Monthly = 3,
 }
+
 public static class SalaryCycleEnumExtensions
 {
     public static string ToFriendlyString(this SalaryCycleEnum salaryCycle)
@@ -15,7 +20,7 @@ public static class SalaryCycleEnumExtensions
             SalaryCycleEnum.Daily => "يومي",
             SalaryCycleEnum.Weekly => "اسبوعي",
             SalaryCycleEnum.Monthly => "شهري",
-            _ => throw new ArgumentOutOfRangeException(nameof(salaryCycle), salaryCycle, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(salaryCycle), salaryCycle, null),
         };
     }
 }
