@@ -43,6 +43,7 @@ describe('AuthStore', () => {
   afterEach(() => {
     server.resetHandlers();
     refreshCalls = 0;
+    localStorage.clear();
   });
   afterAll(() => server.close());
 
@@ -53,7 +54,7 @@ describe('AuthStore', () => {
   it('logs in through the API (JWT set as an HttpOnly cookie) and loads claims from /me', async () => {
     const store = TestBed.inject(AuthStore);
 
-    const me = await store.login('cashier@goldstore.app', 'secret');
+    const me = (await store.login('cashier@goldstore.app', 'secret')) as MeResponse;
 
     expect(me.permissions).toEqual(['catalog', 'sales', 'inventory']);
     expect(store.isAuthenticated()).toBe(true);
@@ -105,6 +106,8 @@ describe('AuthStore', () => {
   });
 
   it('restores both cookie sessions from /me and /host/me on reload', async () => {
+    localStorage.setItem('isTenantAuthenticated', 'true');
+    localStorage.setItem('isHostAdmin', 'true');
     const store = TestBed.inject(AuthStore);
 
     await store.restoreSessions();

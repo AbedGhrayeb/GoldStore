@@ -42,7 +42,7 @@ internal sealed class GetInventoryAdjustmentKpisQueryHandler(
 
     private async Task<InventoryAdjustmentKpiResponse> BuildAsync(CancellationToken cancellationToken)
     {
-        DateTime todayStart = dateTimeProvider.UtcNow.Date;
+        DateTime todayStart = DateTime.SpecifyKind(dateTimeProvider.UtcNow.Date, DateTimeKind.Utc);
 
         List<InventoryAdjustment> todayAdjustments = await context.InventoryAdjustments
             .AsNoTracking()

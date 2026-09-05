@@ -138,8 +138,9 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
-            options.UseSqlServer(connectionString, sqlServerOptions =>
-                             sqlServerOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName));
+            options.UseNpgsql(connectionString, npgsqlOptions =>
+                npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName))
+                .UseSnakeCaseNamingConvention();
         });
 
         // Readiness check pings the database through the app's own DbContext so the

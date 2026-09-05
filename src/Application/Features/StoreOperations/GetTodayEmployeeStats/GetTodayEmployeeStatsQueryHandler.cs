@@ -20,7 +20,7 @@ internal sealed class GetTodayEmployeeStatsQueryHandler(
         GetTodayEmployeeStatsQuery query,
         CancellationToken cancellationToken)
     {
-        DateTime todayStart = dateTimeProvider.Now.Date;
+        DateTime todayStart = DateTime.SpecifyKind(dateTimeProvider.UtcNow.Date, DateTimeKind.Utc);
 
         var salesHeaders = await context.SalesInvoices
             .AsNoTracking()

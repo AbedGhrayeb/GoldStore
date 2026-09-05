@@ -15,26 +15,25 @@ using Domain.Users;
 using Infrastructure.Database;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Npgsql;
 using SharedKernel.Result;
+using Testcontainers.PostgreSql;
 using WebUI;
 using Xunit;
 
 namespace Application.IntegrationTests;
 
 /// <summary>
-/// Real SQL Server-backed test host (plan Phase 8). Each factory instance gets a
-/// brand-new, randomly named database so test classes never share state. The host is
-/// started through <c>Program.Main</c>, which applies migrations and seeds the initial
-/// tenant; the fixture then seeds a second fully-provisioned tenant and a set of
-/// eligibility fixtures (pending, grace, expired, disabled) with deliberately similar
-/// data so isolation failures are easy to detect.
+/// PostgreSQL-backed test host via Testcontainers. Each factory instance gets a
+/// brand-new randomly named database inside a shared postgres:18.6-alpine container
+/// so test classes never share state. The host is started through Program.Main which
+/// applies migrations and seeds the initial tenant.
 /// </summary>
 public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
@@ -44,7 +43,7 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
     public const string TenantAKey = InitialTenant.Key;
     public const string TenantBKey = "second-store";
 
-    /// <summary>Admin of a fully-provisioned tenant that has the <c>catalog</c> feature disabled.</summary>
+    /// <summary>Admin of a fully-provisioned tenant that has the catalog feature disabled.</summary>
     public const string NoCatalogAdmin = "admin@no-catalog.goldstore.test";
 
     /// <summary>Admin of a tenant that has the supplier feature disabled.</summary>
@@ -91,13 +90,31 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
 
     public FinancialAccount FinancialAccountB { get; private set; } = null!;
 
-    public string ConnectionString { get; }
+    // Shared container — started lazily once per test run, reused across factories
+    private static readonly PostgreSqlContainer SharedContainer = new PostgreSqlBuilder()
+        .WithImage("postgres:18.6-alpine")
+        .WithDatabase("postgres")
+        .WithUsername("postgres")
+        .WithPassword("Postgres-2026!")
+        .WithPortBinding(5432, true)
+        .Build();
 
-    public MultiTenantWebApplicationFactory()
+    private static bool _sharedStarted;
+
+    private static async Task EnsureContainerStartedAsync()
     {
-        ConnectionString =
-            $"Server=.;Database={DbName};Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true;";
+        if (_sharedStarted)
+        {
+            return;
+        }
+
+        await SharedContainer.StartAsync();
+        _sharedStarted = true;
     }
+
+    private string SharedConnectionString => SharedContainer.GetConnectionString();
+
+    public string ConnectionString { get; private set; } = null!;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -114,6 +131,8 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
                 // suite (many of these tests sign in repeatedly); the dedicated
                 // AuthRateLimitingTests factory pins the 429 behaviour with a tiny limit.
                 ["RateLimiting:Login:PermitLimit"] = "100000",
+                // Point the app at the per-factory test database inside the container
+                ["ConnectionStrings:Database"] = ConnectionString,
             });
         });
 
@@ -127,8 +146,9 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
             services.AddDbContext<ApplicationDbContext>((sp, options) =>
             {
                 options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
-                options.UseSqlServer(ConnectionString,
-                    sqlServerOptions => sqlServerOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName));
+                options.UseNpgsql(ConnectionString,
+                    npgsqlOptions => npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName))
+                    .UseSnakeCaseNamingConvention();
             });
 
             // Seeding and requests run without an HTTP user context, which would leave
@@ -140,7 +160,9 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
 
     public async Task InitializeAsync()
     {
-        await DropDatabaseAsync();
+        await EnsureContainerStartedAsync();
+        ConnectionString = BuildDatabaseConnectionString(DbName);
+        await CreateDatabaseAsync();
 
         // Starting the server runs Program.Main, which migrates the (empty) database
         // and seeds the initial tenant "goldstore".
@@ -389,8 +411,6 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
         Tenant tenant = Tenant.Create(tenantId, key, key, TenantStatus.Active).Value;
         if (status == TenantStatus.Cancelled)
         {
-            // The domain rejects a grace window that has already ended, so cancel with a
-            // future grace first, then backdate the grace through reflection.
             DateTimeOffset futureGrace = graceUntilUtc is not null && graceUntilUtc > utcNow
                 ? graceUntilUtc.Value
                 : utcNow.AddDays(30);
@@ -445,14 +465,38 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
         tenant.GetType().GetProperty(nameof(Tenant.Status))!.SetValue(tenant, TenantStatus.Pending);
     }
 
+    private string BuildDatabaseConnectionString(string database)
+    {
+        var builder = new NpgsqlConnectionStringBuilder(SharedConnectionString)
+        {
+            Database = database
+        };
+        return builder.ConnectionString;
+    }
+
+    private async Task CreateDatabaseAsync()
+    {
+        await using var connection = new NpgsqlConnection(SharedConnectionString);
+        await connection.OpenAsync();
+        // Quote identifier to handle mixed-case / hyphenated names safely
+        await using var command = new NpgsqlCommand($"CREATE DATABASE \"{DbName}\" TEMPLATE template0;", connection);
+        try
+        {
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (PostgresException ex) when (ex.SqlState == "42P04") // duplicate_database
+        {
+            // Already exists — safe to ignore for idempotent retry
+        }
+    }
+
     private async Task DropDatabaseAsync()
     {
-        await using SqlConnection connection = new("Server=.;Trusted_Connection=True;TrustServerCertificate=True;");
+        // Terminate backends first — WITH (FORCE) handles this in PG13+ but connector
+        // still needs a clean connection to 'postgres'
+        await using var connection = new NpgsqlConnection(SharedConnectionString);
         await connection.OpenAsync();
-        await using SqlCommand command = new(
-            $"IF DB_ID('{DbName}') IS NOT NULL " +
-            $"BEGIN ALTER DATABASE [{DbName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{DbName}]; END",
-            connection);
+        await using var command = new NpgsqlCommand($"DROP DATABASE IF EXISTS \"{DbName}\" WITH (FORCE);", connection);
         await command.ExecuteNonQueryAsync();
     }
 }

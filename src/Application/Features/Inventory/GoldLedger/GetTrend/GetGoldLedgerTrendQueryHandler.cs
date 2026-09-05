@@ -17,12 +17,13 @@ internal sealed class GetGoldLedgerTrendQueryHandler(
     public async Task<Result<List<GoldTrendPoint>>> Handle(GetGoldLedgerTrendQuery query, CancellationToken cancellationToken)
     {
         int days = Math.Clamp(query.Days, 1, 90);
-        DateTime todayStart = dateTimeProvider.Now.Date;
+        DateTime todayStart = DateTime.SpecifyKind(dateTimeProvider.UtcNow.Date, DateTimeKind.Utc);
         DateTime fromDate = todayStart.AddDays(-(days - 1));
+        DateTimeOffset fromDateOffset = new DateTimeOffset(fromDate, TimeSpan.Zero);
 
         var entries = await context.GoldLedgerEntries
             .AsNoTracking()
-            .Where(e => e.TenantId == currentTenant.TenantId && e.CreatedAtUtc >= fromDate)
+            .Where(e => e.TenantId == currentTenant.TenantId && e.CreatedAtUtc >= fromDateOffset)
             .Select(e => new { e.CreatedAtUtc!.Value.Date, e.MovementType, e.Equivalent21KWeightInGrams })
             .ToListAsync(cancellationToken);
 

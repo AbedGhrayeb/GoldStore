@@ -24,13 +24,13 @@ internal sealed class GetGoldLedgerQueryHandler(IApplicationDbContext context, I
 
         if (query.FromDate.HasValue)
         {
-            DateTime fromDate = query.FromDate.Value.ToUniversalTime();
+            DateTime fromDate = DateTime.SpecifyKind(query.FromDate.Value, DateTimeKind.Utc);
             entries = entries.Where(e => e.CreatedAtUtc >= fromDate);
         }
 
         if (query.ToDate.HasValue)
         {
-            DateTime toDate = query.ToDate.Value.ToUniversalTime();
+            DateTime toDate = DateTime.SpecifyKind(query.ToDate.Value, DateTimeKind.Utc);
             entries = entries.Where(e => e.CreatedAtUtc <= toDate);
         }
 

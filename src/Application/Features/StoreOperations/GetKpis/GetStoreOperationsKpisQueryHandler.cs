@@ -47,7 +47,7 @@ internal sealed class GetStoreOperationsKpisQueryHandler(
 
     private async Task<StoreOperationsKpiResponse> BuildAsync(CancellationToken cancellationToken)
     {
-        DateTime todayStart = dateTimeProvider.Now.Date;
+        DateTime todayStart = DateTime.SpecifyKind(dateTimeProvider.UtcNow.Date, DateTimeKind.Utc);
 
         var sales = await context.SalesInvoices
             .AsNoTracking()

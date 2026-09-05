@@ -21,13 +21,13 @@ internal sealed class GetInventoryAdjustmentsQueryHandler(IApplicationDbContext 
 
         if (query.FromDate.HasValue)
         {
-            DateTime fromDate = query.FromDate.Value.ToUniversalTime();
+            DateTime fromDate = DateTime.SpecifyKind(query.FromDate.Value, DateTimeKind.Utc);
             adjustments = adjustments.Where(a => a.CreatedAtUtc >= fromDate);
         }
 
         if (query.ToDate.HasValue)
         {
-            DateTime toDate = query.ToDate.Value.ToUniversalTime();
+            DateTime toDate = DateTime.SpecifyKind(query.ToDate.Value, DateTimeKind.Utc);
             adjustments = adjustments.Where(a => a.CreatedAtUtc <= toDate);
         }
 
