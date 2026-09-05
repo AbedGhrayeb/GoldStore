@@ -39,7 +39,7 @@ function firstValidationMessage(error: ApiError): string | null {
   template: `
     <app-dialog
       [open]="open()"
-      title="دفعة خردة لمورد"
+      title="دفعة كسر لمورد"
       subtitle="الموردون"
       icon="coins"
       (openChange)="onDismiss()"

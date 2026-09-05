@@ -131,9 +131,7 @@ export class SuppliersStore {
     this.tableErrorSignal.set(null);
     try {
       this.pageSignal.set(
-        await firstValueFrom(
-          this.api.getTransactions(query, { context: SuppliersStore.NO_TOAST }),
-        ),
+        await firstValueFrom(this.api.getTransactions(query, { context: SuppliersStore.NO_TOAST })),
       );
     } catch (error) {
       this.tableErrorSignal.set(asApiError(error));
@@ -147,9 +145,7 @@ export class SuppliersStore {
     this.detailErrorSignal.set(null);
     try {
       this.detailSignal.set(
-        await firstValueFrom(
-          this.api.getSupplier(id, { context: SuppliersStore.NO_TOAST }),
-        ),
+        await firstValueFrom(this.api.getSupplier(id, { context: SuppliersStore.NO_TOAST })),
       );
     } catch (error) {
       this.detailErrorSignal.set(asApiError(error));
@@ -200,9 +196,7 @@ export class SuppliersStore {
   private async loadAccounts(): Promise<void> {
     try {
       this.accountsSignal.set(
-        await firstValueFrom(
-          this.api.getAccounts({ context: SuppliersStore.NO_TOAST }),
-        ),
+        await firstValueFrom(this.api.getAccounts({ context: SuppliersStore.NO_TOAST })),
       );
     } catch {
       this.accountsErrorSignal.set(
@@ -237,7 +231,9 @@ export class SuppliersStore {
     this.savingSignal.set(true);
     this.saveErrorSignal.set(null);
     try {
-      await firstValueFrom(this.api.updateSupplier(id, input, { context: SuppliersStore.NO_TOAST }));
+      await firstValueFrom(
+        this.api.updateSupplier(id, input, { context: SuppliersStore.NO_TOAST }),
+      );
       this.toasts.success('تم تحديث المورد بنجاح');
       await this.load();
       return true;
@@ -285,7 +281,7 @@ export class SuppliersStore {
       await firstValueFrom(
         this.api.createScrapGoldPayment(input, { context: SuppliersStore.NO_TOAST }),
       );
-      this.toasts.success('تم تسجيل دفعة الخردة بنجاح');
+      this.toasts.success('تم تسجيل دفعة الكسر بنجاح');
       await this.load();
       return true;
     } catch (error) {
@@ -318,9 +314,7 @@ export class SuppliersStore {
     this.savingSignal.set(true);
     this.saveErrorSignal.set(null);
     try {
-      await firstValueFrom(
-        this.api.createTransaction(input, { context: SuppliersStore.NO_TOAST }),
-      );
+      await firstValueFrom(this.api.createTransaction(input, { context: SuppliersStore.NO_TOAST }));
       this.toasts.success('تمت إضافة المعاملة المالية بنجاح');
       return true;
     } catch (error) {
@@ -331,7 +325,10 @@ export class SuppliersStore {
     }
   }
 
-  async createPayment(transactionId: string, input: SupplierFinancialPaymentInput): Promise<boolean> {
+  async createPayment(
+    transactionId: string,
+    input: SupplierFinancialPaymentInput,
+  ): Promise<boolean> {
     this.savingSignal.set(true);
     this.saveErrorSignal.set(null);
     try {

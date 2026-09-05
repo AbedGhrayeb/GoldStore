@@ -369,7 +369,7 @@ public class ApplicationDbContextInitializer(
 
         Result<FinancialAccount> jodAccount = FinancialAccount.Create("صندوق الدينار الرئيسي", Currency.JOD, FinancialAccountType.Cash, "JOD-" + Random.Shared.Next(1000, 9999), "صندوق الدينار الكاش الرئيسي");
         Result<FinancialAccount> usdAccount = FinancialAccount.Create("صندوق الدولار الرئيسي", Currency.USD, FinancialAccountType.Cash, "JOD-" + Random.Shared.Next(1000, 9999), "صندوق الدولار الكاش الرئيسي");
-        Result<FinancialAccount> ilsAccount = FinancialAccount.Create("صندوق الدينار الرئيسي", Currency.ILS, FinancialAccountType.Cash, "JOD-" + Random.Shared.Next(1000, 9999), "صندوق الشيكل الكاش الرئيسي");
+        Result<FinancialAccount> ilsAccount = FinancialAccount.Create("صندوق الشيكل الرئيسي", Currency.ILS, FinancialAccountType.Cash, "JOD-" + Random.Shared.Next(1000, 9999), "صندوق الشيكل الكاش الرئيسي");
 
         seedAccounts.AddRange(jodAccount.Value, usdAccount.Value, ilsAccount.Value);
 

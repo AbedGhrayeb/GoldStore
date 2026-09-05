@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild, type TemplateRef } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+  viewChild,
+  type TemplateRef,
+} from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { AuthStore } from '../../core/auth/auth-store';
 
@@ -76,19 +84,45 @@ function toRow(supplier: SupplierResponse): SupplierTableRow {
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 class="text-2xl font-bold text-gray-900">الموردون</h1>
-          <p class="mt-1 text-sm text-gray-600">الموردون، التسليمات، دفعات الخردة والتصنيع، والسلف.</p>
+          <p class="mt-1 text-sm text-gray-600">
+            الموردون، التسليمات، دفعات الكسر والتصنيع، والسلف.
+          </p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <app-button variant="secondary" icon="truck" [disabled]="!canManageSuppliers()" [title]="!canManageSuppliers() ? 'ليس لديك صلاحية' : ''" (clicked)="canManageSuppliers() && deliveryOpen.set(true)">
+          <app-button
+            variant="secondary"
+            icon="truck"
+            [disabled]="!canManageSuppliers()"
+            [title]="!canManageSuppliers() ? 'ليس لديك صلاحية' : ''"
+            (clicked)="canManageSuppliers() && deliveryOpen.set(true)"
+          >
             تسليم ذهب
           </app-button>
-          <app-button variant="secondary" icon="coins" [disabled]="!canManageSuppliers()" [title]="!canManageSuppliers() ? 'ليس لديك صلاحية' : ''" (clicked)="canManageSuppliers() && scrapOpen.set(true)">
-            دفع خردة
+          <app-button
+            variant="secondary"
+            icon="coins"
+            [disabled]="!canManageSuppliers()"
+            [title]="!canManageSuppliers() ? 'ليس لديك صلاحية' : ''"
+            (clicked)="canManageSuppliers() && scrapOpen.set(true)"
+          >
+            دفع كسر
           </app-button>
-          <app-button variant="secondary" icon="receipt" [disabled]="!canManageSuppliers()" [title]="!canManageSuppliers() ? 'ليس لديك صلاحية' : ''" (clicked)="canManageSuppliers() && manufacturingOpen.set(true)">
+          <app-button
+            variant="secondary"
+            icon="receipt"
+            [disabled]="!canManageSuppliers()"
+            [title]="!canManageSuppliers() ? 'ليس لديك صلاحية' : ''"
+            (clicked)="canManageSuppliers() && manufacturingOpen.set(true)"
+          >
             دفع تصنيع
           </app-button>
-          <app-button icon="user-plus" [disabled]="!canManageSuppliers()" [title]="!canManageSuppliers() ? 'ليس لديك صلاحية إضافة مورد' : ''" (clicked)="canManageSuppliers() && openCreate()">إضافة مورد</app-button>
+          <app-button
+            icon="user-plus"
+            [disabled]="!canManageSuppliers()"
+            [title]="!canManageSuppliers() ? 'ليس لديك صلاحية إضافة مورد' : ''"
+            (clicked)="canManageSuppliers() && openCreate()"
+            >إضافة مورد</app-button
+          >
         </div>
       </div>
 
@@ -98,7 +132,9 @@ function toRow(supplier: SupplierResponse): SupplierTableRow {
             <app-card>
               <div class="flex items-center justify-between">
                 <p class="text-xs font-medium text-gray-500">سلف الموردين — {{ item.currency }}</p>
-                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-gold-container/50">
+                <span
+                  class="flex h-9 w-9 items-center justify-center rounded-lg bg-gold-container/50"
+                >
                   <lucide-icon [img]="walletIcon" [size]="18" class="text-gray-700" />
                 </span>
               </div>
@@ -175,7 +211,9 @@ function toRow(supplier: SupplierResponse): SupplierTableRow {
                   type="button"
                   class="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gold-container/40 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
                   [title]="row.isActive ? 'إيقاف المورد' : 'تفعيل المورد'"
-                  [attr.aria-label]="row.isActive ? 'إيقاف ' + (row.name ?? '') : 'تفعيل ' + (row.name ?? '')"
+                  [attr.aria-label]="
+                    row.isActive ? 'إيقاف ' + (row.name ?? '') : 'تفعيل ' + (row.name ?? '')
+                  "
                   [disabled]="!canManageSuppliers() || mutatingId() === row.id"
                   (click)="canManageSuppliers() && toggleActive(row)"
                 >
@@ -190,7 +228,13 @@ function toRow(supplier: SupplierResponse): SupplierTableRow {
       <app-card>
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 class="text-sm font-semibold text-gray-700">المعاملات المالية (السلف)</h2>
-          <app-button size="sm" icon="wallet" [disabled]="!canManageSuppliers()" [title]="!canManageSuppliers() ? 'ليس لديك صلاحية' : ''" (clicked)="canManageSuppliers() && transactionOpen.set(true)">
+          <app-button
+            size="sm"
+            icon="wallet"
+            [disabled]="!canManageSuppliers()"
+            [title]="!canManageSuppliers() ? 'ليس لديك صلاحية' : ''"
+            (clicked)="canManageSuppliers() && transactionOpen.set(true)"
+          >
             معاملة مالية جديدة
           </app-button>
         </div>
@@ -292,7 +336,9 @@ function toRow(supplier: SupplierResponse): SupplierTableRow {
                 </tr>
               } @else {
                 @for (transaction of transactionRows(); track transaction.id) {
-                  <tr class="border-b border-gray-100 transition-colors last:border-0 hover:bg-gold-container/15">
+                  <tr
+                    class="border-b border-gray-100 transition-colors last:border-0 hover:bg-gold-container/15"
+                  >
                     <td class="px-4 py-3 font-medium">{{ transaction.supplierName }}</td>
                     <td class="px-4 py-3">
                       @if (transaction.directionLabel === 'له') {
@@ -307,7 +353,10 @@ function toRow(supplier: SupplierResponse): SupplierTableRow {
                     </td>
                     <td class="px-4 py-3">{{ transaction.currency }}</td>
                     <td class="px-4 py-3">{{ formatDate(transaction.createdAt ?? '') }}</td>
-                    <td class="max-w-48 truncate px-4 py-3 text-gray-600" title="{{ transaction.notes ?? '' }}">
+                    <td
+                      class="max-w-48 truncate px-4 py-3 text-gray-600"
+                      title="{{ transaction.notes ?? '' }}"
+                    >
                       {{ transaction.notes ?? '—' }}
                     </td>
                     <td class="px-4 py-3 text-center">
@@ -371,9 +420,21 @@ function toRow(supplier: SupplierResponse): SupplierTableRow {
         (openChange)="closeDetail()"
       />
 
-      <app-delivery-dialog [open]="deliveryOpen()" (openChange)="deliveryOpen.set(false)" (saved)="deliveryOpen.set(false)" />
-      <app-scrap-gold-dialog [open]="scrapOpen()" (openChange)="scrapOpen.set(false)" (saved)="scrapOpen.set(false)" />
-      <app-manufacturing-dialog [open]="manufacturingOpen()" (openChange)="manufacturingOpen.set(false)" (saved)="manufacturingOpen.set(false)" />
+      <app-delivery-dialog
+        [open]="deliveryOpen()"
+        (openChange)="deliveryOpen.set(false)"
+        (saved)="deliveryOpen.set(false)"
+      />
+      <app-scrap-gold-dialog
+        [open]="scrapOpen()"
+        (openChange)="scrapOpen.set(false)"
+        (saved)="scrapOpen.set(false)"
+      />
+      <app-manufacturing-dialog
+        [open]="manufacturingOpen()"
+        (openChange)="manufacturingOpen.set(false)"
+        (saved)="manufacturingOpen.set(false)"
+      />
 
       <app-financial-transaction-dialog
         [open]="transactionOpen()"
@@ -392,7 +453,9 @@ function toRow(supplier: SupplierResponse): SupplierTableRow {
 })
 export class SuppliersPage {
   private readonly auth = inject(AuthStore);
-  readonly canManageSuppliers = computed(() => this.auth.hasPermission('suppliers.manage') || this.auth.hasRole('store_admin'));
+  readonly canManageSuppliers = computed(
+    () => this.auth.hasPermission('suppliers.manage') || this.auth.hasRole('store_admin'),
+  );
   readonly store = inject(SuppliersStore);
 
   readonly suppliers = this.store.suppliers;
@@ -473,7 +536,8 @@ export class SuppliersPage {
       header: 'آخر عملية',
       cell: (row) => (row.lastTransactionDate ? formatDate(row.lastTransactionDate) : '—'),
       sortable: true,
-      sortValue: (row) => (row.lastTransactionDate ? new Date(row.lastTransactionDate).getTime() : 0),
+      sortValue: (row) =>
+        row.lastTransactionDate ? new Date(row.lastTransactionDate).getTime() : 0,
     },
     {
       key: 'status',
@@ -545,7 +609,8 @@ export class SuppliersPage {
       page: 1,
       pageSize: PAGE_SIZE,
       supplierId: this.filterSupplierId() || undefined,
-      direction: this.filterDirection() === '' ? undefined : (Number(this.filterDirection()) as 1 | 2),
+      direction:
+        this.filterDirection() === '' ? undefined : (Number(this.filterDirection()) as 1 | 2),
       search: this.filterSearch() || undefined,
     });
     void this.store.loadTransactions(this.query());

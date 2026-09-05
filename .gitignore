@@ -406,3 +406,4 @@ FodyWeavers.xsd
 **/*firebase-adminsdk*.json
 **/goldstore-f2729-fireb*.json
 *.bak
+docs/*
