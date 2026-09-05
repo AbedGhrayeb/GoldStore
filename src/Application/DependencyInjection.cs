@@ -1,4 +1,8 @@
-﻿using Application.Abstractions.Behaviors;
+﻿// <copyright file="DependencyInjection.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Application.Abstractions.Behaviors;
 using Application.Abstractions.Messaging;
 using Application.Common.Messaging;
 using FluentValidation;

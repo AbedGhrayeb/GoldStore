@@ -1,4 +1,8 @@
-﻿using System.Security.Claims;
+﻿// <copyright file="UserContext.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using System.Security.Claims;
 using Application.Abstractions.Authentication;
 using Microsoft.AspNetCore.Http;
 
@@ -6,27 +10,27 @@ namespace Infrastructure.Authentication;
 
 internal sealed class UserContext : IUserContext
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IHttpContextAccessor httpContextAccessor;
 
     public UserContext(IHttpContextAccessor httpContextAccessor)
     {
-        _httpContextAccessor = httpContextAccessor;
+        this.httpContextAccessor = httpContextAccessor;
     }
 
     public bool IsAvailable =>
         Guid.TryParse(
-            _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier),
+            this.httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier),
             out _);
 
     public Guid UserId =>
-        _httpContextAccessor
+        this.httpContextAccessor
             .HttpContext?
             .User
             .GetUserId() ??
         throw new UserContextUnavailableException();
 
     public Guid? UserIdOrNull =>
-        _httpContextAccessor
+        this.httpContextAccessor
             .HttpContext?
             .User
             .GetUserIdOrNull();

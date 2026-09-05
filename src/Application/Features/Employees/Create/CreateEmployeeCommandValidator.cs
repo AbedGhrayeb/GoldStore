@@ -1,3 +1,7 @@
+// <copyright file="CreateEmployeeCommandValidator.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using FluentValidation;
 
 namespace Application.Employees.Create;
@@ -6,17 +10,17 @@ internal sealed class CreateEmployeeCommandValidator : AbstractValidator<CreateE
 {
     public CreateEmployeeCommandValidator()
     {
-        RuleFor(c => c.FirstName).NotEmpty().MaximumLength(20);
-        RuleFor(c => c.LastName).NotEmpty().MaximumLength(20);
-        RuleFor(c => c.Role).IsInEnum();
-        RuleFor(c => c.Salary).GreaterThan(0);
-        RuleFor(c => c.Currency).IsInEnum();
-        RuleFor(c => c.SalaryCycle).IsInEnum();
+        this.RuleFor(c => c.FirstName).NotEmpty().MaximumLength(20);
+        this.RuleFor(c => c.LastName).NotEmpty().MaximumLength(20);
+        this.RuleFor(c => c.Role).IsInEnum();
+        this.RuleFor(c => c.Salary).GreaterThan(0);
+        this.RuleFor(c => c.Currency).IsInEnum();
+        this.RuleFor(c => c.SalaryCycle).IsInEnum();
 
-        When(c => c.ConnectToUser && !c.ExistingUserId.HasValue, () =>
+        this.When(c => c.ConnectToUser && !c.ExistingUserId.HasValue, () =>
         {
-            RuleFor(c => c.NewUserEmail).NotEmpty().EmailAddress().MaximumLength(256);
-            RuleFor(c => c.NewUserPassword).NotEmpty().MinimumLength(8).MaximumLength(100);
+            this.RuleFor(c => c.NewUserEmail).NotEmpty().EmailAddress().MaximumLength(256);
+            this.RuleFor(c => c.NewUserPassword).NotEmpty().MinimumLength(8).MaximumLength(100);
         });
     }
 }

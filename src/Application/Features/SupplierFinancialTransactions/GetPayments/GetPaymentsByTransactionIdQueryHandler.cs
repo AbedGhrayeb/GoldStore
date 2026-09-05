@@ -1,3 +1,7 @@
+// <copyright file="GetPaymentsByTransactionIdQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -38,7 +42,7 @@ internal sealed class GetPaymentsByTransactionIdQueryHandler(IApplicationDbConte
                     .Select(a => a.Name)
                     .FirstOrDefault() ?? string.Empty,
                 Date = p.CreatedAtUtc!.Value.LocalDateTime,
-                Notes = p.Notes
+                Notes = p.Notes,
             })
             .ToListAsync(cancellationToken);
 

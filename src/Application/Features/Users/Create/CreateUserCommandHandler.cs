@@ -1,3 +1,7 @@
+// <copyright file="CreateUserCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -37,10 +41,10 @@ internal sealed class CreateUserCommandHandler(
         {
             return user.Errors;
         }
+
         context.Users.Add(user.Value);
         await context.SaveChangesAsync(cancellationToken);
 
         return user.Value.Id;
-
     }
 }

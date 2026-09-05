@@ -1,4 +1,8 @@
-﻿using Application.Abstractions.Messaging;
+﻿// <copyright file="CreateCustomerPurchaseInvoiceCommand.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Application.Abstractions.Messaging;
 using Application.Common.Ledger;
 
 namespace Application.Features.CustomerPurchaseInvoices.Create;
@@ -19,8 +23,7 @@ public sealed record CreateCustomerPurchaseInvoiceCommand(
     string? SellerAccountNumber,
     string? Notes,
     List<CustomerPurchaseInvoiceItemDto> Items,
-    List<PaymentLegDto>? PaymentLegs
-) : ICommand<Guid>;
+    List<PaymentLegDto>? PaymentLegs) : ICommand<Guid>;
 
 public sealed record CustomerPurchaseInvoiceItemDto(
     Guid? CategoryId,

@@ -1,3 +1,7 @@
+// <copyright file="TestAuth.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.Text.RegularExpressions;
 
 namespace Application.IntegrationTests;
@@ -47,6 +51,7 @@ public static class TestAuth
     }
 
     /// <summary>Fetches an antiforgery token by rendering a page/form that contains one.</summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
     public static async Task<string?> GetAntiforgeryTokenAsync(HttpClient client, string path)
     {
         HttpResponseMessage response = await client.GetAsync(path);

@@ -1,3 +1,7 @@
+// <copyright file="CreatePaymentCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Ledger;
@@ -44,7 +48,8 @@ internal sealed class CreatePaymentCommandHandler(
         decimal paidSoFar = await context.DebtLedgerEntries
             .AsNoTracking()
             .Where(e => e.DebtId == command.DebtId)
-            .SumAsync(e => e.MovementType == DebtBalanceMovementType.Increase
+            .SumAsync(
+                e => e.MovementType == DebtBalanceMovementType.Increase
                 ? e.Amount
                 : -e.Amount, cancellationToken);
 
@@ -60,13 +65,14 @@ internal sealed class CreatePaymentCommandHandler(
         {
             return debtLedgerEntryResult.Errors;
         }
+
         context.DebtLedgerEntries.Add(debtLedgerEntryResult.Value);
 
         FinancialTransactionType transactionType = debt.Direction switch
         {
             DebtDirection.Receivable => FinancialTransactionType.Inflow,
             DebtDirection.Payable => FinancialTransactionType.Outflow,
-            _ => FinancialTransactionType.Inflow
+            _ => FinancialTransactionType.Inflow,
         };
 
         if (transactionType == FinancialTransactionType.Outflow)
@@ -93,9 +99,6 @@ internal sealed class CreatePaymentCommandHandler(
 
         context.FinancialTransactions.Add(financialTransactionResult.Value);
 
-
-
-
         await context.SaveChangesAsync(cancellationToken);
 
         return Result.Updated;
@@ -105,6 +108,6 @@ internal sealed class CreatePaymentCommandHandler(
     {
         DebtDirection.Receivable => "لنا - ذمة مدينة",
         DebtDirection.Payable => "علينا - ذمة دائنة",
-        _ => "دين"
+        _ => "دين",
     };
 }

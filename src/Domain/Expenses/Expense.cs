@@ -1,3 +1,7 @@
+// <copyright file="Expense.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Finance;
 using SharedKernel;
 using SharedKernel.Result;
@@ -7,7 +11,6 @@ namespace Domain.Expenses;
 public sealed class Expense : AuditableEntity, ITenantEntity
 {
     public Guid TenantId { get; private set; }
-
 
     public Guid? ExpenseCategoryId { get; private set; }
 
@@ -21,19 +24,21 @@ public sealed class Expense : AuditableEntity, ITenantEntity
 
     // Navigation properties
     public ExpenseCategory? ExpenseCategory { get; set; } = null;
+
     public FinancialAccount? FinancialAccount { get; set; }
 
     private Expense()
     {
-
     }
-    private Expense(Guid id, Guid? expenseCategoryId, Guid? accountId, decimal amount, string? description, DateOnly expenseDate) : base(id)
+
+    private Expense(Guid id, Guid? expenseCategoryId, Guid? accountId, decimal amount, string? description, DateOnly expenseDate)
+        : base(id)
     {
-        ExpenseCategoryId = expenseCategoryId;
-        AccountId = accountId;
-        Amount = amount;
-        Description = description;
-        ExpenseDate = expenseDate;
+        this.ExpenseCategoryId = expenseCategoryId;
+        this.AccountId = accountId;
+        this.Amount = amount;
+        this.Description = description;
+        this.ExpenseDate = expenseDate;
     }
 
     public static Result<Expense> Create(Guid? expenseCategoryId, Guid? accountId, decimal amount, string? description, DateOnly expenseDate)
@@ -42,42 +47,48 @@ public sealed class Expense : AuditableEntity, ITenantEntity
         {
             return ExpenseErrors.ExpenseCategoriesRequired;
         }
+
         if (!accountId.HasValue || accountId == Guid.Empty)
         {
             return ExpenseErrors.AccountRequired;
         }
+
         if (amount <= 0)
         {
             return ExpenseErrors.AmountMustBePositive;
         }
+
         return new Expense(Guid.CreateVersion7(), expenseCategoryId, accountId, amount, description, expenseDate);
     }
-    public Result<Updated> Update
-        (Guid id, Guid? expenseCategoryId, Guid? accountId, decimal amount, string? description, DateOnly expenseDate)
 
+    public Result<Updated> Update(
+        Guid id, Guid? expenseCategoryId, Guid? accountId, decimal amount, string? description, DateOnly expenseDate)
     {
         if (id == Guid.Empty)
         {
             return ExpenseErrors.ExpenseIdRequired;
         }
+
         if (!expenseCategoryId.HasValue || expenseCategoryId == Guid.Empty)
         {
             return ExpenseErrors.ExpenseCategoriesRequired;
         }
+
         if (!accountId.HasValue || accountId == Guid.Empty)
         {
             return ExpenseErrors.AccountRequired;
         }
+
         if (amount <= 0)
         {
             return ExpenseErrors.AmountMustBePositive;
         }
 
-        ExpenseCategoryId = expenseCategoryId!.Value;
-        AccountId = accountId!.Value;
-        Amount = amount;
-        Description = description;
-        ExpenseDate = expenseDate;
+        this.ExpenseCategoryId = expenseCategoryId!.Value;
+        this.AccountId = accountId!.Value;
+        this.Amount = amount;
+        this.Description = description;
+        this.ExpenseDate = expenseDate;
 
         return Result.Updated;
     }

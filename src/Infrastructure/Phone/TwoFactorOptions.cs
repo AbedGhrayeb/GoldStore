@@ -1,3 +1,7 @@
+// <copyright file="TwoFactorOptions.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Infrastructure.Phone;
 
 public sealed class TwoFactorOptions

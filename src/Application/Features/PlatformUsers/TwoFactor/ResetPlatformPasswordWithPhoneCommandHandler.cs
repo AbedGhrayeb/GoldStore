@@ -1,3 +1,7 @@
+// <copyright file="ResetPlatformPasswordWithPhoneCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -19,8 +23,13 @@ internal sealed class ResetPlatformPasswordWithPhoneCommandHandler(
     {
         VerifiedPhone verified;
         try
-        { verified = await phoneVerifier.VerifyAsync(command.IdToken, cancellationToken); }
-        catch (Exception ex) { return ApplicationErrors.InvalidPhoneVerification; }
+        {
+            verified = await phoneVerifier.VerifyAsync(command.IdToken, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            return ApplicationErrors.InvalidPhoneVerification;
+        }
 
         string normalized = command.EmailOrPhone.Trim();
         PlatformUser? user = await context.PlatformUsers.SingleOrDefaultAsync(u => u.Email == normalized || u.PhoneNumber == normalized, cancellationToken);

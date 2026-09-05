@@ -1,3 +1,7 @@
+// <copyright file="CookieAuthSessionManager.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.Security.Claims;
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
@@ -49,7 +53,7 @@ internal sealed class CookieAuthSessionManager(
             ExpiresUtc = rememberMe
                 ? DateTimeOffset.UtcNow.AddDays(14)
                 : DateTimeOffset.UtcNow.AddHours(8),
-            AllowRefresh = true
+            AllowRefresh = true,
         };
         HttpContext _httpContext = httpContextAccessor.HttpContext ?? throw new NullReferenceException();
         await _httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);

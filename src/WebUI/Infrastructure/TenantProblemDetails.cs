@@ -1,3 +1,7 @@
+// <copyright file="TenantProblemDetails.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebUI.Infrastructure;
@@ -49,6 +53,6 @@ internal static class TenantProblemDetails
         Type = ForbiddenType,
         Title = title,
         Detail = detail,
-        Extensions = { ["code"] = code }
+        Extensions = { ["code"] = code },
     };
 }

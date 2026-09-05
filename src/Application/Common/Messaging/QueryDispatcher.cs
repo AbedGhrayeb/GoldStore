@@ -1,3 +1,7 @@
+// <copyright file="QueryDispatcher.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Messaging;
 using SharedKernel.Result;
 
@@ -15,7 +19,7 @@ internal sealed class QueryDispatcher(IServiceProvider serviceProvider) : IQuery
         CancellationToken cancellationToken)
         where TQuery : IQuery<TResult>
     {
-        IQueryHandler<TQuery, TResult> handler = ResolveHandler<TQuery, TResult>();
+        IQueryHandler<TQuery, TResult> handler = this.ResolveHandler<TQuery, TResult>();
         return handler.Handle(query, cancellationToken);
     }
 

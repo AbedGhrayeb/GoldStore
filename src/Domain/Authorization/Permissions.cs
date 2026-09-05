@@ -1,3 +1,7 @@
+// <copyright file="Permissions.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Domain.Authorization;
 
 /// <summary>

@@ -1,3 +1,7 @@
+// <copyright file="AuthConstants.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace WebUI.Infrastructure;
 
 public static class AuthConstants

@@ -1,3 +1,7 @@
+// <copyright file="LoginPlatformUserCommandValidator.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.PlatformUsers.Login;
 using FluentValidation;
 
@@ -7,7 +11,7 @@ public class LoginPlatformUserCommandValidator : AbstractValidator<LoginPlatform
 {
     public LoginPlatformUserCommandValidator()
     {
-        RuleFor(c => c.Email).NotEmpty().EmailAddress();
-        RuleFor(c => c.Password).NotEmpty().MinimumLength(8).MaximumLength(20);
+        this.RuleFor(c => c.Email).NotEmpty().EmailAddress();
+        this.RuleFor(c => c.Password).NotEmpty().MinimumLength(8).MaximumLength(20);
     }
 }

@@ -1,3 +1,7 @@
+// <copyright file="SupplierGoldLedgerEntry.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Common;
 using Domain.Inventory;
 using SharedKernel;
@@ -7,7 +11,6 @@ namespace Domain.Suppliers;
 public sealed class SupplierGoldLedgerEntry : AuditableEntity, ITenantEntity
 {
     public Guid TenantId { get; private set; }
-
 
     public Guid SupplierId { get; private set; }
 
@@ -24,23 +27,25 @@ public sealed class SupplierGoldLedgerEntry : AuditableEntity, ITenantEntity
     public Guid? ReferenceId { get; private set; }
 
     public string? Notes { get; set; }
+
     public Supplier Supplier { get; set; }
 
     private SupplierGoldLedgerEntry()
     {
-
     }
+
     private SupplierGoldLedgerEntry(Guid id, Guid supplierId, Karat karat, decimal weightInGrams,
-        SupplierBalanceMovementType movementType, SupplierGoldReferenceType referenceType, Guid? referenceId, string? notes) : base(id)
+        SupplierBalanceMovementType movementType, SupplierGoldReferenceType referenceType, Guid? referenceId, string? notes)
+        : base(id)
     {
-        SupplierId = supplierId;
-        Karat = karat;
-        WeightInGrams = weightInGrams;
-        Equivalent21KWeightInGrams = GoldWeight.CalculateEquivalent21KWeight(weightInGrams, karat);
-        MovementType = movementType;
-        ReferenceType = referenceType;
-        ReferenceId = referenceId;
-        Notes = notes;
+        this.SupplierId = supplierId;
+        this.Karat = karat;
+        this.WeightInGrams = weightInGrams;
+        this.Equivalent21KWeightInGrams = GoldWeight.CalculateEquivalent21KWeight(weightInGrams, karat);
+        this.MovementType = movementType;
+        this.ReferenceType = referenceType;
+        this.ReferenceId = referenceId;
+        this.Notes = notes;
     }
 
     public static SupplierGoldLedgerEntry Create(Guid supplierId, Karat karat, decimal weightInGrams,

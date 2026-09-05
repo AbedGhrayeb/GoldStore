@@ -1,3 +1,7 @@
+// <copyright file="GetGoldLedgerQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -39,6 +43,7 @@ internal sealed class GetGoldLedgerQueryHandler(IApplicationDbContext context, I
         {
             entries = entries.Where(e => e.ReferenceType == refType);
         }
+
         List<Guid> userIds = await entries
             .OrderByDescending(e => e.CreatedAtUtc)
             .Select(e => e.CreatedBy!.Value)
@@ -67,7 +72,7 @@ internal sealed class GetGoldLedgerQueryHandler(IApplicationDbContext context, I
             ReferenceId = e.ReferenceId,
             Notes = e.Notes,
             UserId = e.CreatedBy!.Value,
-            UserName = userNames.GetValueOrDefault(e.CreatedBy!.Value, "Unknown")
+            UserName = userNames.GetValueOrDefault(e.CreatedBy!.Value, "Unknown"),
         });
 
         return await PaginatedList<GoldLedgerEntryResponse>.CreateAsync(items, query.Page, query.PageSize);

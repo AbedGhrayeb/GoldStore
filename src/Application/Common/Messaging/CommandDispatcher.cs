@@ -1,3 +1,7 @@
+// <copyright file="CommandDispatcher.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Messaging;
 using SharedKernel.Result;
 
@@ -15,7 +19,7 @@ internal sealed class CommandDispatcher(IServiceProvider serviceProvider) : ICom
         CancellationToken cancellationToken)
         where TCommand : ICommand<TResult>
     {
-        ICommandHandler<TCommand, TResult> handler = ResolveHandler<TCommand, TResult>();
+        ICommandHandler<TCommand, TResult> handler = this.ResolveHandler<TCommand, TResult>();
         return handler.Handle(command, cancellationToken);
     }
 

@@ -1,3 +1,7 @@
+// <copyright file="TenantEntityInterceptor.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Tenants;
 using Infrastructure.Tenants;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +24,7 @@ public sealed class TenantEntityInterceptor(ICurrentTenant currentTenant) : Save
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
-        EnforceTenantRules(eventData.Context);
+        this.EnforceTenantRules(eventData.Context);
 
         return base.SavingChanges(eventData, result);
     }
@@ -28,7 +32,7 @@ public sealed class TenantEntityInterceptor(ICurrentTenant currentTenant) : Save
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        EnforceTenantRules(eventData.Context);
+        this.EnforceTenantRules(eventData.Context);
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
@@ -45,15 +49,15 @@ public sealed class TenantEntityInterceptor(ICurrentTenant currentTenant) : Save
             switch (entry.State)
             {
                 case EntityState.Added:
-                    StampOrValidateNewEntity(entry);
+                    this.StampOrValidateNewEntity(entry);
                     break;
 
                 case EntityState.Modified:
-                    GuardExistingEntity(entry);
+                    this.GuardExistingEntity(entry);
                     break;
 
                 case EntityState.Deleted:
-                    GuardOwnedByCurrentTenant(entry.Entity);
+                    this.GuardOwnedByCurrentTenant(entry.Entity);
                     break;
             }
         }
@@ -91,7 +95,7 @@ public sealed class TenantEntityInterceptor(ICurrentTenant currentTenant) : Save
                 $"Cannot change the tenant of {entry.Entity.GetType().Name}: TenantId is immutable.");
         }
 
-        GuardOwnedByCurrentTenant(entry.Entity);
+        this.GuardOwnedByCurrentTenant(entry.Entity);
     }
 
     private void GuardOwnedByCurrentTenant(ITenantEntity entity)

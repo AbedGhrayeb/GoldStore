@@ -1,3 +1,7 @@
+// <copyright file="TenantSubscription.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -26,16 +30,17 @@ public sealed class TenantSubscription : Entity, ITenantEntity
     }
 
     private TenantSubscription(Guid id, Guid tenantId, Guid subscriptionPlanId, SubscriptionBillingCycle billingCycle,
-        DateTimeOffset startsAtUtc, DateTimeOffset endsAtUtc, string? billingProvider, string? billingProviderReference) : base(id)
+        DateTimeOffset startsAtUtc, DateTimeOffset endsAtUtc, string? billingProvider, string? billingProviderReference)
+        : base(id)
     {
-        TenantId = tenantId;
-        SubscriptionPlanId = subscriptionPlanId;
-        Status = SubscriptionStatus.Active;
-        BillingCycle = billingCycle;
-        StartsAtUtc = startsAtUtc;
-        EndsAtUtc = endsAtUtc;
-        BillingProvider = billingProvider;
-        BillingProviderReference = billingProviderReference;
+        this.TenantId = tenantId;
+        this.SubscriptionPlanId = subscriptionPlanId;
+        this.Status = SubscriptionStatus.Active;
+        this.BillingCycle = billingCycle;
+        this.StartsAtUtc = startsAtUtc;
+        this.EndsAtUtc = endsAtUtc;
+        this.BillingProvider = billingProvider;
+        this.BillingProviderReference = billingProviderReference;
     }
 
     public static Result<TenantSubscription> Create(Guid tenantId, Guid subscriptionPlanId, SubscriptionBillingCycle billingCycle,
@@ -62,9 +67,9 @@ public sealed class TenantSubscription : Entity, ITenantEntity
             return TenantErrors.InvalidSubscriptionPeriod;
         }
 
-        StartsAtUtc = startsAtUtc;
-        EndsAtUtc = endsAtUtc;
-        Status = SubscriptionStatus.Active;
+        this.StartsAtUtc = startsAtUtc;
+        this.EndsAtUtc = endsAtUtc;
+        this.Status = SubscriptionStatus.Active;
 
         return Result.Updated;
     }
@@ -76,27 +81,27 @@ public sealed class TenantSubscription : Entity, ITenantEntity
             return TenantErrors.IdRequired;
         }
 
-        SubscriptionPlanId = newPlanId;
+        this.SubscriptionPlanId = newPlanId;
         return Result.Updated;
     }
 
     public void ChangeBillingCycle(SubscriptionBillingCycle billingCycle)
     {
-        BillingCycle = billingCycle;
+        this.BillingCycle = billingCycle;
     }
 
     public void MarkPastDue()
     {
-        Status = SubscriptionStatus.PastDue;
+        this.Status = SubscriptionStatus.PastDue;
     }
 
     public void Cancel()
     {
-        Status = SubscriptionStatus.Cancelled;
+        this.Status = SubscriptionStatus.Cancelled;
     }
 
     public void Expire()
     {
-        Status = SubscriptionStatus.Expired;
+        this.Status = SubscriptionStatus.Expired;
     }
 }

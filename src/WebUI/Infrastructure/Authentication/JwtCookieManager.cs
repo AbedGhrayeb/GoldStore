@@ -1,3 +1,7 @@
+// <copyright file="JwtCookieManager.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Authentication;
 using Infrastructure.Authentication;
 using Infrastructure.Tenancy;
@@ -19,11 +23,11 @@ internal sealed class JwtCookieManager(IOptions<TenantHostOptions> tenantHostOpt
         context.Response.Cookies.Append(
             JwtCookieDefaults.TenantAccessCookieName,
             accessToken.Value,
-            CreateOptions(context, accessToken.ExpiresAtUtc, "/", includeTenantDomain: true));
+            this.CreateOptions(context, accessToken.ExpiresAtUtc, "/", includeTenantDomain: true));
         context.Response.Cookies.Append(
             JwtCookieDefaults.TenantRefreshCookieName,
             refreshToken.Value,
-            CreateOptions(context, refreshToken.ExpiresAtUtc, "/api/v1/auth", includeTenantDomain: true));
+            this.CreateOptions(context, refreshToken.ExpiresAtUtc, "/api/v1/auth", includeTenantDomain: true));
     }
 
     public void SetHostToken(HttpContext context, PlatformAccessTokenResponse accessToken)
@@ -31,23 +35,23 @@ internal sealed class JwtCookieManager(IOptions<TenantHostOptions> tenantHostOpt
         context.Response.Cookies.Append(
             JwtCookieDefaults.HostAccessCookieName,
             accessToken.Value,
-            CreateOptions(context, accessToken.ExpiresAtUtc, "/host", includeTenantDomain: false));
+            this.CreateOptions(context, accessToken.ExpiresAtUtc, "/host", includeTenantDomain: false));
     }
 
     public void DeleteTenantTokens(HttpContext context)
     {
         context.Response.Cookies.Delete(
             JwtCookieDefaults.TenantAccessCookieName,
-            CreateOptions(context, null, "/", includeTenantDomain: true));
+            this.CreateOptions(context, null, "/", includeTenantDomain: true));
         context.Response.Cookies.Delete(
             JwtCookieDefaults.TenantRefreshCookieName,
-            CreateOptions(context, null, "/api/v1/auth", includeTenantDomain: true));
+            this.CreateOptions(context, null, "/api/v1/auth", includeTenantDomain: true));
     }
 
     public void DeleteHostToken(HttpContext context) =>
         context.Response.Cookies.Delete(
             JwtCookieDefaults.HostAccessCookieName,
-            CreateOptions(context, null, "/host", includeTenantDomain: false));
+            this.CreateOptions(context, null, "/host", includeTenantDomain: false));
 
     private CookieOptions CreateOptions(
         HttpContext context,

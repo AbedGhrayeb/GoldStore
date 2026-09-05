@@ -1,4 +1,8 @@
-﻿using Domain.CustomerPurchases;
+﻿// <copyright file="CustomerPurchaseInvoiceItemConfiguration.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Domain.CustomerPurchases;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

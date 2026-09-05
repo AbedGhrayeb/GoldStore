@@ -1,4 +1,8 @@
-﻿using System.Text;
+﻿// <copyright file="DependencyInjection.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using System.Text;
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Caching;
 using Application.Abstractions.Data;
@@ -94,7 +98,7 @@ public static class DependencyInjection
                     : FirebaseAdmin.FirebaseApp.Create(new FirebaseAdmin.AppOptions
                     {
                         ProjectId = projectId,
-                        Credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(svc)
+                        Credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(svc),
                     });
                 _ = app;
             }
@@ -227,7 +231,7 @@ public static class DependencyInjection
                     ValidIssuer = issuer,
                     ValidAudience = audience,
                     IssuerSigningKey = signingKey,
-                    ClockSkew = TimeSpan.FromMinutes(1)
+                    ClockSkew = TimeSpan.FromMinutes(1),
                 };
 
                 // Browser clients receive this JWT in an HttpOnly cookie. Header credentials
@@ -257,7 +261,7 @@ public static class DependencyInjection
                     ValidIssuer = issuer,
                     ValidAudience = audience,
                     IssuerSigningKey = signingKey,
-                    ClockSkew = TimeSpan.FromMinutes(1)
+                    ClockSkew = TimeSpan.FromMinutes(1),
                 };
                 opts.Events = new JwtBearerEvents
                 {

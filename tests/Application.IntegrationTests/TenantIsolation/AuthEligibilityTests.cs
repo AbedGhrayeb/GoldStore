@@ -1,4 +1,8 @@
-﻿using System.Net;
+﻿// <copyright file="AuthEligibilityTests.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -20,19 +24,20 @@ public sealed class AuthEligibilityTests : IClassFixture<MultiTenantWebApplicati
     private const string ExpiredGraceAdmin = "admin@expired-store.goldstore.test";
     private const string DisabledUser = "disabled@goldstore.test";
 
-    private readonly MultiTenantWebApplicationFactory _factory;
+    private readonly MultiTenantWebApplicationFactory factory;
 
     public AuthEligibilityTests(MultiTenantWebApplicationFactory factory)
     {
-        _factory = factory;
+        this.factory = factory;
     }
 
     [Fact]
     public async Task Login_ValidTenantAndUser_ReturnsToken()
     {
-        HttpClient client = _factory.CreateClient();
+        HttpClient client = this.factory.CreateClient();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/v1/auth/login",
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/v1/auth/login",
             new { email = TenantAAdmin, password = TenantAAdminPassword });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -46,9 +51,10 @@ public sealed class AuthEligibilityTests : IClassFixture<MultiTenantWebApplicati
     [InlineData(DisabledUser)]
     public async Task Login_DisqualifiedUserOrTenant_IsDenied(string email)
     {
-        HttpClient client = _factory.CreateClient();
+        HttpClient client = this.factory.CreateClient();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/v1/auth/login",
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/v1/auth/login",
             new { email, password = MultiTenantWebApplicationFactory.TestPassword });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -57,9 +63,10 @@ public sealed class AuthEligibilityTests : IClassFixture<MultiTenantWebApplicati
     [Fact]
     public async Task Login_WrongPassword_IsDenied()
     {
-        HttpClient client = _factory.CreateClient();
+        HttpClient client = this.factory.CreateClient();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/v1/auth/login",
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/v1/auth/login",
             new { email = TenantAAdmin, password = "wrong-password" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -68,7 +75,7 @@ public sealed class AuthEligibilityTests : IClassFixture<MultiTenantWebApplicati
     [Fact]
     public async Task CancelledTenantInsideGrace_CanReadButNotWrite()
     {
-        HttpClient client = await _factory.CreateJwtClientAsync(GraceAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient client = await this.factory.CreateJwtClientAsync(GraceAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         HttpResponseMessage read = await client.GetAsync("/api/v1/suppliers");
         Assert.Equal(HttpStatusCode.OK, read.StatusCode);
@@ -80,7 +87,7 @@ public sealed class AuthEligibilityTests : IClassFixture<MultiTenantWebApplicati
             secondaryPhone = (string?)null,
             bankAccountNumber = "JO00READONLY",
             notes = "grace read-only probe",
-            isActive = true
+            isActive = true,
         });
         HttpResponseMessage write = await client.PostAsync("/api/v1/suppliers", payload);
         string body = await write.Content.ReadAsStringAsync();
@@ -93,7 +100,7 @@ public sealed class AuthEligibilityTests : IClassFixture<MultiTenantWebApplicati
     public async Task TenantUser_CannotReachHostAdministration()
     {
         // Tenant JWT must not grant access to host administration.
-        HttpClient client = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient client = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
 
         // Host administration is guarded by the dedicated host JWT (HttpOnly cookie). A store
         // user's tenant credentials are never accepted there: the host JWT bearer scheme

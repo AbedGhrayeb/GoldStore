@@ -1,3 +1,7 @@
+// <copyright file="SalesInvoiceItem.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Catalog;
 using Domain.Common;
 using SharedKernel;
@@ -24,22 +28,24 @@ public sealed class SalesInvoiceItem : AuditableEntity, ITenantEntity
     public decimal GoldAmount { get; private set; }
 
     public SalesInvoice SalesInvoice { get; set; }
+
     public Category Category { get; set; }
 
     private SalesInvoiceItem()
     {
-
     }
+
     private SalesInvoiceItem(Guid id, Guid saleInvoceId, Guid categoryId,
-        Karat karat, decimal weightInGrams, decimal pricePerGram) : base(id)
+        Karat karat, decimal weightInGrams, decimal pricePerGram)
+        : base(id)
     {
-        SalesInvoiceId = saleInvoceId;
-        CategoryId = categoryId;
-        Karat = karat;
-        WeightInGrams = weightInGrams;
-        PricePerGram = pricePerGram;
-        Equivalent21KWeightInGrams = GoldWeight.CalculateEquivalent21KWeight(weightInGrams, karat);
-        GoldAmount = weightInGrams * pricePerGram;
+        this.SalesInvoiceId = saleInvoceId;
+        this.CategoryId = categoryId;
+        this.Karat = karat;
+        this.WeightInGrams = weightInGrams;
+        this.PricePerGram = pricePerGram;
+        this.Equivalent21KWeightInGrams = GoldWeight.CalculateEquivalent21KWeight(weightInGrams, karat);
+        this.GoldAmount = weightInGrams * pricePerGram;
     }
 
     public static Result<SalesInvoiceItem> Create(Guid saleInvoceId, Guid categoryId,
@@ -49,18 +55,22 @@ public sealed class SalesInvoiceItem : AuditableEntity, ITenantEntity
         {
             return SalesInvoiceErrors.InvoceNumberRequired;
         }
+
         if (categoryId == Guid.Empty)
         {
             return SalesInvoiceErrors.CategoryIdRequired;
         }
+
         if (weightInGrams <= 0)
         {
             return SalesInvoiceErrors.WeightMustBePositive;
         }
+
         if (pricePerGram <= 0)
         {
             return SalesInvoiceErrors.PriceMustBePositive;
         }
+
         return new SalesInvoiceItem(Guid.CreateVersion7(), saleInvoceId, categoryId, karat, weightInGrams, pricePerGram);
     }
 }

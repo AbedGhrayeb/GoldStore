@@ -1,4 +1,8 @@
-﻿using Application.Abstractions.Messaging;
+﻿// <copyright file="LoggingDecorator.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Application.Abstractions.Messaging;
 using Microsoft.Extensions.Logging;
 using Serilog.Context;
 using SharedKernel.Result;
@@ -41,7 +45,8 @@ internal static class LoggingDecorator
         IQueryHandler<TQuery, TResponse> innerHandler,
         ILogger<QueryHandler<TQuery, TResponse>> logger)
         : IQueryHandler<TQuery, TResponse>
-        //IQueryHandler<TQuery, TResponse>
+
+        // IQueryHandler<TQuery, TResponse>
         where TQuery : IQuery<TResponse>
     {
         public async Task<Result<TResponse>> Handle(TQuery query, CancellationToken cancellationToken)

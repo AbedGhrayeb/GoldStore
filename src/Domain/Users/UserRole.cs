@@ -1,3 +1,7 @@
+// <copyright file="UserRole.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -20,11 +24,12 @@ public sealed class UserRole : Entity, ITenantEntity
     {
     }
 
-    private UserRole(Guid id, Guid tenantId, Guid userId, Guid roleId) : base(id)
+    private UserRole(Guid id, Guid tenantId, Guid userId, Guid roleId)
+        : base(id)
     {
-        TenantId = tenantId;
-        UserId = userId;
-        RoleId = roleId;
+        this.TenantId = tenantId;
+        this.UserId = userId;
+        this.RoleId = roleId;
     }
 
     public static Result<UserRole> Create(Guid tenantId, Guid userId, Guid roleId)

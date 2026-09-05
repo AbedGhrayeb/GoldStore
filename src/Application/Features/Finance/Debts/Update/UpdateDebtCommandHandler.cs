@@ -1,3 +1,7 @@
+// <copyright file="UpdateDebtCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Errors;
@@ -18,11 +22,14 @@ internal sealed class UpdateDebtCommandHandler(
         Debt? debt = await context.Debts.FirstOrDefaultAsync(d => d.Id == command.Id, cancellationToken);
 
         if (debt is null)
-        { return DebtErrors.NotFound(command.Id); }
+        {
+            return DebtErrors.NotFound(command.Id);
+        }
         try
         {
             // --- Determine target account ---
             Guid? targetAccountId = command.NewAccountId ?? debt.AccountId;
+
             // --- Update basic fields ---
             Result<Updated> debtUpdateResult = debt.Update(command.Name ?? debt.Name, command.Phone ?? debt.Phone,
                      targetAccountId, command.Notes ?? debt.Notes);
@@ -31,6 +38,7 @@ internal sealed class UpdateDebtCommandHandler(
             {
                 return debtUpdateResult.Errors;
             }
+
             // --- Compute current ledger totals ---
             decimal totalIncrease = await context.DebtLedgerEntries
                 .Where(e => e.DebtId == command.Id && e.MovementType == DebtBalanceMovementType.Increase)
@@ -55,7 +63,9 @@ internal sealed class UpdateDebtCommandHandler(
                     .FirstOrDefaultAsync(a => a.Id == targetAccountId!.Value, cancellationToken);
 
                 if (targetAccount is null)
-                { return DebtErrors.AccountNotFound(targetAccountId!.Value); }
+                {
+                    return DebtErrors.AccountNotFound(targetAccountId!.Value);
+                }
 
                 if (targetAccount.Currency != debt.Currency)
                 {
@@ -83,8 +93,7 @@ internal sealed class UpdateDebtCommandHandler(
                                 : FinancialTransactionType.Inflow,
                             FinancialReferenceType.DebtAdjustment,
                             debt.Id,
-                            $"إلغاء نقل حساب — {debt.Name}"
-                        );
+                            $"إلغاء نقل حساب — {debt.Name}");
 
                         context.FinancialTransactions.Add(newTransactionResult.Value);
                     }
@@ -108,10 +117,10 @@ internal sealed class UpdateDebtCommandHandler(
                     {
                         Result<FinancialTransaction> newTransactionResult = FinancialTransaction.Create(
                              targetAccountId!.Value,
-                            tx.Currency,
-                            tx.Amount,
-                            tx.TransactionType,
-                            FinancialReferenceType.DebtAdjustment, debt.Id, $"نقل حساب — {debt.Name}");
+                             tx.Currency,
+                             tx.Amount,
+                             tx.TransactionType,
+                             FinancialReferenceType.DebtAdjustment, debt.Id, $"نقل حساب — {debt.Name}");
                         context.FinancialTransactions.Add(newTransactionResult.Value);
 
                         if (tx.TransactionType == FinancialTransactionType.Outflow)
@@ -131,7 +140,7 @@ internal sealed class UpdateDebtCommandHandler(
                         {
                             DebtDirection.Receivable => FinancialTransactionType.Outflow,
                             DebtDirection.Payable => FinancialTransactionType.Inflow,
-                            _ => FinancialTransactionType.Outflow
+                            _ => FinancialTransactionType.Outflow,
                         };
 
                         if (initialTxType == FinancialTransactionType.Outflow)
@@ -144,12 +153,11 @@ internal sealed class UpdateDebtCommandHandler(
                             }
                         }
 
-                        context.FinancialTransactions.Add(FinancialTransaction.Create(targetAccountId!.Value,
+                        context.FinancialTransactions.Add(FinancialTransaction.Create(
+                            targetAccountId!.Value,
                             targetAccount.Currency, netBalance, initialTxType, FinancialReferenceType.DebtAdjustment, debt.Id, $"نقل حساب — {debt.Name}").Value);
-
                     }
                 }
-
             }
 
             // --- Handle amount change ---
@@ -158,7 +166,6 @@ internal sealed class UpdateDebtCommandHandler(
                 decimal newAmount = command.NewAmount!.Value;
 
                 if (newAmount < totalDecrease)
-
                 {
                     return DebtErrors.AmountBelowPayments(newAmount, totalDecrease);
                 }
@@ -167,11 +174,9 @@ internal sealed class UpdateDebtCommandHandler(
 
                 if (diff != 0)
                 {
-
                     Result<DebtLedgerEntry> debtLedgerEntryResult = DebtLedgerEntry.Create(debt.Id, Math.Abs(diff),
                         diff > 0 ? DebtBalanceMovementType.Increase : DebtBalanceMovementType.Decrease,
                         $"تعديل قيمة الدين — {debt.Name}");
-
 
                     if (debtLedgerEntryResult.IsError)
                     {
@@ -179,7 +184,6 @@ internal sealed class UpdateDebtCommandHandler(
                     }
 
                     context.DebtLedgerEntries.Add(debtLedgerEntryResult.Value);
-
 
                     // Financial transaction on the target account
                     Guid? effectiveAccountId = targetAccountId ?? debt.AccountId;
@@ -191,7 +195,6 @@ internal sealed class UpdateDebtCommandHandler(
                             .FirstOrDefaultAsync(a => a.Id == effectiveAccountId.Value, cancellationToken);
 
                         if (account is null)
-
                         {
                             return DebtErrors.AccountNotFound(effectiveAccountId.Value);
                         }
@@ -204,7 +207,7 @@ internal sealed class UpdateDebtCommandHandler(
                             DebtDirection.Payable => diff > 0
                                 ? FinancialTransactionType.Inflow
                                 : FinancialTransactionType.Outflow,
-                            _ => FinancialTransactionType.Outflow
+                            _ => FinancialTransactionType.Outflow,
                         };
 
                         if (txType == FinancialTransactionType.Outflow)
@@ -226,14 +229,12 @@ internal sealed class UpdateDebtCommandHandler(
                                 Math.Abs(diff), txType,
                                 FinancialReferenceType.DebtAdjustment, debt.Id, $"تعديل قيمة الدين — {debt.Name}");
 
-
                         if (financialTransactionResult.IsError)
                         {
                             return financialTransactionResult.Errors;
                         }
 
                         context.FinancialTransactions.Add(financialTransactionResult.Value);
-
                     }
                 }
             }
@@ -244,7 +245,6 @@ internal sealed class UpdateDebtCommandHandler(
         {
             return ApplicationErrors.DatabaseError;
         }
-
 
         return Result.Updated;
     }

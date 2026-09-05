@@ -1,3 +1,7 @@
+// <copyright file="GetAccountsWithBalancesQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -46,7 +50,7 @@ internal sealed class GetAccountsWithBalancesQueryHandler(IApplicationDbContext 
             .Select(g => new
             {
                 AccountId = g.Key,
-                Balance = g.Sum(t => t.TransactionType == FinancialTransactionType.Inflow ? t.Amount : -t.Amount)
+                Balance = g.Sum(t => t.TransactionType == FinancialTransactionType.Inflow ? t.Amount : -t.Amount),
             })
             .ToListAsync(cancellationToken);
 
@@ -81,7 +85,7 @@ internal sealed class GetAccountsWithBalancesQueryHandler(IApplicationDbContext 
                 IsActive = a.IsActive,
                 Balance = balance,
                 LastChangeAmount = lastAmount,
-                LastChangeDirection = lastType == FinancialTransactionType.Inflow ? "Inflow" : "Outflow"
+                LastChangeDirection = lastType == FinancialTransactionType.Inflow ? "Inflow" : "Outflow",
             };
         }).ToList();
 

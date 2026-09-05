@@ -1,3 +1,7 @@
+// <copyright file="AntiforgeryEndpointFilter.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Microsoft.AspNetCore.Antiforgery;
 
 namespace WebUI.Infrastructure.Authentication;
@@ -26,6 +30,7 @@ internal sealed class AntiforgeryEndpointFilter(IAntiforgery antiforgery) : IEnd
             // The host JWT cookie already proves authentication; the pair of
             // antiforgery cookie + X-XSRF-TOKEN header still proves same-site origin.
         }
+
         return await next(context);
     }
 }

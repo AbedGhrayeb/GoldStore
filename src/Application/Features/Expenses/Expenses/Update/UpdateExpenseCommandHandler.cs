@@ -1,3 +1,7 @@
+// <copyright file="UpdateExpenseCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Ledger;
@@ -43,12 +47,14 @@ internal sealed class UpdateExpenseCommandHandler(IApplicationDbContext context)
                 return Error.NotFound("ExpenseCategories.NotFound", "تصنيف المصروف غير موجود أو غير نشط");
             }
         }
+
         Result<Updated> expenseUpdateResult = expense.Update(command.Id, command.CategoryId, command.AccountId, command.Amount, command.Description, command.ExpenseDate);
 
         if (expenseUpdateResult.IsError)
         {
             return expenseUpdateResult.Errors;
         }
+
         decimal availableBalance = await context.GetAccountBalanceExcludingAsync(command.AccountId, FinancialReferenceType.Expense, expense.Id, cancellationToken);
 
         if (command.Amount > availableBalance)
@@ -69,19 +75,18 @@ internal sealed class UpdateExpenseCommandHandler(IApplicationDbContext context)
             {
                 return financialTransactionsUpdateResult.Errors;
             }
-
         }
         else
         {
             Result<FinancialTransaction> financialTransactionsResult = FinancialTransaction.Create(command.AccountId, account.Currency, command.Amount,
                      FinancialTransactionType.Outflow, FinancialReferenceType.Expense, expense.Id, command.Description);
             if (financialTransactionsResult.IsError)
-            { return financialTransactionsResult.Errors; }
+            {
+                return financialTransactionsResult.Errors;
+            }
 
             context.FinancialTransactions.Add(financialTransactionsResult.Value);
         }
-
-
 
         await context.SaveChangesAsync(cancellationToken);
 

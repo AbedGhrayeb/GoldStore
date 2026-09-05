@@ -1,12 +1,16 @@
-﻿namespace SharedKernel.Result;
+﻿// <copyright file="Error.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+namespace SharedKernel.Result;
 
 public record Error
 {
     private Error(string code, string description, ErrorType type)
     {
-        Code = code;
-        Description = description;
-        Type = type;
+        this.Code = code;
+        this.Description = description;
+        this.Type = type;
     }
 
     public string Code { get; }

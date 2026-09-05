@@ -1,3 +1,7 @@
+// <copyright file="KpiCacheInvalidationInterceptor.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Caching;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -15,21 +19,21 @@ namespace Infrastructure.Database.Interceptors;
 /// </summary>
 public sealed class KpiCacheInvalidationInterceptor(ICacheService cache) : SaveChangesInterceptor
 {
-    private readonly HashSet<Guid> _affectedTenants = new();
+    private readonly HashSet<Guid> affectedTenants = new();
 
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        CollectAffectedTenants(eventData.Context);
+        this.CollectAffectedTenants(eventData.Context);
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
     public override async ValueTask<int> SavedChangesAsync(
         SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
     {
-        if (_affectedTenants.Count > 0)
+        if (this.affectedTenants.Count > 0)
         {
-            await EvictAsync(cancellationToken);
+            await this.EvictAsync(cancellationToken);
         }
 
         return await base.SavedChangesAsync(eventData, result, cancellationToken);
@@ -46,18 +50,18 @@ public sealed class KpiCacheInvalidationInterceptor(ICacheService cache) : SaveC
         {
             if (entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
             {
-                _affectedTenants.Add(entry.Entity.TenantId);
+                this.affectedTenants.Add(entry.Entity.TenantId);
             }
         }
     }
 
     private async Task EvictAsync(CancellationToken cancellationToken)
     {
-        foreach (Guid tenantId in _affectedTenants)
+        foreach (Guid tenantId in this.affectedTenants)
         {
             await cache.RemoveByTagAsync(CacheKeys.KpiTenant(tenantId), cancellationToken);
         }
 
-        _affectedTenants.Clear();
+        this.affectedTenants.Clear();
     }
 }

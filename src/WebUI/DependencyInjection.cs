@@ -1,4 +1,8 @@
-﻿using System.Text.Json.Serialization;
+﻿// <copyright file="DependencyInjection.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.OpenApi;
@@ -9,11 +13,11 @@ using WebUI.Endpoints;
 using WebUI.Infrastructure;
 using WebUI.Infrastructure.Authentication;
 using WebUI.Infrastructure.OpenApi;
+
 namespace WebUI;
 
 public static class DependencyInjection
 {
-
     public static IServiceCollection AddPresentation(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<JwtCookieManager>();
@@ -42,6 +46,7 @@ public static class DependencyInjection
                 .AddAppOutputCaching()
                 .AddOpenApiDocumentation()
                 .AddAngularCors();
+
         // ─── HTTP security headers ─────────────────────────────────────────────────────
         services.AddHsts(opts =>
         {
@@ -56,6 +61,7 @@ public static class DependencyInjection
     /// Built-in OpenAPI document (plan Phase 7a) with the JWT bearer security scheme and
     /// document metadata. Served through the Scalar API reference UI in Program.cs.
     /// </summary>
+    /// <returns></returns>
     public static IServiceCollection AddOpenApiDocumentation(this IServiceCollection services)
     {
         services.AddOpenApi(options =>
@@ -68,7 +74,7 @@ public static class DependencyInjection
                     Version = ApiRoutes.Version,
                     Description = "Tenant-isolated API for the GoldStore ERP. " +
                         "Tenant endpoints require a bearer token from POST /api/v1/auth/login; " +
-                        "endpoints never accept a tenant id — the tenant is resolved from the token claims."
+                        "endpoints never accept a tenant id — the tenant is resolved from the token claims.",
                 };
                 return Task.CompletedTask;
             });
@@ -84,6 +90,7 @@ public static class DependencyInjection
     /// the same tenant subdomain as the API (same-origin, no CORS needed), so this mainly
     /// enables the local Angular dev server and tenant subdomains of the public domain.
     /// </summary>
+    /// <returns></returns>
     public static IServiceCollection AddAngularCors(this IServiceCollection services)
     {
         services.AddCors(options =>
@@ -178,7 +185,6 @@ public static class DependencyInjection
         return services;
     }
 
-
     public static IServiceCollection AddExceptionHandling(this IServiceCollection services)
     {
         services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -196,6 +202,4 @@ public static class DependencyInjection
 
         return services;
     }
-
-
 }

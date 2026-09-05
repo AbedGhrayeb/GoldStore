@@ -1,3 +1,7 @@
+// <copyright file="FinancialReferenceType.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Domain.Finance;
 
 public enum FinancialReferenceType
@@ -11,8 +15,9 @@ public enum FinancialReferenceType
     DebtCreation = 7,
     DebtPayment = 8,
     DebtAdjustment = 9,
-    SupplierLoan = 10
+    SupplierLoan = 10,
 }
+
 public static class FinancialReferenceTypeExtensions
 {
     public static string GetDescription(this FinancialReferenceType type)
@@ -29,7 +34,7 @@ public static class FinancialReferenceTypeExtensions
             FinancialReferenceType.DebtPayment => "دفعة دين",
             FinancialReferenceType.DebtAdjustment => "تعديل دين",
             FinancialReferenceType.SupplierLoan => "قرض المورد",
-            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
         };
     }
 }

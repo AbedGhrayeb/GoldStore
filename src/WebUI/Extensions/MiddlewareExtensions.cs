@@ -1,4 +1,8 @@
-﻿using WebUI.Middleware;
+﻿// <copyright file="MiddlewareExtensions.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using WebUI.Middleware;
 
 namespace WebUI.Extensions;
 

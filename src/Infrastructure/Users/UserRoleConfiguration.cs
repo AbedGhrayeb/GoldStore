@@ -1,3 +1,7 @@
+// <copyright file="UserRoleConfiguration.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Authorization;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;

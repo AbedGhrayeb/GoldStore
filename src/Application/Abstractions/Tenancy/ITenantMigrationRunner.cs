@@ -1,3 +1,7 @@
+// <copyright file="ITenantMigrationRunner.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel.Result;
 
 namespace Application.Abstractions.Tenancy;

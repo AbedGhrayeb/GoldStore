@@ -1,3 +1,7 @@
+// <copyright file="RefreshTokenService.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.Security.Cryptography;
 using System.Text;
 using Application.Abstractions.Authentication;
@@ -27,14 +31,14 @@ internal sealed class RefreshTokenService(
 {
     public async Task<RefreshTokenResponse> IssueAsync(Guid userId, CancellationToken cancellationToken)
     {
-        User user = await LoadUserAsync(userId, cancellationToken);
-        Tenant tenant = await LoadTenantAsync(user.TenantId, cancellationToken);
+        User user = await this.LoadUserAsync(userId, cancellationToken);
+        Tenant tenant = await this.LoadTenantAsync(user.TenantId, cancellationToken);
 
         // Login runs before any tenant context exists; select the tenant explicitly so the
         // write guard can stamp the new token row.
         currentTenantSetter.Set(user.TenantId, tenant.Key);
 
-        (string plainToken, RefreshToken entity) = CreateToken(user.TenantId, user.Id);
+        (string plainToken, RefreshToken entity) = this.CreateToken(user.TenantId, user.Id);
 
         context.RefreshTokens.Add(entity);
         await context.SaveChangesAsync(cancellationToken);
@@ -78,7 +82,7 @@ internal sealed class RefreshTokenService(
 
         currentTenantSetter.Set(stored.TenantId, tenant.Key);
 
-        (string plainToken, RefreshToken replacement) = CreateToken(stored.TenantId, stored.UserId);
+        (string plainToken, RefreshToken replacement) = this.CreateToken(stored.TenantId, stored.UserId);
         stored.Revoke(utcNow, replacement.TokenHash);
 
         context.RefreshTokens.Add(replacement);
@@ -100,7 +104,7 @@ internal sealed class RefreshTokenService(
             return;
         }
 
-        await SelectTenantAsync(stored.TenantId, cancellationToken);
+        await this.SelectTenantAsync(stored.TenantId, cancellationToken);
         stored.Revoke(timeProvider.GetUtcNow());
         await context.SaveChangesAsync(cancellationToken);
     }
@@ -117,8 +121,8 @@ internal sealed class RefreshTokenService(
             return;
         }
 
-        User user = await LoadUserAsync(userId, cancellationToken);
-        await SelectTenantAsync(user.TenantId, cancellationToken);
+        User user = await this.LoadUserAsync(userId, cancellationToken);
+        await this.SelectTenantAsync(user.TenantId, cancellationToken);
 
         DateTimeOffset utcNow = timeProvider.GetUtcNow();
         foreach (RefreshToken token in activeTokens)
@@ -146,7 +150,7 @@ internal sealed class RefreshTokenService(
 
     private async Task SelectTenantAsync(Guid tenantId, CancellationToken cancellationToken)
     {
-        Tenant tenant = await LoadTenantAsync(tenantId, cancellationToken);
+        Tenant tenant = await this.LoadTenantAsync(tenantId, cancellationToken);
         currentTenantSetter.Set(tenantId, tenant.Key);
     }
 

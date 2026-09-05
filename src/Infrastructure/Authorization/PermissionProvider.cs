@@ -1,4 +1,8 @@
-﻿using Application.Abstractions.Data;
+﻿// <copyright file="PermissionProvider.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Application.Abstractions.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Authorization;

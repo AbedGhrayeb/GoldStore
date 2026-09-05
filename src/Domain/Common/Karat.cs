@@ -1,11 +1,16 @@
+// <copyright file="Karat.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Domain.Common;
 
 public enum Karat
 {
     K18 = 18,
     K21 = 21,
-    K24 = 24
+    K24 = 24,
 }
+
 public static class KaratExtentions
 {
     public static string KaratLabel(this Karat karat)
@@ -19,5 +24,4 @@ public static class KaratExtentions
 
         };
     }
-
 }

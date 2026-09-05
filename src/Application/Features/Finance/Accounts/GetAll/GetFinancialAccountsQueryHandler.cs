@@ -1,3 +1,7 @@
+// <copyright file="GetFinancialAccountsQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -28,7 +32,7 @@ internal sealed class GetFinancialAccountsQueryHandler(IApplicationDbContext con
                 Currency = a.Currency.ToString(),
                 AccountType = a.AccountType.ToString(),
                 AccountNumber = a.AccountNumber,
-                IsActive = a.IsActive
+                IsActive = a.IsActive,
             })
             .ToListAsync(cancellationToken);
 

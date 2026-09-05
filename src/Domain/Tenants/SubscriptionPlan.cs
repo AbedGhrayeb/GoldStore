@@ -1,3 +1,7 @@
+// <copyright file="SubscriptionPlan.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -19,7 +23,7 @@ public sealed class SubscriptionPlan : Entity
 
     public bool IsTrial { get; private set; }
 
-    /// <summary>Duration in months: 1,3,6,12,24 etc. For trial fixed to 1.</summary>
+    /// <summary>Gets duration in months: 1,3,6,12,24 etc. For trial fixed to 1.</summary>
     public int DurationInMonths { get; private set; }
 
     public decimal Price { get; private set; }
@@ -28,23 +32,24 @@ public sealed class SubscriptionPlan : Entity
 
     private SubscriptionPlan()
     {
-        Name = string.Empty;
-        Key = string.Empty;
+        this.Name = string.Empty;
+        this.Key = string.Empty;
     }
 
-    private SubscriptionPlan(Guid id, string name, string key, int? maximumActiveUsers, int? maximumPostedInvoicesPerPeriod, int? maximumActiveBranches, long? maximumStorageBytes, bool isTrial, int durationInMonths, decimal price, decimal? discountPercent) : base(id)
+    private SubscriptionPlan(Guid id, string name, string key, int? maximumActiveUsers, int? maximumPostedInvoicesPerPeriod, int? maximumActiveBranches, long? maximumStorageBytes, bool isTrial, int durationInMonths, decimal price, decimal? discountPercent)
+        : base(id)
     {
-        Name = name;
-        Key = key;
-        MaximumActiveUsers = maximumActiveUsers;
-        MaximumPostedInvoicesPerPeriod = maximumPostedInvoicesPerPeriod;
-        MaximumActiveBranches = maximumActiveBranches;
-        MaximumStorageBytes = maximumStorageBytes;
-        IsTrial = isTrial;
-        DurationInMonths = durationInMonths;
-        Price = price;
-        DiscountPercent = discountPercent;
-        IsActive = true;
+        this.Name = name;
+        this.Key = key;
+        this.MaximumActiveUsers = maximumActiveUsers;
+        this.MaximumPostedInvoicesPerPeriod = maximumPostedInvoicesPerPeriod;
+        this.MaximumActiveBranches = maximumActiveBranches;
+        this.MaximumStorageBytes = maximumStorageBytes;
+        this.IsTrial = isTrial;
+        this.DurationInMonths = durationInMonths;
+        this.Price = price;
+        this.DiscountPercent = discountPercent;
+        this.IsActive = true;
     }
 
     public static Result<SubscriptionPlan> Create(string name, string? key, int? maximumActiveUsers, int? maximumPostedInvoicesPerPeriod, int? maximumActiveBranches, long? maximumStorageBytes, bool isTrial, int durationInMonths, decimal price, decimal? discountPercent)
@@ -149,27 +154,27 @@ public sealed class SubscriptionPlan : Entity
             discountPercent = null;
         }
 
-        Name = name.Trim();
-        Key = normalizedKey;
-        MaximumActiveUsers = maximumActiveUsers;
-        MaximumPostedInvoicesPerPeriod = maximumPostedInvoicesPerPeriod;
-        MaximumActiveBranches = maximumActiveBranches;
-        MaximumStorageBytes = maximumStorageBytes;
-        IsTrial = isTrial;
-        DurationInMonths = durationInMonths;
-        Price = price;
-        DiscountPercent = discountPercent;
-        IsActive = isActive;
+        this.Name = name.Trim();
+        this.Key = normalizedKey;
+        this.MaximumActiveUsers = maximumActiveUsers;
+        this.MaximumPostedInvoicesPerPeriod = maximumPostedInvoicesPerPeriod;
+        this.MaximumActiveBranches = maximumActiveBranches;
+        this.MaximumStorageBytes = maximumStorageBytes;
+        this.IsTrial = isTrial;
+        this.DurationInMonths = durationInMonths;
+        this.Price = price;
+        this.DiscountPercent = discountPercent;
+        this.IsActive = isActive;
 
         return Result.Updated;
     }
 
-    public decimal EffectivePrice => DiscountPercent is null ? Price : Math.Round(Price * (1 - DiscountPercent.Value / 100m), 2);
+    public decimal EffectivePrice => this.DiscountPercent is null ? this.Price : Math.Round(this.Price * (1 - (this.DiscountPercent.Value / 100m)), 2);
 
     public static string GenerateKey(string name)
     {
         string slug = name.Trim().ToLowerInvariant();
-        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9\s-]", "");
+        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9\s-]", string.Empty);
         slug = System.Text.RegularExpressions.Regex.Replace(slug, @"\s+", "-");
         slug = System.Text.RegularExpressions.Regex.Replace(slug, @"-+", "-");
         slug = slug.Trim('-');
@@ -177,6 +182,7 @@ public sealed class SubscriptionPlan : Entity
         {
             slug = $"plan-{Guid.CreateVersion7():N}"[..8];
         }
+
         if (slug.Length > 50)
         {
             slug = slug[..50].Trim('-');

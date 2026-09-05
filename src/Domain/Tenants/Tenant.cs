@@ -1,3 +1,7 @@
+// <copyright file="Tenant.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -17,15 +21,16 @@ public sealed class Tenant : AuditableEntity
 
     private Tenant()
     {
-        Name = string.Empty;
-        Key = string.Empty;
+        this.Name = string.Empty;
+        this.Key = string.Empty;
     }
 
-    private Tenant(Guid id, string name, string key, TenantStatus status) : base(id)
+    private Tenant(Guid id, string name, string key, TenantStatus status)
+        : base(id)
     {
-        Name = name;
-        Key = key;
-        Status = status;
+        this.Name = name;
+        this.Key = key;
+        this.Status = status;
     }
 
     public static Result<Tenant> Create(string name, string key, TenantStatus status)
@@ -66,18 +71,18 @@ public sealed class Tenant : AuditableEntity
             return TenantErrors.InvalidSubscriptionPeriod;
         }
 
-        Status = TenantStatus.Trial;
-        TrialEndsAtUtc = trialEndsAtUtc;
-        CancellationReadOnlyUntilUtc = null;
+        this.Status = TenantStatus.Trial;
+        this.TrialEndsAtUtc = trialEndsAtUtc;
+        this.CancellationReadOnlyUntilUtc = null;
 
         return Result.Updated;
     }
 
     public void Activate()
     {
-        Status = TenantStatus.Active;
-        TrialEndsAtUtc = null;
-        CancellationReadOnlyUntilUtc = null;
+        this.Status = TenantStatus.Active;
+        this.TrialEndsAtUtc = null;
+        this.CancellationReadOnlyUntilUtc = null;
     }
 
     public Result<Updated> Cancel(DateTimeOffset readOnlyUntilUtc)
@@ -87,8 +92,8 @@ public sealed class Tenant : AuditableEntity
             return TenantErrors.InvalidSubscriptionPeriod;
         }
 
-        Status = TenantStatus.Cancelled;
-        CancellationReadOnlyUntilUtc = readOnlyUntilUtc;
+        this.Status = TenantStatus.Cancelled;
+        this.CancellationReadOnlyUntilUtc = readOnlyUntilUtc;
 
         return Result.Updated;
     }

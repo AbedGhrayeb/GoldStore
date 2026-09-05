@@ -1,3 +1,7 @@
+// <copyright file="InvoiceNumberSequence.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 
 namespace Domain.Common;
@@ -25,9 +29,9 @@ public sealed class InvoiceNumberSequence : Entity, ITenantEntity
         int nextNumber)
         : base(id)
     {
-        DocumentType = documentType;
-        Period = period;
-        NextNumber = nextNumber;
+        this.DocumentType = documentType;
+        this.Period = period;
+        this.NextNumber = nextNumber;
     }
 
     public static InvoiceNumberSequence Create(
@@ -38,9 +42,9 @@ public sealed class InvoiceNumberSequence : Entity, ITenantEntity
 
     public int AllocateNext()
     {
-        int allocatedNumber = NextNumber;
-        NextNumber++;
-        Version++;
+        int allocatedNumber = this.NextNumber;
+        this.NextNumber++;
+        this.Version++;
         return allocatedNumber;
     }
 }

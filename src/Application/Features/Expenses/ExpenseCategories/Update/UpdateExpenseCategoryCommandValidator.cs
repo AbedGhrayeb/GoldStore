@@ -1,3 +1,7 @@
+// <copyright file="UpdateExpenseCategoryCommandValidator.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Features.Expenses.ExpenseCategories.Update;
 using FluentValidation;
 
@@ -7,7 +11,7 @@ internal sealed class UpdateExpenseCategoryCommandValidator : AbstractValidator<
 {
     public UpdateExpenseCategoryCommandValidator()
     {
-        RuleFor(x => x.Id).NotEmpty();
-        RuleFor(x => x.Name).NotEmpty().WithMessage("اسم التصنيف مطلوب").MaximumLength(200);
+        this.RuleFor(x => x.Id).NotEmpty();
+        this.RuleFor(x => x.Name).NotEmpty().WithMessage("اسم التصنيف مطلوب").MaximumLength(200);
     }
 }

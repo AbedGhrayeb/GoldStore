@@ -1,3 +1,7 @@
+// <copyright file="ApiIsolationTests.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -26,26 +30,26 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     private const string TenantAAdminPassword = "GoldStore@321!";
     private const string TenantBAdmin = "admin@second-store.goldstore.test";
 
-    private readonly MultiTenantWebApplicationFactory _factory;
+    private readonly MultiTenantWebApplicationFactory factory;
 
     public ApiIsolationTests(MultiTenantWebApplicationFactory factory)
     {
-        _factory = factory;
+        this.factory = factory;
     }
 
     [Fact]
     public async Task Categories_AndUsers_Lists_AreTenantScoped()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
-        HttpClient clientB = await _factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         JsonElement[] categoriesA = (await clientA.GetFromJsonAsync<JsonElement[]>("/api/v1/categories"))!;
-        Assert.Contains(categoriesA, c => c.GetProperty("id").GetString() == _factory.CategoryA.Id.ToString());
-        Assert.DoesNotContain(categoriesA, c => c.GetProperty("id").GetString() == _factory.CategoryB.Id.ToString());
+        Assert.Contains(categoriesA, c => c.GetProperty("id").GetString() == this.factory.CategoryA.Id.ToString());
+        Assert.DoesNotContain(categoriesA, c => c.GetProperty("id").GetString() == this.factory.CategoryB.Id.ToString());
 
         JsonElement[] categoriesB = (await clientB.GetFromJsonAsync<JsonElement[]>("/api/v1/categories"))!;
-        Assert.Contains(categoriesB, c => c.GetProperty("id").GetString() == _factory.CategoryB.Id.ToString());
-        Assert.DoesNotContain(categoriesB, c => c.GetProperty("id").GetString() == _factory.CategoryA.Id.ToString());
+        Assert.Contains(categoriesB, c => c.GetProperty("id").GetString() == this.factory.CategoryB.Id.ToString());
+        Assert.DoesNotContain(categoriesB, c => c.GetProperty("id").GetString() == this.factory.CategoryA.Id.ToString());
 
         JsonElement[] usersA = (await clientA.GetFromJsonAsync<JsonElement[]>("/api/v1/users"))!;
         Assert.All(usersA, u => Assert.DoesNotContain("second-store", u.GetProperty("email").GetString()));
@@ -57,8 +61,8 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task CrossTenantCategoryId_UpdateDeleteAndToggle_Return404()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
-        HttpClient clientB = await _factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         using var update = JsonContent.Create(new
         {
@@ -69,11 +73,11 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
         });
 
         HttpResponseMessage updateResponse = await clientA.PutAsync(
-            $"/api/v1/categories/{_factory.CategoryB.Id}", update);
+            $"/api/v1/categories/{this.factory.CategoryB.Id}", update);
         Assert.Equal(HttpStatusCode.NotFound, updateResponse.StatusCode);
 
         HttpResponseMessage toggleResponse = await clientA.PostAsync(
-            $"/api/v1/categories/{_factory.CategoryB.Id}/toggle-active", content: null);
+            $"/api/v1/categories/{this.factory.CategoryB.Id}/toggle-active", content: null);
         Assert.Equal(HttpStatusCode.NotFound, toggleResponse.StatusCode);
 
         // The DELETE write path exists on users (categories are deactivated, not deleted),
@@ -91,8 +95,8 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task WriteStamping_BogusTenantIdInBody_IsIgnored()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
-        HttpClient clientB = await _factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         using var payload = JsonContent.Create(new
         {
@@ -100,7 +104,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             description = "stamping probe",
             parentCategoryId = (Guid?)null,
             isActive = true,
-            tenantId = _factory.TenantBId.ToString(),
+            tenantId = this.factory.TenantBId.ToString(),
         });
 
         HttpResponseMessage create = await clientA.PostAsync("/api/v1/categories", payload);
@@ -110,7 +114,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
         JsonElement[] categoriesB = (await clientB.GetFromJsonAsync<JsonElement[]>("/api/v1/categories"))!;
         Assert.DoesNotContain(categoriesB, c => c.GetProperty("id").GetString() == categoryId);
 
-        using IServiceScope scope = _factory.Services.CreateScope();
+        using IServiceScope scope = this.factory.Services.CreateScope();
         ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         Guid actualTenantId = await db.Categories
             .IgnoreQueryFilters()
@@ -124,8 +128,8 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task CategoryName_IsUniqueWithinTenant_ButReusableAcrossTenants()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
-        HttpClient clientB = await _factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         using var createdInA = JsonContent.Create(new
         {
@@ -161,7 +165,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task FeatureGate_CatalogDisabled_Returns403()
     {
-        HttpClient client = await _factory.CreateJwtClientAsync(
+        HttpClient client = await this.factory.CreateJwtClientAsync(
             MultiTenantWebApplicationFactory.NoCatalogAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         HttpResponseMessage list = await client.GetAsync("/api/v1/categories");
@@ -181,7 +185,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task UsersMe_ReturnsOwnProfile()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
 
         JsonElement me = await clientA.GetFromJsonAsync<JsonElement>("/api/v1/users/me");
 
@@ -191,24 +195,24 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task Suppliers_Lists_AreTenantScoped()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
-        HttpClient clientB = await _factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         JsonElement[] suppliersA = (await clientA.GetFromJsonAsync<JsonElement[]>("/api/v1/suppliers"))!;
-        Assert.Contains(suppliersA, supplier => supplier.GetProperty("id").GetString() == _factory.SupplierA.Id.ToString());
-        Assert.DoesNotContain(suppliersA, supplier => supplier.GetProperty("id").GetString() == _factory.SupplierB.Id.ToString());
+        Assert.Contains(suppliersA, supplier => supplier.GetProperty("id").GetString() == this.factory.SupplierA.Id.ToString());
+        Assert.DoesNotContain(suppliersA, supplier => supplier.GetProperty("id").GetString() == this.factory.SupplierB.Id.ToString());
 
         JsonElement[] suppliersB = (await clientB.GetFromJsonAsync<JsonElement[]>("/api/v1/suppliers"))!;
-        Assert.Contains(suppliersB, supplier => supplier.GetProperty("id").GetString() == _factory.SupplierB.Id.ToString());
-        Assert.DoesNotContain(suppliersB, supplier => supplier.GetProperty("id").GetString() == _factory.SupplierA.Id.ToString());
+        Assert.Contains(suppliersB, supplier => supplier.GetProperty("id").GetString() == this.factory.SupplierB.Id.ToString());
+        Assert.DoesNotContain(suppliersB, supplier => supplier.GetProperty("id").GetString() == this.factory.SupplierA.Id.ToString());
     }
 
     [Fact]
     public async Task CrossTenantSupplierId_ReadUpdateAndToggle_Return404()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
 
-        HttpResponseMessage readResponse = await clientA.GetAsync($"/api/v1/suppliers/{_factory.SupplierB.Id}");
+        HttpResponseMessage readResponse = await clientA.GetAsync($"/api/v1/suppliers/{this.factory.SupplierB.Id}");
         Assert.Equal(HttpStatusCode.NotFound, readResponse.StatusCode);
 
         using var update = JsonContent.Create(new
@@ -221,23 +225,23 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             isActive = true,
         });
         HttpResponseMessage updateResponse = await clientA.PutAsync(
-            $"/api/v1/suppliers/{_factory.SupplierB.Id}", update);
+            $"/api/v1/suppliers/{this.factory.SupplierB.Id}", update);
         Assert.Equal(HttpStatusCode.NotFound, updateResponse.StatusCode);
 
         HttpResponseMessage toggleResponse = await clientA.PostAsync(
-            $"/api/v1/suppliers/{_factory.SupplierB.Id}/toggle-active", content: null);
+            $"/api/v1/suppliers/{this.factory.SupplierB.Id}/toggle-active", content: null);
         Assert.Equal(HttpStatusCode.NotFound, toggleResponse.StatusCode);
     }
 
     [Fact]
     public async Task SupplierDelivery_WriteStamping_IgnoresForgedTenantAndEquivalentWeight()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
         const string notes = "api-b2-delivery-stamping";
 
         using var payload = JsonContent.Create(new
         {
-            supplierId = _factory.SupplierA.Id,
+            supplierId = this.factory.SupplierA.Id,
             lines = new[]
             {
                 new
@@ -250,13 +254,13 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             manufacturingFeePerGram = 0M,
             manufacturingFeeCurrency = "JOD",
             notes,
-            tenantId = _factory.TenantBId,
+            tenantId = this.factory.TenantBId,
         });
 
         HttpResponseMessage response = await clientA.PostAsync("/api/v1/supplier-deliveries", payload);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        using IServiceScope scope = _factory.Services.CreateScope();
+        using IServiceScope scope = this.factory.Services.CreateScope();
         ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         SupplierDelivery delivery = await db.SupplierDeliveries
             .IgnoreQueryFilters()
@@ -272,8 +276,8 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task SupplierName_IsUniqueWithinTenant_ButReusableAcrossTenants()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
-        HttpClient clientB = await _factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
         const string supplierName = "API B2 Supplier";
 
         using JsonContent createdInA = CreateSupplierPayload(supplierName, "0793333333", "JO00APIA");
@@ -292,10 +296,10 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task SupplierFinancialTransaction_UppercaseCurrency_ReturnsPersistedId()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
         Guid accountId;
 
-        using (IServiceScope scope = _factory.Services.CreateScope())
+        using (IServiceScope scope = this.factory.Services.CreateScope())
         {
             ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             accountId = await db.FinancialAccounts
@@ -307,7 +311,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
 
         using var payload = JsonContent.Create(new
         {
-            supplierId = _factory.SupplierA.Id,
+            supplierId = this.factory.SupplierA.Id,
             direction = 1,
             amount = 125M,
             currency = "JOD",
@@ -330,11 +334,11 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task MalformedSupplierCollections_Return400()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
 
         using var nullLines = JsonContent.Create(new
         {
-            supplierId = _factory.SupplierA.Id,
+            supplierId = this.factory.SupplierA.Id,
             lines = (object?)null,
             manufacturingFeePerGram = 0M,
             manufacturingFeeCurrency = "JOD",
@@ -345,7 +349,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
 
         using var nullLineItem = JsonContent.Create(new
         {
-            supplierId = _factory.SupplierA.Id,
+            supplierId = this.factory.SupplierA.Id,
             lines = new object?[] { null },
             manufacturingFeePerGram = 0M,
             manufacturingFeeCurrency = "JOD",
@@ -356,7 +360,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
 
         using var nullTransactionLeg = JsonContent.Create(new
         {
-            supplierId = _factory.SupplierA.Id,
+            supplierId = this.factory.SupplierA.Id,
             direction = 1,
             amount = 1M,
             currency = "JOD",
@@ -371,7 +375,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
 
         using var nullManufacturingLeg = JsonContent.Create(new
         {
-            supplierId = _factory.SupplierA.Id,
+            supplierId = this.factory.SupplierA.Id,
             accountId = Guid.NewGuid(),
             amount = 1M,
             currency = "JOD",
@@ -386,7 +390,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task FeatureGates_AreIndependentAndCoverEverySupplierGroup()
     {
-        HttpClient noSuppliersClient = await _factory.CreateJwtClientAsync(
+        HttpClient noSuppliersClient = await this.factory.CreateJwtClientAsync(
             MultiTenantWebApplicationFactory.NoSuppliersAdmin,
             MultiTenantWebApplicationFactory.TestPassword);
 
@@ -410,7 +414,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
         HttpResponseMessage allowedInventory = await noSuppliersClient.GetAsync("/api/v1/inventory/gold-ledger");
         Assert.Equal(HttpStatusCode.OK, allowedInventory.StatusCode);
 
-        HttpClient noInventoryClient = await _factory.CreateJwtClientAsync(
+        HttpClient noInventoryClient = await this.factory.CreateJwtClientAsync(
             MultiTenantWebApplicationFactory.NoInventoryAdmin,
             MultiTenantWebApplicationFactory.TestPassword);
 
@@ -424,13 +428,13 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task CrossTenantSalesInvoiceId_ReadAndList_Return404OrExcludeInvoice()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
-        HttpClient clientB = await _factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         using JsonContent payload = CreateSalesInvoicePayload(
-            _factory.EmployeeB.Id,
-            _factory.FinancialAccountB.Id,
-            _factory.CategoryB.Id,
+            this.factory.EmployeeB.Id,
+            this.factory.FinancialAccountB.Id,
+            this.factory.CategoryB.Id,
             "api-b3-cross-tenant-sale",
             InitialTenant.Id);
         HttpResponseMessage create = await clientB.PostAsync("/api/v1/sales-invoices", payload);
@@ -452,22 +456,22 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task SalesAndPurchaseInvoices_StampCallerTenantAndWriteGoldLedger()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
-        HttpClient clientB = await _factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         using JsonContent salePayload = CreateSalesInvoicePayload(
-            _factory.EmployeeA.Id,
-            _factory.FinancialAccountA.Id,
-            _factory.CategoryA.Id,
+            this.factory.EmployeeA.Id,
+            this.factory.FinancialAccountA.Id,
+            this.factory.CategoryA.Id,
             "api-b3-sale-ledger",
-            _factory.TenantBId);
+            this.factory.TenantBId);
         HttpResponseMessage saleResponse = await clientA.PostAsync("/api/v1/sales-invoices", salePayload);
         Assert.Equal(HttpStatusCode.Created, saleResponse.StatusCode);
         Guid saleId = await saleResponse.Content.ReadFromJsonAsync<Guid>();
 
         using JsonContent purchasePayload = CreateCustomerPurchaseInvoicePayload(
-            _factory.EmployeeB.Id,
-            _factory.FinancialAccountB.Id,
+            this.factory.EmployeeB.Id,
+            this.factory.FinancialAccountB.Id,
             "api-b3-purchase-ledger",
             InitialTenant.Id);
         HttpResponseMessage purchaseResponse = await clientB.PostAsync(
@@ -475,7 +479,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
         Assert.Equal(HttpStatusCode.Created, purchaseResponse.StatusCode);
         Guid purchaseId = await purchaseResponse.Content.ReadFromJsonAsync<Guid>();
 
-        using IServiceScope scope = _factory.Services.CreateScope();
+        using IServiceScope scope = this.factory.Services.CreateScope();
         ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         Guid persistedSaleTenantId = await db.SalesInvoices
@@ -498,7 +502,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             .Where(invoice => invoice.Id == purchaseId)
             .Select(invoice => invoice.TenantId)
             .SingleAsync();
-        Assert.Equal(_factory.TenantBId, persistedPurchaseTenantId);
+        Assert.Equal(this.factory.TenantBId, persistedPurchaseTenantId);
 
         List<GoldLedgerEntry> purchaseEntries = await db.GoldLedgerEntries
             .IgnoreQueryFilters()
@@ -506,14 +510,14 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
                 && entry.ReferenceType == GoldReferenceType.CustomerGoldPurchase)
             .ToListAsync();
         GoldLedgerEntry purchaseEntry = Assert.Single(purchaseEntries);
-        Assert.Equal(_factory.TenantBId, purchaseEntry.TenantId);
+        Assert.Equal(this.factory.TenantBId, purchaseEntry.TenantId);
         Assert.Equal(GoldMovementType.Increase, purchaseEntry.MovementType);
     }
 
     [Fact]
     public async Task PartialPurchase_WithPaymentLeg_UsesValidatedTenantAccountForDebt()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
         const string sellerName = "API Partial Purchase Seller";
 
         using var payload = JsonContent.Create(new
@@ -523,20 +527,20 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             sellerIdNumber = "987654321",
             sellerYearOfBirth = 1991,
             sellerAddress = "Amman",
-            employeeId = _factory.EmployeeA.Id,
+            employeeId = this.factory.EmployeeA.Id,
             currency = "JOD",
             date = DateTime.UtcNow,
             totalAmount = 100M,
             amountPaid = 0M,
             paymentMethod = 1,
-            accountId = _factory.FinancialAccountB.Id,
+            accountId = this.factory.FinancialAccountB.Id,
             sellerAccountNumber = (string?)null,
             notes = "api-b3-partial-purchase",
             items = new[]
             {
                 new
                 {
-                    categoryId = (Guid?)_factory.CategoryA.Id,
+                    categoryId = (Guid?)this.factory.CategoryA.Id,
                     karat = 21,
                     weightInGrams = 1M,
                     pricePerGram = 100M,
@@ -546,27 +550,27 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             {
                 new
                 {
-                    accountId = _factory.FinancialAccountA.Id,
+                    accountId = this.factory.FinancialAccountA.Id,
                     currency = "JOD",
                     amount = 40M,
                     exchangeRate = 1M,
                 },
             },
-            tenantId = _factory.TenantBId,
+            tenantId = this.factory.TenantBId,
         });
 
         HttpResponseMessage response = await clientA.PostAsync("/api/v1/customer-purchases/invoices", payload);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Guid invoiceId = await response.Content.ReadFromJsonAsync<Guid>();
 
-        using IServiceScope scope = _factory.Services.CreateScope();
+        using IServiceScope scope = this.factory.Services.CreateScope();
         ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         Debt debt = await db.Debts
             .IgnoreQueryFilters()
             .SingleAsync(item => item.Name == sellerName);
 
         Assert.Equal(InitialTenant.Id, debt.TenantId);
-        Assert.Equal(_factory.FinancialAccountA.Id, debt.AccountId);
+        Assert.Equal(this.factory.FinancialAccountA.Id, debt.AccountId);
 
         DebtLedgerEntry debtEntry = await db.DebtLedgerEntries
             .IgnoreQueryFilters()
@@ -582,18 +586,18 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task InvoiceNumbers_AreScopedIndependentlyPerTenantAndModule()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
-        HttpClient clientB = await _factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         string salesNumberA = (await clientA.GetFromJsonAsync<string>("/api/v1/sales-invoices/next-number"))!;
         string salesNumberB = (await clientB.GetFromJsonAsync<string>("/api/v1/sales-invoices/next-number"))!;
 
         using (JsonContent payload = CreateSalesInvoicePayload(
-            _factory.EmployeeA.Id,
-            _factory.FinancialAccountA.Id,
-            _factory.CategoryA.Id,
+            this.factory.EmployeeA.Id,
+            this.factory.FinancialAccountA.Id,
+            this.factory.CategoryA.Id,
             "api-b3-number-scope-sale",
-            _factory.TenantBId))
+            this.factory.TenantBId))
         {
             HttpResponseMessage create = await clientA.PostAsync("/api/v1/sales-invoices", payload);
             Assert.Equal(HttpStatusCode.Created, create.StatusCode);
@@ -610,10 +614,10 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             "/api/v1/customer-purchases/invoices/next-number"))!;
 
         using (JsonContent payload = CreateCustomerPurchaseInvoicePayload(
-            _factory.EmployeeA.Id,
-            _factory.FinancialAccountA.Id,
+            this.factory.EmployeeA.Id,
+            this.factory.FinancialAccountA.Id,
             "api-b3-number-scope-purchase",
-            _factory.TenantBId))
+            this.factory.TenantBId))
         {
             HttpResponseMessage create = await clientA.PostAsync("/api/v1/customer-purchases/invoices", payload);
             Assert.Equal(HttpStatusCode.Created, create.StatusCode);
@@ -630,20 +634,20 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task ConcurrentInvoiceCreates_AllocateUniqueNumbers()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
 
         using JsonContent firstSalePayload = CreateSalesInvoicePayload(
-            _factory.EmployeeA.Id,
-            _factory.FinancialAccountA.Id,
-            _factory.CategoryA.Id,
+            this.factory.EmployeeA.Id,
+            this.factory.FinancialAccountA.Id,
+            this.factory.CategoryA.Id,
             "api-b3-concurrent-sale-1",
-            _factory.TenantBId);
+            this.factory.TenantBId);
         using JsonContent secondSalePayload = CreateSalesInvoicePayload(
-            _factory.EmployeeA.Id,
-            _factory.FinancialAccountA.Id,
-            _factory.CategoryA.Id,
+            this.factory.EmployeeA.Id,
+            this.factory.FinancialAccountA.Id,
+            this.factory.CategoryA.Id,
             "api-b3-concurrent-sale-2",
-            _factory.TenantBId);
+            this.factory.TenantBId);
 
         HttpResponseMessage[] saleResponses = await Task.WhenAll(
             clientA.PostAsync("/api/v1/sales-invoices", firstSalePayload),
@@ -654,15 +658,15 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             response => response.Content.ReadFromJsonAsync<Guid>()));
 
         using JsonContent firstPurchasePayload = CreateCustomerPurchaseInvoicePayload(
-            _factory.EmployeeA.Id,
-            _factory.FinancialAccountA.Id,
+            this.factory.EmployeeA.Id,
+            this.factory.FinancialAccountA.Id,
             "api-b3-concurrent-purchase-1",
-            _factory.TenantBId);
+            this.factory.TenantBId);
         using JsonContent secondPurchasePayload = CreateCustomerPurchaseInvoicePayload(
-            _factory.EmployeeA.Id,
-            _factory.FinancialAccountA.Id,
+            this.factory.EmployeeA.Id,
+            this.factory.FinancialAccountA.Id,
             "api-b3-concurrent-purchase-2",
-            _factory.TenantBId);
+            this.factory.TenantBId);
 
         HttpResponseMessage[] purchaseResponses = await Task.WhenAll(
             clientA.PostAsync("/api/v1/customer-purchases/invoices", firstPurchasePayload),
@@ -672,7 +676,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
         Guid[] purchaseIds = await Task.WhenAll(purchaseResponses.Select(
             response => response.Content.ReadFromJsonAsync<Guid>()));
 
-        using IServiceScope scope = _factory.Services.CreateScope();
+        using IServiceScope scope = this.factory.Services.CreateScope();
         ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         List<string> saleNumbers = await db.SalesInvoices
             .IgnoreQueryFilters()
@@ -692,7 +696,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task MalformedInvoiceCollections_Return400()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
 
         using var nullSalesItems = JsonContent.Create(new
         {
@@ -703,8 +707,8 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             totalAmount = 100M,
             amountPaid = 100M,
             paymentMethod = 1,
-            accountId = _factory.FinancialAccountA.Id,
-            employeeId = _factory.EmployeeA.Id,
+            accountId = this.factory.FinancialAccountA.Id,
+            employeeId = this.factory.EmployeeA.Id,
         });
         HttpResponseMessage nullSalesItemsResponse = await clientA.PostAsync(
             "/api/v1/sales-invoices", nullSalesItems);
@@ -719,8 +723,8 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             totalAmount = 100M,
             amountPaid = 100M,
             paymentMethod = 1,
-            accountId = _factory.FinancialAccountA.Id,
-            employeeId = _factory.EmployeeA.Id,
+            accountId = this.factory.FinancialAccountA.Id,
+            employeeId = this.factory.EmployeeA.Id,
         });
         HttpResponseMessage nullSalesItemResponse = await clientA.PostAsync(
             "/api/v1/sales-invoices", nullSalesItem);
@@ -735,8 +739,8 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             totalAmount = 100M,
             amountPaid = 100M,
             paymentMethod = 1,
-            accountId = _factory.FinancialAccountA.Id,
-            employeeId = _factory.EmployeeA.Id,
+            accountId = this.factory.FinancialAccountA.Id,
+            employeeId = this.factory.EmployeeA.Id,
             paymentLegs = new object?[] { null },
         });
         HttpResponseMessage nullSalesLegResponse = await clientA.PostAsync(
@@ -747,13 +751,13 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
         {
             sellerName = "Invalid Purchase",
             sellerIdNumber = "123456789",
-            employeeId = _factory.EmployeeA.Id,
+            employeeId = this.factory.EmployeeA.Id,
             currency = "JOD",
             date = DateTime.UtcNow,
             totalAmount = 100M,
             amountPaid = 100M,
             paymentMethod = 1,
-            accountId = _factory.FinancialAccountA.Id,
+            accountId = this.factory.FinancialAccountA.Id,
             items = (object?)null,
         });
         HttpResponseMessage nullPurchaseItemsResponse = await clientA.PostAsync(
@@ -764,13 +768,13 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
         {
             sellerName = "Invalid Purchase",
             sellerIdNumber = "123456789",
-            employeeId = _factory.EmployeeA.Id,
+            employeeId = this.factory.EmployeeA.Id,
             currency = "JOD",
             date = DateTime.UtcNow,
             totalAmount = 100M,
             amountPaid = 100M,
             paymentMethod = 1,
-            accountId = _factory.FinancialAccountA.Id,
+            accountId = this.factory.FinancialAccountA.Id,
             items = new object?[] { null },
         });
         HttpResponseMessage nullPurchaseItemResponse = await clientA.PostAsync(
@@ -781,13 +785,13 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
         {
             sellerName = "Invalid Purchase",
             sellerIdNumber = "123456789",
-            employeeId = _factory.EmployeeA.Id,
+            employeeId = this.factory.EmployeeA.Id,
             currency = "JOD",
             date = DateTime.UtcNow,
             totalAmount = 100M,
             amountPaid = 100M,
             paymentMethod = 1,
-            accountId = _factory.FinancialAccountA.Id,
+            accountId = this.factory.FinancialAccountA.Id,
             items = new[] { new { categoryId = (Guid?)null, karat = 21, weightInGrams = 1M, pricePerGram = 100M } },
             paymentLegs = new object?[] { null },
         });
@@ -799,7 +803,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task SalesAndPurchasesFeatureGates_AreIndependent()
     {
-        HttpClient noSalesClient = await _factory.CreateJwtClientAsync(
+        HttpClient noSalesClient = await this.factory.CreateJwtClientAsync(
             MultiTenantWebApplicationFactory.NoSalesAdmin,
             MultiTenantWebApplicationFactory.TestPassword);
 
@@ -817,7 +821,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             "/api/v1/customer-purchases/invoices/next-number");
         Assert.Equal(HttpStatusCode.OK, allowedPurchases.StatusCode);
 
-        HttpClient noPurchasesClient = await _factory.CreateJwtClientAsync(
+        HttpClient noPurchasesClient = await this.factory.CreateJwtClientAsync(
             MultiTenantWebApplicationFactory.NoPurchasesAdmin,
             MultiTenantWebApplicationFactory.TestPassword);
 
@@ -836,8 +840,8 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task FinanceAccountBalances_AreTenantScoped()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
-        HttpClient clientB = await _factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         using var accountARequest = JsonContent.Create(new
         {
@@ -846,7 +850,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             accountNumber = "API-B4-A",
             notes = "tenant A balance probe",
             openingBalance = 1111M,
-            tenantId = _factory.TenantBId,
+            tenantId = this.factory.TenantBId,
         });
         HttpResponseMessage accountAResponse = await clientA.PostAsync(
             "/api/v1/finance/accounts", accountARequest);
@@ -888,11 +892,11 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task CrossTenantAccountDebtAndEmployeeIds_Return404()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
-        HttpClient clientB = await _factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         HttpResponseMessage accountRead = await clientA.GetAsync(
-            $"/api/v1/finance/accounts/{_factory.FinancialAccountB.Id}/balance");
+            $"/api/v1/finance/accounts/{this.factory.FinancialAccountB.Id}/balance");
         Assert.Equal(HttpStatusCode.NotFound, accountRead.StatusCode);
 
         using var setBalance = JsonContent.Create(new
@@ -901,7 +905,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             notes = "cross-tenant balance attack",
         });
         HttpResponseMessage accountUpdate = await clientA.PutAsync(
-            $"/api/v1/finance/accounts/{_factory.FinancialAccountB.Id}/balance", setBalance);
+            $"/api/v1/finance/accounts/{this.factory.FinancialAccountB.Id}/balance", setBalance);
         Assert.Equal(HttpStatusCode.NotFound, accountUpdate.StatusCode);
 
         using var createDebt = JsonContent.Create(new
@@ -910,7 +914,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             phone = "0791234567",
             direction = 2,
             currency = "JOD",
-            accountId = _factory.FinancialAccountB.Id,
+            accountId = this.factory.FinancialAccountB.Id,
             amount = 250M,
             notes = "cross-tenant debt probe",
             date = DateTime.UtcNow,
@@ -940,7 +944,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
 
         using var payDebt = JsonContent.Create(new
         {
-            accountId = _factory.FinancialAccountA.Id,
+            accountId = this.factory.FinancialAccountA.Id,
             amount = 1M,
             date = DateTime.UtcNow,
             notes = "cross-tenant debt payment attack",
@@ -950,7 +954,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
         Assert.Equal(HttpStatusCode.NotFound, debtPayment.StatusCode);
 
         HttpResponseMessage employeeRead = await clientA.GetAsync(
-            $"/api/v1/employees/{_factory.EmployeeB.Id}");
+            $"/api/v1/employees/{this.factory.EmployeeB.Id}");
         Assert.Equal(HttpStatusCode.NotFound, employeeRead.StatusCode);
 
         using var updateEmployee = JsonContent.Create(new
@@ -964,31 +968,31 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             isActive = true,
         });
         HttpResponseMessage employeeUpdate = await clientA.PutAsync(
-            $"/api/v1/employees/{_factory.EmployeeB.Id}", updateEmployee);
+            $"/api/v1/employees/{this.factory.EmployeeB.Id}", updateEmployee);
         Assert.Equal(HttpStatusCode.NotFound, employeeUpdate.StatusCode);
 
         HttpResponseMessage employeeToggle = await clientA.PostAsync(
-            $"/api/v1/employees/{_factory.EmployeeB.Id}/toggle-active", content: null);
+            $"/api/v1/employees/{this.factory.EmployeeB.Id}/toggle-active", content: null);
         Assert.Equal(HttpStatusCode.NotFound, employeeToggle.StatusCode);
 
         using var paySalary = JsonContent.Create(new
         {
-            accountId = _factory.FinancialAccountA.Id,
+            accountId = this.factory.FinancialAccountA.Id,
             amount = 1M,
             paymentDate = DateOnly.FromDateTime(DateTime.UtcNow),
             notes = "cross-tenant salary attack",
         });
         HttpResponseMessage salaryPayment = await clientA.PostAsync(
-            $"/api/v1/employees/{_factory.EmployeeB.Id}/pay-salary", paySalary);
+            $"/api/v1/employees/{this.factory.EmployeeB.Id}/pay-salary", paySalary);
         Assert.Equal(HttpStatusCode.NotFound, salaryPayment.StatusCode);
     }
 
     [Fact]
     public async Task ExpensesAndHrWorkflow_UsesTenantLedgersAndSubresources()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
         JsonElement startingBalance = await clientA.GetFromJsonAsync<JsonElement>(
-            $"/api/v1/finance/accounts/{_factory.FinancialAccountA.Id}/balance");
+            $"/api/v1/finance/accounts/{this.factory.FinancialAccountA.Id}/balance");
         decimal balanceBeforeExpense = startingBalance.GetProperty("currentBalance").GetDecimal();
 
         using var createCategory = JsonContent.Create(new { name = "API B4 Operations" });
@@ -1015,7 +1019,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             categoryId,
             description = "API B4 expense",
             amount = 10M,
-            accountId = _factory.FinancialAccountA.Id,
+            accountId = this.factory.FinancialAccountA.Id,
         });
         HttpResponseMessage expenseCreateResponse = await clientA.PostAsync(
             "/api/v1/expenses", createExpense);
@@ -1028,7 +1032,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             categoryId,
             description = "API B4 expense updated",
             amount = 12M,
-            accountId = _factory.FinancialAccountA.Id,
+            accountId = this.factory.FinancialAccountA.Id,
         });
         HttpResponseMessage expenseUpdateResponse = await clientA.PutAsync(
             $"/api/v1/expenses/{expenseId}", updateExpense);
@@ -1042,7 +1046,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
                 && expense.GetProperty("amount").GetDecimal() == 12M);
 
         JsonElement balanceAfterUpdate = await clientA.GetFromJsonAsync<JsonElement>(
-            $"/api/v1/finance/accounts/{_factory.FinancialAccountA.Id}/balance");
+            $"/api/v1/finance/accounts/{this.factory.FinancialAccountA.Id}/balance");
         Assert.Equal(
             balanceBeforeExpense - 12M,
             balanceAfterUpdate.GetProperty("currentBalance").GetDecimal());
@@ -1061,7 +1065,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
         Assert.Equal(HttpStatusCode.OK, expenseDeleteResponse.StatusCode);
 
         JsonElement balanceAfterDelete = await clientA.GetFromJsonAsync<JsonElement>(
-            $"/api/v1/finance/accounts/{_factory.FinancialAccountA.Id}/balance");
+            $"/api/v1/finance/accounts/{this.factory.FinancialAccountA.Id}/balance");
         Assert.Equal(
             balanceBeforeExpense,
             balanceAfterDelete.GetProperty("currentBalance").GetDecimal());
@@ -1112,7 +1116,7 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
 
         using var paySalary = JsonContent.Create(new
         {
-            accountId = _factory.FinancialAccountA.Id,
+            accountId = this.factory.FinancialAccountA.Id,
             amount = 1M,
             paymentDate = today,
             notes = "API B4 salary payment",
@@ -1130,7 +1134,8 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
 
         JsonElement[] employees = (await clientA.GetFromJsonAsync<JsonElement[]>("/api/v1/employees"))!;
         Assert.Contains(employees, item => item.GetProperty("id").GetGuid() == employeeId);
-        Assert.Equal(HttpStatusCode.OK,
+        Assert.Equal(
+            HttpStatusCode.OK,
             (await clientA.GetAsync("/api/v1/employees/unlinked-users")).StatusCode);
 
         HttpResponseMessage toggleEmployeeResponse = await clientA.PostAsync(
@@ -1141,51 +1146,63 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task FinanceExpensesAndHrFeatureGates_AreIndependent()
     {
-        HttpClient noFinanceClient = await _factory.CreateJwtClientAsync(
+        HttpClient noFinanceClient = await this.factory.CreateJwtClientAsync(
             MultiTenantWebApplicationFactory.NoFinanceAdmin,
             MultiTenantWebApplicationFactory.TestPassword);
 
-        Assert.Equal(HttpStatusCode.Forbidden,
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
             (await noFinanceClient.GetAsync("/api/v1/finance/accounts")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden,
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
             (await noFinanceClient.GetAsync("/api/v1/finance/debts")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden,
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
             (await noFinanceClient.GetAsync("/api/v1/finance/transactions")).StatusCode);
-        Assert.Equal(HttpStatusCode.OK,
+        Assert.Equal(
+            HttpStatusCode.OK,
             (await noFinanceClient.GetAsync("/api/v1/expenses/categories")).StatusCode);
-        Assert.Equal(HttpStatusCode.OK,
+        Assert.Equal(
+            HttpStatusCode.OK,
             (await noFinanceClient.GetAsync("/api/v1/employees")).StatusCode);
 
-        HttpClient noExpensesClient = await _factory.CreateJwtClientAsync(
+        HttpClient noExpensesClient = await this.factory.CreateJwtClientAsync(
             MultiTenantWebApplicationFactory.NoExpensesAdmin,
             MultiTenantWebApplicationFactory.TestPassword);
 
-        Assert.Equal(HttpStatusCode.Forbidden,
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
             (await noExpensesClient.GetAsync("/api/v1/expenses")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden,
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
             (await noExpensesClient.GetAsync("/api/v1/expenses/categories")).StatusCode);
-        Assert.Equal(HttpStatusCode.OK,
+        Assert.Equal(
+            HttpStatusCode.OK,
             (await noExpensesClient.GetAsync("/api/v1/finance/accounts")).StatusCode);
 
-        HttpClient noHrClient = await _factory.CreateJwtClientAsync(
+        HttpClient noHrClient = await this.factory.CreateJwtClientAsync(
             MultiTenantWebApplicationFactory.NoHrAdmin,
             MultiTenantWebApplicationFactory.TestPassword);
 
-        Assert.Equal(HttpStatusCode.Forbidden,
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
             (await noHrClient.GetAsync("/api/v1/employees")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden,
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
             (await noHrClient.GetAsync("/api/v1/employees/salary-payments")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden,
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
             (await noHrClient.GetAsync("/api/v1/employees/unlinked-users")).StatusCode);
-        Assert.Equal(HttpStatusCode.OK,
+        Assert.Equal(
+            HttpStatusCode.OK,
             (await noHrClient.GetAsync("/api/v1/finance/accounts")).StatusCode);
     }
 
     [Fact]
     public async Task StoreOperationsKpis_AreTenantScoped()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
-        HttpClient clientB = await _factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         decimal jodSalesBeforeA = await GetTodayJodSalesTotalAsync(clientA);
         decimal jodSalesBeforeB = await GetTodayJodSalesTotalAsync(clientB);
@@ -1193,20 +1210,20 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
         // Deliberately similar data — identical 100 JOD sales in both tenants; each
         // tenant's KPI must reflect only its own increment.
         using (JsonContent saleInA = CreateSalesInvoicePayload(
-            _factory.EmployeeA.Id,
-            _factory.FinancialAccountA.Id,
-            _factory.CategoryA.Id,
+            this.factory.EmployeeA.Id,
+            this.factory.FinancialAccountA.Id,
+            this.factory.CategoryA.Id,
             "api-b5-kpi-scoping-a",
-            _factory.TenantBId))
+            this.factory.TenantBId))
         {
             HttpResponseMessage create = await clientA.PostAsync("/api/v1/sales-invoices", saleInA);
             Assert.Equal(HttpStatusCode.Created, create.StatusCode);
         }
 
         using (JsonContent saleInB = CreateSalesInvoicePayload(
-            _factory.EmployeeB.Id,
-            _factory.FinancialAccountB.Id,
-            _factory.CategoryB.Id,
+            this.factory.EmployeeB.Id,
+            this.factory.FinancialAccountB.Id,
+            this.factory.CategoryB.Id,
             "api-b5-kpi-scoping-b",
             InitialTenant.Id))
         {
@@ -1221,13 +1238,13 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
     [Fact]
     public async Task StoreOperationDetailAndList_AreTenantScoped()
     {
-        HttpClient clientA = await _factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
-        HttpClient clientB = await _factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
         using JsonContent payload = CreateSalesInvoicePayload(
-            _factory.EmployeeB.Id,
-            _factory.FinancialAccountB.Id,
-            _factory.CategoryB.Id,
+            this.factory.EmployeeB.Id,
+            this.factory.FinancialAccountB.Id,
+            this.factory.CategoryB.Id,
             "api-b5-detail-attack",
             InitialTenant.Id);
         HttpResponseMessage create = await clientB.PostAsync("/api/v1/sales-invoices", payload);

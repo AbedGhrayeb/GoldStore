@@ -1,3 +1,7 @@
+// <copyright file="SupplierManufacturingPayment.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Common;
 using Domain.Finance;
 using Domain.Suppliers;
@@ -20,18 +24,23 @@ public sealed class SupplierManufacturingPayment : AuditableEntity, ITenantEntit
     public string? Notes { get; private set; }
 
     public Supplier Supplier { get; set; }
+
     public FinancialAccount Account { get; set; }
+
     private SupplierManufacturingPayment()
     {
     }
-    private SupplierManufacturingPayment(Guid id, Guid supplierId, Guid accountId, decimal amount, Currency currency, string? notes) : base(id)
+
+    private SupplierManufacturingPayment(Guid id, Guid supplierId, Guid accountId, decimal amount, Currency currency, string? notes)
+        : base(id)
     {
-        SupplierId = supplierId;
-        AccountId = accountId;
-        Amount = amount;
-        Currency = currency;
-        Notes = notes;
+        this.SupplierId = supplierId;
+        this.AccountId = accountId;
+        this.Amount = amount;
+        this.Currency = currency;
+        this.Notes = notes;
     }
+
     public static SupplierManufacturingPayment Create(Guid supplierId, Guid accountId, decimal amount, Currency currency, string? notes)
     {
         return new SupplierManufacturingPayment(Guid.CreateVersion7(), supplierId, accountId, amount, currency, notes);

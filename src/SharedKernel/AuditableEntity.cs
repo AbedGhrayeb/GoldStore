@@ -1,9 +1,20 @@
-﻿namespace SharedKernel;
+﻿// <copyright file="AuditableEntity.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+namespace SharedKernel;
 
 public abstract class AuditableEntity : Entity
 {
-    protected AuditableEntity() { }
-    protected AuditableEntity(Guid id) : base(id) { }
+    protected AuditableEntity()
+    {
+    }
+
+    protected AuditableEntity(Guid id)
+        : base(id)
+    {
+    }
+
     public DateTimeOffset? CreatedAtUtc { get; set; }
 
     public Guid? CreatedBy { get; set; }

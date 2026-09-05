@@ -1,3 +1,7 @@
+// <copyright file="FinancialTransaction.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Common;
 using SharedKernel;
 using SharedKernel.Result;
@@ -25,24 +29,27 @@ public sealed class FinancialTransaction : AuditableEntity, ITenantEntity
     public Guid? ReferenceId { get; private set; }
 
     public string? Notes { get; private set; }
+
     // Navigation property
     public FinancialAccount FinancialAccount { get; set; }
 
     private FinancialTransaction()
     {
+    }
 
-    }
     private FinancialTransaction(Guid id, Guid accountId, Currency currency, decimal amount, FinancialTransactionType transactionType,
-        FinancialReferenceType referenceType, Guid? referenceId, string? notes) : base(id)
+        FinancialReferenceType referenceType, Guid? referenceId, string? notes)
+        : base(id)
     {
-        AccountId = accountId;
-        Currency = currency;
-        Amount = amount;
-        TransactionType = transactionType;
-        ReferenceType = referenceType;
-        ReferenceId = referenceId;
-        Notes = notes;
+        this.AccountId = accountId;
+        this.Currency = currency;
+        this.Amount = amount;
+        this.TransactionType = transactionType;
+        this.ReferenceType = referenceType;
+        this.ReferenceId = referenceId;
+        this.Notes = notes;
     }
+
     public static Result<FinancialTransaction> Create(Guid accountId, Currency currency, decimal amount, FinancialTransactionType transactionType,
         FinancialReferenceType referenceType, Guid? referenceId, string? notes)
     {
@@ -50,14 +57,17 @@ public sealed class FinancialTransaction : AuditableEntity, ITenantEntity
         {
             return FinancialAccountErrors.AccountIdRequired;
         }
+
         if (amount <= 0)
         {
             return FinancialAccountErrors.InvalidTargetBalance;
         }
+
         if (referenceId == Guid.Empty)
         {
             return FinancialAccountErrors.ReferenceId;
         }
+
         return new FinancialTransaction(Guid.CreateVersion7(), accountId, currency, amount, transactionType, referenceType, referenceId, notes);
     }
 
@@ -68,26 +78,29 @@ public sealed class FinancialTransaction : AuditableEntity, ITenantEntity
         {
             return FinancialAccountErrors.NotFound(id);
         }
+
         if (accountId == Guid.Empty)
         {
             return FinancialAccountErrors.AccountIdRequired;
         }
+
         if (amount <= 0)
         {
             return FinancialAccountErrors.InvalidTargetBalance;
         }
+
         if (referenceId == Guid.Empty)
         {
             return FinancialAccountErrors.ReferenceId;
         }
 
-        AccountId = accountId;
-        Currency = currency;
-        Amount = amount;
-        TransactionType = transactionType;
-        ReferenceType = referenceType;
-        ReferenceId = referenceId;
-        Notes = notes;
+        this.AccountId = accountId;
+        this.Currency = currency;
+        this.Amount = amount;
+        this.TransactionType = transactionType;
+        this.ReferenceType = referenceType;
+        this.ReferenceId = referenceId;
+        this.Notes = notes;
         return Result.Updated;
     }
 }

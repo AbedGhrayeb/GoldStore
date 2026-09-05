@@ -1,3 +1,7 @@
+// <copyright file="CreateEmployeeCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -39,7 +43,7 @@ internal sealed class CreateEmployeeCommandHandler(
             }
             else
             {
-                Result<Guid> createUserResult = await CreateUserAsync(command, cancellationToken);
+                Result<Guid> createUserResult = await this.CreateUserAsync(command, cancellationToken);
                 if (createUserResult.IsError)
                 {
                     return createUserResult.Errors;

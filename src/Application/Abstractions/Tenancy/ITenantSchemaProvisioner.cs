@@ -1,3 +1,7 @@
+// <copyright file="ITenantSchemaProvisioner.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Application.Abstractions.Tenancy;
 
 /// <summary>
@@ -8,5 +12,6 @@ public interface ITenantSchemaProvisioner
 {
     /// <param name="schemaName">Validated tenant schema name (e.g. t_demo).</param>
     /// <param name="connectionString">Dedicated database (escape hatch), or null for the shared database.</param>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
     Task ProvisionAsync(string schemaName, string? connectionString, CancellationToken cancellationToken = default);
 }

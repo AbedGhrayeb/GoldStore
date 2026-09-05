@@ -1,3 +1,7 @@
+// <copyright file="CreateSupplierFinancialPaymentCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Ledger;
@@ -18,18 +22,21 @@ internal sealed class CreateSupplierFinancialPaymentCommandHandler(
             .FirstOrDefaultAsync(t => t.Id == command.TransactionId, cancellationToken);
 
         if (transaction is null)
-        { return SupplierFinancialErrors.NotFound(command.TransactionId); }
+        {
+            return SupplierFinancialErrors.NotFound(command.TransactionId);
+        }
 
         FinancialTransactionType financialTransactionType = transaction.Direction switch
         {
             SupplierFinancialTransactionDirection.FromSupplier => FinancialTransactionType.Outflow,
             SupplierFinancialTransactionDirection.ToSupplier => FinancialTransactionType.Inflow,
-            _ => FinancialTransactionType.Outflow
+            _ => FinancialTransactionType.Outflow,
         };
 
         decimal outstandingBalance = await context.SupplierFinancialLedgerEntries
             .Where(e => e.SupplierFinancialTransactionId == command.TransactionId)
-            .SumAsync(e => e.MovementType == SupplierBalanceMovementType.Increase
+            .SumAsync(
+                e => e.MovementType == SupplierBalanceMovementType.Increase
                 ? e.Amount
                 : -e.Amount, cancellationToken);
 
@@ -51,27 +58,39 @@ internal sealed class CreateSupplierFinancialPaymentCommandHandler(
             accountId = paymentResult.Value.PrimaryAccountId;
 
             if (amount > outstandingBalance)
-            { return SupplierFinancialErrors.PaymentExceedsBalance(amount, outstandingBalance); }
+            {
+                return SupplierFinancialErrors.PaymentExceedsBalance(amount, outstandingBalance);
+            }
         }
         else
         {
             if (command.Amount <= 0)
-            { return SupplierFinancialErrors.PaymentAmountMustBePositive; }
+            {
+                return SupplierFinancialErrors.PaymentAmountMustBePositive;
+            }
 
             if (command.Amount > outstandingBalance)
-            { return SupplierFinancialErrors.PaymentExceedsBalance(command.Amount, outstandingBalance); }
+            {
+                return SupplierFinancialErrors.PaymentExceedsBalance(command.Amount, outstandingBalance);
+            }
 
             FinancialAccount? account = await context.FinancialAccounts
                 .FirstOrDefaultAsync(a => a.Id == command.AccountId, cancellationToken);
 
             if (account is null)
-            { return SupplierFinancialErrors.AccountNotFound(command.AccountId); }
+            {
+                return SupplierFinancialErrors.AccountNotFound(command.AccountId);
+            }
 
             if (!account.IsActive)
-            { return SupplierFinancialErrors.AccountNotActive; }
+            {
+                return SupplierFinancialErrors.AccountNotActive;
+            }
 
             if (account.Currency != transaction.Currency)
-            { return SupplierFinancialErrors.AccountCurrencyMismatch; }
+            {
+                return SupplierFinancialErrors.AccountCurrencyMismatch;
+            }
 
             amount = command.Amount;
             accountId = command.AccountId;
@@ -83,6 +102,7 @@ internal sealed class CreateSupplierFinancialPaymentCommandHandler(
         {
             return paymentResultValue.Errors;
         }
+
         context.SupplierFinancialPayments.Add(paymentResultValue.Value);
 
         var supplierFinancialLedgerEntry = SupplierFinancialLedgerEntry.Create(command.TransactionId, amount,
@@ -114,6 +134,7 @@ internal sealed class CreateSupplierFinancialPaymentCommandHandler(
             {
                 return financialTransaction.Errors;
             }
+
             context.FinancialTransactions.Add(financialTransaction.Value);
         }
 

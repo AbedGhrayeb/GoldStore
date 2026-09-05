@@ -1,3 +1,7 @@
+// <copyright file="GoldLedgerEntryConfiguration.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Inventory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -21,7 +25,6 @@ internal sealed class GoldLedgerEntryConfiguration : IEntityTypeConfiguration<Go
         builder.Property(entry => entry.ReferenceType).HasConversion<string>().HasMaxLength(50);
 
         builder.Property(entry => entry.Notes).HasMaxLength(1000);
-
 
         builder.HasIndex(entry => new { entry.TenantId, entry.Karat, entry.CreatedAtUtc });
 

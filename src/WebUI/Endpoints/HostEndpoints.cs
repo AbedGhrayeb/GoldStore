@@ -1,4 +1,8 @@
-﻿using Application.Abstractions.Authentication;
+﻿// <copyright file="HostEndpoints.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Phone;
@@ -201,6 +205,7 @@ public sealed class HostEndpoints : IEndpoint
 
         PlatformAccessTokenResponse accessToken = await tokenProvider.CreateAccessTokenAsync(result.Value, cancellationToken);
         cookieManager.SetHostToken(context, accessToken);
+
         // Antiforgery tokens are tied to the current user identity. The login request itself is
         // anonymous, so we must project the just-authenticated host identity into HttpContext.User
         // before generating tokens; otherwise the token's embedded username (empty) will mismatch
@@ -219,6 +224,7 @@ public sealed class HostEndpoints : IEndpoint
             ], "Host");
             context.User = new System.Security.Claims.ClaimsPrincipal(hostIdentity);
         }
+
         AntiforgeryTokenSet tokens = antiforgery.GetAndStoreTokens(context);
         context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions
         {
@@ -226,7 +232,7 @@ public sealed class HostEndpoints : IEndpoint
             SameSite = SameSiteMode.Strict,
             Secure = context.Request.IsHttps,
             IsEssential = true,
-            Path = "/"
+            Path = "/",
         });
 
         return TypedResults.Ok(new { message = "Signed in" });
@@ -457,13 +463,15 @@ public sealed class HostEndpoints : IEndpoint
         PlatformUser? pu = await dbContext.PlatformUsers.AsNoTracking().SingleOrDefaultAsync(u => u.Id == result.Value, cancellationToken);
         if (pu is not null)
         {
-            var id = new System.Security.Claims.ClaimsIdentity([
+            var id = new System.Security.Claims.ClaimsIdentity(
+                [
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, $"{pu.FirstName} {pu.LastName}".Trim()),
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, pu.Id.ToString()),
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, pu.Email),
             ], "Host");
             context.User = new System.Security.Claims.ClaimsPrincipal(id);
         }
+
         AntiforgeryTokenSet tokens = antiforgery.GetAndStoreTokens(context);
         context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions { HttpOnly = false, SameSite = SameSiteMode.Strict, Secure = context.Request.IsHttps, IsEssential = true, Path = "/" });
         return TypedResults.Ok(new { message = "Signed in" });
@@ -491,13 +499,15 @@ public sealed class HostEndpoints : IEndpoint
         PlatformUser? pu = await dbContext.PlatformUsers.AsNoTracking().SingleOrDefaultAsync(u => u.Id == result.Value, cancellationToken);
         if (pu is not null)
         {
-            var id = new System.Security.Claims.ClaimsIdentity([
+            var id = new System.Security.Claims.ClaimsIdentity(
+                [
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, $"{pu.FirstName} {pu.LastName}".Trim()),
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, pu.Id.ToString()),
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, pu.Email),
             ], "Host");
             context.User = new System.Security.Claims.ClaimsPrincipal(id);
         }
+
         AntiforgeryTokenSet tokens = antiforgery.GetAndStoreTokens(context);
         context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions { HttpOnly = false, SameSite = SameSiteMode.Strict, Secure = context.Request.IsHttps, IsEssential = true, Path = "/" });
         return TypedResults.Ok(new { message = "Signed in" });

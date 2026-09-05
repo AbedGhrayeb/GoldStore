@@ -1,3 +1,7 @@
+// <copyright file="SetAccountBalanceCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Finance;
@@ -40,7 +44,6 @@ internal sealed class SetAccountBalanceCommandHandler(IApplicationDbContext cont
             return Result.Updated;
         }
 
-
         Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(account.Id, account.Currency, Math.Abs(diff),
                  diff > 0m ? FinancialTransactionType.Inflow : FinancialTransactionType.Outflow,
                  FinancialReferenceType.ManualAdjustment, account.Id, command.Notes);
@@ -49,8 +52,8 @@ internal sealed class SetAccountBalanceCommandHandler(IApplicationDbContext cont
         {
             return financialTransactionResult.Errors;
         }
-        context.FinancialTransactions.Add(financialTransactionResult.Value);
 
+        context.FinancialTransactions.Add(financialTransactionResult.Value);
 
         await context.SaveChangesAsync(cancellationToken);
 

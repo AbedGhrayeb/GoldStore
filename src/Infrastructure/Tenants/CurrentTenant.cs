@@ -1,3 +1,7 @@
+// <copyright file="CurrentTenant.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.Security.Claims;
 using Application.Abstractions.Data;
 using Application.Abstractions.Tenants;
@@ -22,24 +26,24 @@ internal sealed class CurrentTenant(
     IServiceProvider serviceProvider,
     TimeProvider timeProvider) : ICurrentTenant, ICurrentTenantSetter
 {
-    private Guid? _explicitTenantId;
-    private string? _explicitTenantKey;
-    private TenantSnapshot? _tenantSnapshot;
-    private IReadOnlyList<string>? _enabledFeatures;
+    private Guid? explicitTenantId;
+    private string? explicitTenantKey;
+    private TenantSnapshot? tenantSnapshot;
+    private IReadOnlyList<string>? enabledFeatures;
 
-    public bool IsAvailable => Resolve() is not null;
+    public bool IsAvailable => this.Resolve() is not null;
 
-    public Guid TenantId => Resolve()?.TenantId ?? throw new CurrentTenantUnavailableException();
+    public Guid TenantId => this.Resolve()?.TenantId ?? throw new CurrentTenantUnavailableException();
 
-    public string TenantKey => Resolve()?.TenantKey ?? throw new CurrentTenantUnavailableException();
+    public string TenantKey => this.Resolve()?.TenantKey ?? throw new CurrentTenantUnavailableException();
 
-    public TenantStatus Status => ResolveTenant()?.Status ?? throw new CurrentTenantUnavailableException();
+    public TenantStatus Status => this.ResolveTenant()?.Status ?? throw new CurrentTenantUnavailableException();
 
-    public bool IsOperational => IsAvailable && IsOperationalInternal();
+    public bool IsOperational => this.IsAvailable && this.IsOperationalInternal();
 
-    public bool IsReadOnly => IsAvailable && Status == TenantStatus.Cancelled;
+    public bool IsReadOnly => this.IsAvailable && this.Status == TenantStatus.Cancelled;
 
-    public IReadOnlyList<string> EnabledFeatures => ResolveEnabledFeatures();
+    public IReadOnlyList<string> EnabledFeatures => this.ResolveEnabledFeatures();
 
     public void Set(Guid tenantId, string tenantKey)
     {
@@ -53,13 +57,13 @@ internal sealed class CurrentTenant(
             throw new ArgumentException("Tenant key cannot be empty.", nameof(tenantKey));
         }
 
-        _explicitTenantId = tenantId;
-        _explicitTenantKey = tenantKey;
+        this.explicitTenantId = tenantId;
+        this.explicitTenantKey = tenantKey;
     }
 
     private bool IsOperationalInternal()
     {
-        TenantSnapshot? snapshot = ResolveTenant();
+        TenantSnapshot? snapshot = this.ResolveTenant();
         if (snapshot is null)
         {
             return false;
@@ -79,12 +83,12 @@ internal sealed class CurrentTenant(
 
     private TenantSnapshot? ResolveTenant()
     {
-        if (_tenantSnapshot is not null)
+        if (this.tenantSnapshot is not null)
         {
-            return _tenantSnapshot;
+            return this.tenantSnapshot;
         }
 
-        (Guid TenantId, string TenantKey)? resolved = Resolve();
+        (Guid TenantId, string TenantKey)? resolved = this.Resolve();
         if (resolved is null)
         {
             return null;
@@ -98,31 +102,31 @@ internal sealed class CurrentTenant(
             .AsNoTracking()
             .SingleOrDefault(entity => entity.Id == resolved.Value.TenantId);
 
-        _tenantSnapshot = tenant is null
+        this.tenantSnapshot = tenant is null
             ? null
             : new TenantSnapshot(tenant.Status, tenant.TrialEndsAtUtc, tenant.CancellationReadOnlyUntilUtc);
 
-        return _tenantSnapshot;
+        return this.tenantSnapshot;
     }
 
     private IReadOnlyList<string> ResolveEnabledFeatures()
     {
-        if (_enabledFeatures is not null)
+        if (this.enabledFeatures is not null)
         {
-            return _enabledFeatures;
+            return this.enabledFeatures;
         }
 
-        (Guid TenantId, string TenantKey)? resolved = Resolve() ?? throw new CurrentTenantUnavailableException();
+        (Guid TenantId, string TenantKey)? resolved = this.Resolve() ?? throw new CurrentTenantUnavailableException();
 
         IApplicationDbContext context = serviceProvider.GetRequiredService<IApplicationDbContext>();
 
-        _enabledFeatures = context.TenantSettings
+        this.enabledFeatures = context.TenantSettings
             .AsNoTracking()
             .Where(settings => settings.TenantId == resolved.Value.TenantId)
             .Select(settings => settings.EnabledFeatures)
             .SingleOrDefault() ?? [];
 
-        return _enabledFeatures;
+        return this.enabledFeatures;
     }
 
     private (Guid TenantId, string TenantKey)? Resolve()
@@ -140,7 +144,7 @@ internal sealed class CurrentTenant(
             }
         }
 
-        if (_explicitTenantId is { } explicitId && _explicitTenantKey is { } explicitKey)
+        if (this.explicitTenantId is { } explicitId && this.explicitTenantKey is { } explicitKey)
         {
             return (explicitId, explicitKey);
         }

@@ -1,3 +1,7 @@
+// <copyright file="ApplicationDbContextInitializer.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Tenants;
 using Domain.Authorization;
@@ -26,23 +30,23 @@ public class ApplicationDbContextInitializer(
 {
     private const string StoreAdministratorRoleKey = "store_admin";
 
-    private readonly ILogger<ApplicationDbContextInitializer> _logger = logger;
-    private readonly ApplicationDbContext _context = context;
-    private readonly IConfiguration _configuration = configuration;
-    private readonly IPasswordHasher _passwordHasher = passwordHasher;
-    private readonly ICurrentTenantSetter _currentTenantSetter = currentTenantSetter;
-    private readonly TimeProvider _timeProvider = timeProvider;
+    private readonly ILogger<ApplicationDbContextInitializer> logger = logger;
+    private readonly ApplicationDbContext context = context;
+    private readonly IConfiguration configuration = configuration;
+    private readonly IPasswordHasher passwordHasher = passwordHasher;
+    private readonly ICurrentTenantSetter currentTenantSetter = currentTenantSetter;
+    private readonly TimeProvider timeProvider = timeProvider;
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
 #pragma warning disable S2139 // Exceptions should be either logged or rethrown but not both
         try
         {
-            await _context.Database.MigrateAsync(cancellationToken);
+            await this.context.Database.MigrateAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while initializing the database.");
+            this.logger.LogError(ex, "An error occurred while initializing the database.");
             throw;
         }
 #pragma warning restore S2139 // Exceptions should be either logged or rethrown but not both
@@ -53,11 +57,11 @@ public class ApplicationDbContextInitializer(
 #pragma warning disable S2139 // Exceptions should be either logged or rethrown but not both
         try
         {
-            await TrySeedAsync(cancellationToken);
+            await this.TrySeedAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while seeding the database.");
+            this.logger.LogError(ex, "An error occurred while seeding the database.");
             throw;
         }
 #pragma warning restore S2139 // Exceptions should be either logged or rethrown but not both
@@ -66,36 +70,36 @@ public class ApplicationDbContextInitializer(
     public async Task TrySeedAsync(CancellationToken cancellationToken = default)
     {
         // Host-level data first: plans and tenants are global and not tenant-filtered.
-        SubscriptionPlan plan = await SeedSubscriptionPlanAsync(cancellationToken);
-        await SeedInitialTenantAsync(cancellationToken);
+        SubscriptionPlan plan = await this.SeedSubscriptionPlanAsync(cancellationToken);
+        await this.SeedInitialTenantAsync(cancellationToken);
 
         // Every tenant-owned row below belongs to the initial tenant. Selecting it
         // explicitly lets the write guard stamp rows and lets queries pass the
         // global tenant filter.
-        _currentTenantSetter.Set(InitialTenant.Id, InitialTenant.Key);
+        this.currentTenantSetter.Set(InitialTenant.Id, InitialTenant.Key);
 
         // Global authorization reference data (plan Phase 4): permissions and role
         // templates are shared by every tenant.
-        await SeedPermissionsAsync(cancellationToken);
-        await SeedStoreAdministratorRoleAsync(cancellationToken);
-        await SeedAdditionalRolesAsync(cancellationToken);
+        await this.SeedPermissionsAsync(cancellationToken);
+        await this.SeedStoreAdministratorRoleAsync(cancellationToken);
+        await this.SeedAdditionalRolesAsync(cancellationToken);
 
-        await SeedInitialSubscriptionAsync(plan, cancellationToken);
-        await SeedInitialSettingsAsync(cancellationToken);
-        await SeedDefaultUserAsync(cancellationToken);
-        await SeedDefaultUserRoleAsync(cancellationToken);
-        await BackfillSecurityStampsAsync(cancellationToken);
-        await SeedDefaultFinancialAccountsAsync(cancellationToken);
+        await this.SeedInitialSubscriptionAsync(plan, cancellationToken);
+        await this.SeedInitialSettingsAsync(cancellationToken);
+        await this.SeedDefaultUserAsync(cancellationToken);
+        await this.SeedDefaultUserRoleAsync(cancellationToken);
+        await this.BackfillSecurityStampsAsync(cancellationToken);
+        await this.SeedDefaultFinancialAccountsAsync(cancellationToken);
 
         // Host administrator identity (plan Phase 4 item 6), independent of any tenant.
-        await SeedDefaultPlatformUserAsync(cancellationToken);
+        await this.SeedDefaultPlatformUserAsync(cancellationToken);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await this.context.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<SubscriptionPlan> SeedSubscriptionPlanAsync(CancellationToken cancellationToken)
     {
-        SubscriptionPlan? plan = await _context.SubscriptionPlans
+        SubscriptionPlan? plan = await this.context.SubscriptionPlans
             .FirstOrDefaultAsync(p => p.Key == "standard", cancellationToken);
 
         if (plan is not null)
@@ -105,13 +109,13 @@ public class ApplicationDbContextInitializer(
 
         // Unlimited default plan; limits are introduced with real subscriptions later.
         plan = SubscriptionPlan.Create("Standard", "standard", null, null, null, null, isTrial: false, durationInMonths: 12, price: 199.00m, discountPercent: null).Value;
-        _context.SubscriptionPlans.Add(plan);
+        this.context.SubscriptionPlans.Add(plan);
 
         // Seed a trial plan for 1 month (free) if not exists
-        if (!await _context.SubscriptionPlans.AnyAsync(p => p.Key == "trial", cancellationToken))
+        if (!await this.context.SubscriptionPlans.AnyAsync(p => p.Key == "trial", cancellationToken))
         {
             SubscriptionPlan trial = SubscriptionPlan.Create("Trial", "trial", 2, 50, 1, 5368709120, isTrial: true, durationInMonths: 1, price: 0m, discountPercent: null).Value;
-            _context.SubscriptionPlans.Add(trial);
+            this.context.SubscriptionPlans.Add(trial);
         }
 
         return plan;
@@ -119,32 +123,32 @@ public class ApplicationDbContextInitializer(
 
     private async Task SeedInitialTenantAsync(CancellationToken cancellationToken)
     {
-        if (await _context.Tenants.AnyAsync(t => t.Id == InitialTenant.Id, cancellationToken))
+        if (await this.context.Tenants.AnyAsync(t => t.Id == InitialTenant.Id, cancellationToken))
         {
             return;
         }
 
         Result<Tenant> tenant = Tenant.Create(InitialTenant.Id, InitialTenant.Name, InitialTenant.Key, TenantStatus.Active);
-        _context.Tenants.Add(tenant.Value);
+        this.context.Tenants.Add(tenant.Value);
     }
 
     private async Task SeedInitialSubscriptionAsync(SubscriptionPlan plan, CancellationToken cancellationToken)
     {
-        if (await _context.TenantSubscriptions.AnyAsync(s => s.TenantId == InitialTenant.Id, cancellationToken))
+        if (await this.context.TenantSubscriptions.AnyAsync(s => s.TenantId == InitialTenant.Id, cancellationToken))
         {
             return;
         }
 
-        DateTimeOffset utcNow = _timeProvider.GetUtcNow();
+        DateTimeOffset utcNow = this.timeProvider.GetUtcNow();
         Result<TenantSubscription> subscription = TenantSubscription.Create(
             InitialTenant.Id, plan.Id, SubscriptionBillingCycle.Annual, utcNow, utcNow.AddYears(100));
 
-        _context.TenantSubscriptions.Add(subscription.Value);
+        this.context.TenantSubscriptions.Add(subscription.Value);
     }
 
     private async Task SeedInitialSettingsAsync(CancellationToken cancellationToken)
     {
-        if (await _context.TenantSettings.AnyAsync(s => s.TenantId == InitialTenant.Id, cancellationToken))
+        if (await this.context.TenantSettings.AnyAsync(s => s.TenantId == InitialTenant.Id, cancellationToken))
         {
             return;
         }
@@ -153,34 +157,34 @@ public class ApplicationDbContextInitializer(
             InitialTenant.Id, InitialTenant.Name, logoUrl: null, timeZoneId: "Asia/Amman",
             enabledFeatures: [.. Features.All]);
 
-        _context.TenantSettings.Add(settings.Value);
+        this.context.TenantSettings.Add(settings.Value);
     }
 
     private async Task SeedPermissionsAsync(CancellationToken cancellationToken)
     {
-        foreach ((string Key, string Name) in Permissions.All)
+        foreach ((string key, string name) in Permissions.All)
         {
-            if (!await _context.Permissions.AnyAsync(p => p.Key == Key, cancellationToken))
+            if (!await this.context.Permissions.AnyAsync(p => p.Key == key, cancellationToken))
             {
-                Result<Permission> permission = Permission.Create(Key, Name);
-                _context.Permissions.Add(permission.Value);
+                Result<Permission> permission = Permission.Create(key, name);
+                this.context.Permissions.Add(permission.Value);
             }
         }
     }
 
     private async Task SeedStoreAdministratorRoleAsync(CancellationToken cancellationToken)
     {
-        Role? role = await _context.Roles.FirstOrDefaultAsync(r => r.Key == StoreAdministratorRoleKey, cancellationToken);
+        Role? role = await this.context.Roles.FirstOrDefaultAsync(r => r.Key == StoreAdministratorRoleKey, cancellationToken);
 
         if (role is null)
         {
             Result<Role> created = Role.Create(StoreAdministratorRoleKey, "مدير المتجر");
             role = created.Value;
-            _context.Roles.Add(role);
+            this.context.Roles.Add(role);
         }
 
-        List<Guid> permissionIds = await _context.Permissions.Select(p => p.Id).ToListAsync(cancellationToken);
-        List<Guid> grantedIds = await _context.RolePermissions
+        List<Guid> permissionIds = await this.context.Permissions.Select(p => p.Id).ToListAsync(cancellationToken);
+        List<Guid> grantedIds = await this.context.RolePermissions
             .Where(rp => rp.RoleId == role.Id)
             .Select(rp => rp.PermissionId)
             .ToListAsync(cancellationToken);
@@ -191,7 +195,7 @@ public class ApplicationDbContextInitializer(
             {
                 // Fix: add via DbSet directly to ensure Added state (navigation Add was resulting in Detached->Modified and concurrency failure)
                 var rp = new RolePermission(Guid.CreateVersion7(), role.Id, permissionId);
-                _context.RolePermissions.Add(rp);
+                this.context.RolePermissions.Add(rp);
             }
         }
     }
@@ -201,7 +205,10 @@ public class ApplicationDbContextInitializer(
         // Seeded granular roles for admin-managed permission page
         var roleDefinitions = new[]
         {
-            new { Key = "manager", Name = "مدير عام", Permissions = new[] {
+            new
+            {
+                Key = "manager", Name = "مدير عام", Permissions = new[]
+            {
                 Permissions.UsersView, Permissions.EmployeesView, Permissions.EmployeesManage,
                 Permissions.SuppliersView, Permissions.SuppliersManage,
                 Permissions.InventoryView, Permissions.InventoryManage,
@@ -210,39 +217,52 @@ public class ApplicationDbContextInitializer(
                 Permissions.PurchasesView, Permissions.PurchasesManage,
                 Permissions.ExpensesView, Permissions.ExpensesManage,
                 Permissions.ReportsView, Permissions.SettingsView
-            }},
-            new { Key = "cashier", Name = "أمين صندوق", Permissions = new[] {
+            },
+            },
+            new
+            {
+                Key = "cashier", Name = "أمين صندوق", Permissions = new[]
+            {
                 Permissions.SalesView, Permissions.SalesManage,
                 Permissions.PurchasesView, Permissions.FinanceView, Permissions.InventoryView,
                 Permissions.ExpensesView
-            }},
-            new { Key = "viewer", Name = "مشاهد", Permissions = new[] {
+            },
+            },
+            new
+            {
+                Key = "viewer", Name = "مشاهد", Permissions = new[]
+            {
                 Permissions.UsersView, Permissions.EmployeesView, Permissions.SuppliersView,
                 Permissions.InventoryView, Permissions.FinanceView, Permissions.SalesView,
                 Permissions.PurchasesView, Permissions.ExpensesView, Permissions.ReportsView, Permissions.SettingsView
-            }},
-            new { Key = "inventory_clerk", Name = "مسؤول مخزون", Permissions = new[] {
+            },
+            },
+            new
+            {
+                Key = "inventory_clerk", Name = "مسؤول مخزون", Permissions = new[]
+            {
                 Permissions.InventoryView, Permissions.InventoryManage,
                 Permissions.SuppliersView, Permissions.SuppliersManage,
                 Permissions.PurchasesView
-            }},
+            },
+            },
         };
 
         // Need permission lookup by key
-        Dictionary<string, Guid> permissionMap = await _context.Permissions.ToDictionaryAsync(p => p.Key, p => p.Id, cancellationToken);
+        Dictionary<string, Guid> permissionMap = await this.context.Permissions.ToDictionaryAsync(p => p.Key, p => p.Id, cancellationToken);
 
         foreach (var def in roleDefinitions)
         {
-            Role? role = await _context.Roles.FirstOrDefaultAsync(r => r.Key == def.Key, cancellationToken);
+            Role? role = await this.context.Roles.FirstOrDefaultAsync(r => r.Key == def.Key, cancellationToken);
             if (role is null)
             {
                 Result<Role> created = Role.Create(def.Key, def.Name);
                 role = created.Value;
-                _context.Roles.Add(role);
-                await _context.SaveChangesAsync(cancellationToken); // need Id for FK
+                this.context.Roles.Add(role);
+                await this.context.SaveChangesAsync(cancellationToken); // need Id for FK
             }
 
-            List<Guid> grantedIds = await _context.RolePermissions
+            List<Guid> grantedIds = await this.context.RolePermissions
                 .Where(rp => rp.RoleId == role.Id)
                 .Select(rp => rp.PermissionId)
                 .ToListAsync(cancellationToken);
@@ -256,7 +276,7 @@ public class ApplicationDbContextInitializer(
 
                 if (!grantedIds.Contains(permId))
                 {
-                    _context.RolePermissions.Add(new RolePermission(Guid.CreateVersion7(), role.Id, permId));
+                    this.context.RolePermissions.Add(new RolePermission(Guid.CreateVersion7(), role.Id, permId));
                 }
             }
         }
@@ -264,18 +284,18 @@ public class ApplicationDbContextInitializer(
 
     private async Task SeedDefaultUserRoleAsync(CancellationToken cancellationToken)
     {
-        User? admin = await _context.Users.FirstOrDefaultAsync(u => u.Email == "admin@goldstore", cancellationToken);
-        Role? role = await _context.Roles.FirstOrDefaultAsync(r => r.Key == StoreAdministratorRoleKey, cancellationToken);
+        User? admin = await this.context.Users.FirstOrDefaultAsync(u => u.Email == "admin@goldstore", cancellationToken);
+        Role? role = await this.context.Roles.FirstOrDefaultAsync(r => r.Key == StoreAdministratorRoleKey, cancellationToken);
 
         if (admin is null || role is null)
         {
             return;
         }
 
-        if (!await _context.UserRoles.AnyAsync(ur => ur.UserId == admin.Id && ur.RoleId == role.Id, cancellationToken))
+        if (!await this.context.UserRoles.AnyAsync(ur => ur.UserId == admin.Id && ur.RoleId == role.Id, cancellationToken))
         {
             Result<UserRole> userRole = UserRole.Create(admin.TenantId, admin.Id, role.Id);
-            _context.UserRoles.Add(userRole.Value);
+            this.context.UserRoles.Add(userRole.Value);
         }
     }
 
@@ -283,7 +303,7 @@ public class ApplicationDbContextInitializer(
     {
         // Rows migrated before the SecurityStamp column share the migration default.
         // Assign each a unique stamp so sessions can be revoked individually.
-        List<User> users = await _context.Users
+        List<User> users = await this.context.Users
             .Where(u => string.IsNullOrEmpty(u.SecurityStamp))
             .ToListAsync(cancellationToken);
 
@@ -295,49 +315,52 @@ public class ApplicationDbContextInitializer(
 
     private async Task SeedDefaultPlatformUserAsync(CancellationToken cancellationToken)
     {
-        if (await _context.PlatformUsers.AnyAsync(cancellationToken))
+        if (await this.context.PlatformUsers.AnyAsync(cancellationToken))
         {
             // Ensure legacy seed has phone (migration adds nullable column)
-            PlatformUser? existing = await _context.PlatformUsers.FirstOrDefaultAsync(cancellationToken);
+            PlatformUser? existing = await this.context.PlatformUsers.FirstOrDefaultAsync(cancellationToken);
             if (existing is not null && string.IsNullOrWhiteSpace(existing.PhoneNumber))
             {
                 existing.SetPhoneNumberVerified("+970592990484");
-                await _context.SaveChangesAsync(cancellationToken);
+                await this.context.SaveChangesAsync(cancellationToken);
             }
+
             return;
         }
 
-        string defaultPassword = _configuration["DefaultPlatformUserPassword"] ?? _configuration["DefaultUserPassword"]!;
+        string defaultPassword = this.configuration["DefaultPlatformUserPassword"] ?? this.configuration["DefaultUserPassword"]!;
         Result<PlatformUser> platformUser = PlatformUser.Create(
-            "platform@goldstore.app", "Platform", "Admin", _passwordHasher.Hash(defaultPassword));
+            "platform@goldstore.app", "Platform", "Admin", this.passwordHasher.Hash(defaultPassword));
+
         // Seed Palestine phone for mandatory 2FA demo; enrollment via dev-token:+970592990484 in dev
         platformUser.Value.SetPhoneNumberVerified("+970592990484");
-        _context.PlatformUsers.Add(platformUser.Value);
+        this.context.PlatformUsers.Add(platformUser.Value);
     }
 
     private async Task SeedDefaultUserAsync(CancellationToken cancellationToken)
     {
-        if (await _context.Users.AnyAsync(cancellationToken))
+        if (await this.context.Users.AnyAsync(cancellationToken))
         {
-            User? existing = await _context.Users.FirstOrDefaultAsync(u => u.Email == "admin@goldstore", cancellationToken);
+            User? existing = await this.context.Users.FirstOrDefaultAsync(u => u.Email == "admin@goldstore", cancellationToken);
             if (existing is not null && string.IsNullOrWhiteSpace(existing.PhoneNumber))
             {
                 existing.SetPhoneNumberVerified("+970592990484");
-                await _context.SaveChangesAsync(cancellationToken);
+                await this.context.SaveChangesAsync(cancellationToken);
             }
+
             return;
         }
 
-        string defaultPassword = _configuration["DefaultUserPassword"]!;
-        string hashedPassword = _passwordHasher.Hash(defaultPassword);
+        string defaultPassword = this.configuration["DefaultUserPassword"]!;
+        string hashedPassword = this.passwordHasher.Hash(defaultPassword);
         Result<User> defaultUser = User.Create(Guid.CreateVersion7(), InitialTenant.Id, "admin@goldstore", "Admin", "Admin", hashedPassword);
         defaultUser.Value.SetPhoneNumberVerified("+970592990484");
-        _context.Users.Add(defaultUser.Value);
+        this.context.Users.Add(defaultUser.Value);
     }
 
     private async Task SeedDefaultFinancialAccountsAsync(CancellationToken cancellationToken)
     {
-        if (await _context.FinancialAccounts.AnyAsync(cancellationToken))
+        if (await this.context.FinancialAccounts.AnyAsync(cancellationToken))
         {
             return;
         }
@@ -351,7 +374,7 @@ public class ApplicationDbContextInitializer(
         seedAccounts.AddRange(jodAccount.Value, usdAccount.Value, ilsAccount.Value);
 
         // TenantId is stamped by the tenant write guard from the ambient tenant.
-        _context.FinancialAccounts.AddRange(seedAccounts);
+        this.context.FinancialAccounts.AddRange(seedAccounts);
     }
 }
 

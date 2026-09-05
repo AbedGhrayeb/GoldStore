@@ -1,3 +1,7 @@
+// <copyright file="CreateDebtCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Common.Ledger;
@@ -37,25 +41,24 @@ internal sealed class CreateDebtCommandHandler(
         {
             return debtResult.Errors;
         }
+
         context.Debts.Add(debtResult.Value);
 
         Result<DebtLedgerEntry> debtLedgerEntryResult = DebtLedgerEntry.Create(debtResult.Value.Id, command.Amount,
             DebtBalanceMovementType.Increase, $"إنشاء دين — {command.Name}");
 
-
-
         if (debtLedgerEntryResult.IsError)
         {
             return debtLedgerEntryResult.Errors;
         }
-        context.DebtLedgerEntries.Add(debtLedgerEntryResult.Value);
 
+        context.DebtLedgerEntries.Add(debtLedgerEntryResult.Value);
 
         FinancialTransactionType financialTransactionType = direction switch
         {
             DebtDirection.Receivable => FinancialTransactionType.Outflow,
             DebtDirection.Payable => FinancialTransactionType.Inflow,
-            _ => FinancialTransactionType.Outflow
+            _ => FinancialTransactionType.Outflow,
         };
 
         if (financialTransactionType == FinancialTransactionType.Outflow)
@@ -71,13 +74,12 @@ internal sealed class CreateDebtCommandHandler(
         Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(command.AccountId, currency, command.Amount,
             financialTransactionType, FinancialReferenceType.DebtCreation, debtResult.Value.Id, $"إنشاء {GetDirectionLabel(direction)}: {command.Name}");
 
-
         if (financialTransactionResult.IsError)
         {
             return financialTransactionResult.Errors;
         }
-        context.FinancialTransactions.Add(financialTransactionResult.Value);
 
+        context.FinancialTransactions.Add(financialTransactionResult.Value);
 
         await context.SaveChangesAsync(cancellationToken);
 
@@ -88,6 +90,6 @@ internal sealed class CreateDebtCommandHandler(
     {
         DebtDirection.Receivable => "لنا - ذمة مدينة",
         DebtDirection.Payable => "له - ذمة دائنة",
-        _ => "دين"
+        _ => "دين",
     };
 }

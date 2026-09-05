@@ -1,3 +1,7 @@
+// <copyright file="ArchitectureDependencyTests.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.Reflection;
 using NetArchTest.Rules;
 using Shouldly;

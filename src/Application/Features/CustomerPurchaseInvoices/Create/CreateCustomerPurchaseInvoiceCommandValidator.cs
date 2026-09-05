@@ -1,4 +1,8 @@
-﻿using Domain.Sales;
+﻿// <copyright file="CreateCustomerPurchaseInvoiceCommandValidator.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Domain.Sales;
 using FluentValidation;
 
 namespace Application.Features.CustomerPurchaseInvoices.Create;
@@ -7,28 +11,28 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandValidator : AbstractVa
 {
     public CreateCustomerPurchaseInvoiceCommandValidator()
     {
-        RuleFor(x => x.SellerName)
+        this.RuleFor(x => x.SellerName)
             .NotEmpty()
             .MaximumLength(200)
             .WithMessage("اسم البائع مطلوب");
-        RuleFor(x => x.SellerIdNumber)
+        this.RuleFor(x => x.SellerIdNumber)
             .MaximumLength(9).When(x => x.SellerIdNumber is not null)
             .WithMessage("رقم الهوية مطلوب");
 
-        RuleFor(x => x.SellerPhone)
+        this.RuleFor(x => x.SellerPhone)
             .MaximumLength(10)
             .When(x => x.SellerPhone is not null);
 
-        RuleFor(x => x.Currency)
+        this.RuleFor(x => x.Currency)
             .NotEmpty()
             .Must(c => c is "JOD" or "USD" or "ILS")
             .WithMessage("العملة غير صالحة");
 
-        RuleFor(x => x.Items)
+        this.RuleFor(x => x.Items)
             .NotEmpty()
             .WithMessage("يجب إضافة صنف واحد على الأقل");
 
-        RuleForEach(x => x.Items).ChildRules(item =>
+        this.RuleForEach(x => x.Items).ChildRules(item =>
         {
             item.RuleFor(i => i.Karat)
                 .Must(k => k is 18 or 21 or 24)
@@ -43,30 +47,28 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandValidator : AbstractVa
                 .WithMessage("السعر للجرام يجب أن يكون أكبر من صفر");
         });
 
-        RuleFor(x => x.TotalAmount)
+        this.RuleFor(x => x.TotalAmount)
             .GreaterThan(0)
             .WithMessage("المبلغ المستحق يجب أن يكون أكبر من صفر");
 
-        RuleFor(x => x.AmountPaid)
+        this.RuleFor(x => x.AmountPaid)
             .GreaterThanOrEqualTo(0)
             .WithMessage("المبلغ المدفوع يجب أن يكون صفر أو أكثر");
 
-        RuleFor(x => x.PaymentMethod)
+        this.RuleFor(x => x.PaymentMethod)
             .Must(p => Enum.IsDefined(typeof(PaymentMethod), p))
             .WithMessage("طريقة الدفع غير صالحة");
 
-        RuleFor(x => x.AccountId)
+        this.RuleFor(x => x.AccountId)
             .NotEmpty()
             .WithMessage("حساب الدفع مطلوب");
 
-        RuleFor(x => x.SellerAccountNumber)
+        this.RuleFor(x => x.SellerAccountNumber)
             .MaximumLength(20)
             .When(x => x.SellerAccountNumber is not null);
 
-        RuleFor(x => x.Notes)
+        this.RuleFor(x => x.Notes)
             .MaximumLength(500)
             .When(x => x.Notes is not null);
-
-
     }
 }

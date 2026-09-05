@@ -1,3 +1,7 @@
+// <copyright file="CreateEmployeeCommand.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Messaging;
 using Domain.Common;
 using Domain.Employees;

@@ -1,3 +1,7 @@
+// <copyright file="FinancialAccountErrors.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -7,14 +11,16 @@ public static class FinancialAccountErrors
 {
     public static Error AccountIdRequired => Error.Validation(
         "Finance.AccountIdRequired",
-       "رقم الحساب مطلوب");
+        "رقم الحساب مطلوب");
+
     public static Error AccountNameRequired => Error.Validation(
         "Finance.AccountNameRequired",
-       "اسم الحساب مطلوب");
+        "اسم الحساب مطلوب");
 
     public static Error ReferenceId => Error.Validation(
         "Finance.ReferenceIdRequired",
         "رقم المرجع مطلوب");
+
     public static Error NotFound(Guid accountId) => Error.NotFound(
         "Finance.AccountNotFound",
         $"The financial account with Id = '{accountId}' was not found");

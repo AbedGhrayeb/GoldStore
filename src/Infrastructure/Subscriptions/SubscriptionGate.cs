@@ -1,3 +1,7 @@
+// <copyright file="SubscriptionGate.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Subscriptions;
 using Application.Abstractions.Tenants;
@@ -24,7 +28,7 @@ internal sealed class SubscriptionGate(
             return ApplicationErrors.TenantAccessDenied;
         }
 
-        PlanAccess plan = await LoadPlanAccessAsync(cancellationToken);
+        PlanAccess plan = await this.LoadPlanAccessAsync(cancellationToken);
 
         if (plan.MaximumActiveUsers is not { } limit)
         {
@@ -45,7 +49,7 @@ internal sealed class SubscriptionGate(
             return ApplicationErrors.TenantAccessDenied;
         }
 
-        PlanAccess plan = await LoadPlanAccessAsync(cancellationToken);
+        PlanAccess plan = await this.LoadPlanAccessAsync(cancellationToken);
 
         if (plan.MaximumPostedInvoicesPerPeriod is not { } limit)
         {
@@ -53,7 +57,8 @@ internal sealed class SubscriptionGate(
         }
 
         int currentInvoices = await context.SalesInvoices
-            .CountAsync(invoice =>
+            .CountAsync(
+                invoice =>
                 invoice.Date.Date >= plan.PeriodStartsAtUtc.UtcDateTime.Date
                 && invoice.Date.Date <= plan.PeriodEndsAtUtc.UtcDateTime.Date,
                 cancellationToken);

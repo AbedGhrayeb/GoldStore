@@ -1,3 +1,7 @@
+// <copyright file="GetGoldPricesQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Services;
 using Domain.Common;
@@ -35,11 +39,11 @@ internal sealed class GetGoldPricesQueryHandler(
                 {
                     > 0 => "up",
                     < 0 => "down",
-                    _ => "none"
+                    _ => "none",
                 },
                 Currency = "JOD",
                 CurrencySymbol = "د.أ",
-                Unit = "أونصة"
+                Unit = "أونصة",
             },
             PricePerGram24K = new GoldPriceInfo
             {
@@ -49,7 +53,7 @@ internal sealed class GetGoldPricesQueryHandler(
                 ChangeDirection = "none",
                 Currency = "JOD",
                 CurrencySymbol = "د.أ",
-                Unit = "جم"
+                Unit = "جم",
             },
             PricePerGram21K = new GoldPriceInfo
             {
@@ -60,7 +64,7 @@ internal sealed class GetGoldPricesQueryHandler(
                 Currency = "JOD",
                 CurrencySymbol = "د.أ",
                 Unit = "جم"
-            }
+            },
         };
     }
 }

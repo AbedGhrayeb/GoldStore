@@ -1,3 +1,7 @@
+// <copyright file="UpdateExpenseCategoryCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Expenses;
@@ -27,11 +31,13 @@ internal sealed class UpdateExpenseCategoryCommandHandler(IApplicationDbContext 
         {
             return ExpenseCategoryErrors.DuplicateName;
         }
+
         Result<Updated> updateResult = category.Update(command.Name);
         if (updateResult.IsError)
         {
             return updateResult.Errors;
         }
+
         await context.SaveChangesAsync(cancellationToken);
 
         return Result.Updated;

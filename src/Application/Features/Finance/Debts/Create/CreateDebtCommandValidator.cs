@@ -1,3 +1,7 @@
+// <copyright file="CreateDebtCommandValidator.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Debts;
 using FluentValidation;
 
@@ -7,37 +11,37 @@ internal sealed class CreateDebtCommandValidator : AbstractValidator<CreateDebtC
 {
     public CreateDebtCommandValidator()
     {
-        RuleFor(x => x.Name)
+        this.RuleFor(x => x.Name)
             .NotEmpty()
             .MaximumLength(200)
             .WithMessage("الاسم مطلوب");
 
-        RuleFor(x => x.Phone)
+        this.RuleFor(x => x.Phone)
             .MaximumLength(10)
             .When(x => x.Phone is not null);
 
-        RuleFor(x => x.Direction)
+        this.RuleFor(x => x.Direction)
             .Must(d => Enum.IsDefined(typeof(DebtDirection), d))
             .WithMessage("اتجاه الدين غير صالح");
 
-        RuleFor(x => x.Currency)
+        this.RuleFor(x => x.Currency)
             .NotEmpty()
             .Must(c => c is "JOD" or "USD" or "ILS")
             .WithMessage("العملة غير صالحة");
 
-        RuleFor(x => x.Amount)
+        this.RuleFor(x => x.Amount)
             .GreaterThan(0)
             .WithMessage("المبلغ يجب أن يكون أكبر من صفر");
 
-        RuleFor(x => x.Notes)
+        this.RuleFor(x => x.Notes)
             .MaximumLength(1000)
             .When(x => x.Notes is not null);
 
-        RuleFor(x => x.AccountId)
+        this.RuleFor(x => x.AccountId)
             .NotEmpty()
             .WithMessage("الحساب المالي مطلوب");
 
-        RuleFor(x => x.Date)
+        this.RuleFor(x => x.Date)
             .NotEmpty()
             .WithMessage("التاريخ مطلوب");
     }

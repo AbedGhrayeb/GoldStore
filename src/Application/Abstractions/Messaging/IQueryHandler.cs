@@ -1,4 +1,8 @@
-﻿using SharedKernel.Result;
+﻿// <copyright file="IQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using SharedKernel.Result;
 
 namespace Application.Abstractions.Messaging;
 

@@ -1,4 +1,8 @@
-﻿using System.Reflection;
+﻿// <copyright file="ApplicationDbContext.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using System.Reflection;
 using Application.Abstractions.Data;
 using Application.Abstractions.Tenants;
 using Domain.Authorization;
@@ -109,7 +113,7 @@ public sealed class ApplicationDbContext(
     public DbSet<PlatformUser> PlatformUsers { get; set; }
 
     /// <summary>
-    /// The tenant applied by the global query filters. Read from the scoped
+    /// Gets the tenant applied by the global query filters. Read from the scoped
     /// <see cref="ICurrentTenant"/> at query time, never captured at model-build
     /// time. Deny by default: when no tenant is available the filters match nothing.
     /// </summary>
@@ -120,7 +124,7 @@ public sealed class ApplicationDbContext(
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
         modelBuilder.ApplyTenantOwnership();
-        ApplyTenantQueryFilters(modelBuilder);
+        this.ApplyTenantQueryFilters(modelBuilder);
         ConfigureDateTimeToUtc(modelBuilder);
     }
 
@@ -169,7 +173,7 @@ public sealed class ApplicationDbContext(
 
     private void SetTenantQueryFilter<TEntity>(ModelBuilder modelBuilder)
         where TEntity : class, ITenantEntity =>
-        modelBuilder.Entity<TEntity>().HasQueryFilter(e => e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<TEntity>().HasQueryFilter(e => e.TenantId == this.CurrentTenantId);
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -182,14 +186,14 @@ public sealed class ApplicationDbContext(
         //     - domain events are a separate transaction
         //     - eventual consistency
         //     - handlers can fail
-
-        List<IDomainEvent> domainEvents = ExtractDomainEvents();
+        List<IDomainEvent> domainEvents = this.ExtractDomainEvents();
         int result = await base.SaveChangesAsync(cancellationToken);
 
-        await PublishDomainEventsAsync(domainEvents);
+        await this.PublishDomainEventsAsync(domainEvents);
 
         return result;
     }
+
     private async Task PublishDomainEventsAsync(IEnumerable<IDomainEvent> domainEvents)
     {
         await domainEventsDispatcher.DispatchAsync(domainEvents);
@@ -197,7 +201,7 @@ public sealed class ApplicationDbContext(
 
     private List<IDomainEvent> ExtractDomainEvents()
     {
-        var domainEvents = ChangeTracker
+        var domainEvents = this.ChangeTracker
             .Entries<Entity>()
             .Select(entry => entry.Entity)
             .SelectMany(entity =>

@@ -1,3 +1,7 @@
+// <copyright file="ReadOnlyTenantMiddleware.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.Collections.Frozen;
 using Application.Abstractions.Tenancy;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +19,7 @@ public sealed class ReadOnlyTenantMiddleware(RequestDelegate next)
         {
             "/api/identity/token",
             "/api/identity/refresh-token",
-            "/api/tenant/subscription/renew"
+            "/api/tenant/subscription/renew",
         },
         StringComparer.OrdinalIgnoreCase);
 

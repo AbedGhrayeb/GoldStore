@@ -1,3 +1,7 @@
+// <copyright file="SupplierGoldLedgerEntryConfiguration.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -28,6 +32,5 @@ internal sealed class SupplierGoldLedgerEntryConfiguration : IEntityTypeConfigur
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(entry => new { entry.TenantId, entry.SupplierId, entry.CreatedAtUtc });
-
     }
 }

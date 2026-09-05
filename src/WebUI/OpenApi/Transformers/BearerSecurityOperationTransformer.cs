@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿// <copyright file="BearerSecurityOperationTransformer.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -25,7 +29,7 @@ internal sealed class BearerSecurityOperationTransformer : IOpenApiOperationTran
 
         operation.Security.Add(new OpenApiSecurityRequirement
         {
-            [new OpenApiSecuritySchemeReference("Bearer", context.Document)] = []
+            [new OpenApiSecuritySchemeReference("Bearer", context.Document)] = [],
         });
 
         return Task.CompletedTask;

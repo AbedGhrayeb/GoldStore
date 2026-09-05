@@ -1,3 +1,7 @@
+// <copyright file="Subscription.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Common;
 using SharedKernel;
 using SharedKernel.Result;
@@ -7,27 +11,36 @@ namespace Domain.Tenants;
 public sealed class Subscription : Entity
 {
     public Guid TenantId { get; private set; }
+
     public Guid PlanId { get; private set; }
+
     public BillingInterval Interval { get; private set; }
+
     public decimal Price { get; private set; }
+
     public Currency Currency { get; private set; }
+
     public DateTimeOffset StartsAtUtc { get; private set; }
+
     public DateTimeOffset ExpiresAtUtc { get; private set; }
+
     public SubscriptionStatus Status { get; private set; }
 
-    private Subscription() { }
+    private Subscription()
+    {
+    }
 
     private Subscription(Guid id, Guid tenantId, Guid planId, BillingInterval interval, decimal price, Currency currency, DateTimeOffset startsAtUtc, DateTimeOffset expiresAtUtc)
         : base(id)
     {
-        TenantId = tenantId;
-        PlanId = planId;
-        Interval = interval;
-        Price = price;
-        Currency = currency;
-        StartsAtUtc = startsAtUtc;
-        ExpiresAtUtc = expiresAtUtc;
-        Status = SubscriptionStatus.Active;
+        this.TenantId = tenantId;
+        this.PlanId = planId;
+        this.Interval = interval;
+        this.Price = price;
+        this.Currency = currency;
+        this.StartsAtUtc = startsAtUtc;
+        this.ExpiresAtUtc = expiresAtUtc;
+        this.Status = SubscriptionStatus.Active;
     }
 
     public static Result<Subscription> Create(Guid tenantId, Guid planId, BillingInterval interval, decimal price, Currency currency, DateTimeOffset startsAtUtc, DateTimeOffset expiresAtUtc)
@@ -57,11 +70,11 @@ public sealed class Subscription : Entity
 
     public void Cancel()
     {
-        Status = SubscriptionStatus.Cancelled;
+        this.Status = SubscriptionStatus.Cancelled;
     }
 
     public void MarkExpired()
     {
-        Status = SubscriptionStatus.Expired;
+        this.Status = SubscriptionStatus.Expired;
     }
 }

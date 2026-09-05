@@ -1,3 +1,7 @@
+// <copyright file="GetCategoriesQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -20,7 +24,7 @@ internal sealed class GetCategoriesQueryHandler(IApplicationDbContext context, I
                 Name = c.Name,
                 Description = c.Description,
                 ParentCategoryId = c.ParentCategoryId,
-                ParentCategoryName = c.ParentCategoryId.HasValue ? "" : "",
+                ParentCategoryName = c.ParentCategoryId.HasValue ? string.Empty : string.Empty,
                 IsActive = c.IsActive,
             })
             .ToListAsync(cancellationToken);

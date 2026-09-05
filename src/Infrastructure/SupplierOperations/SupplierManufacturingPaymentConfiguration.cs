@@ -1,3 +1,7 @@
+// <copyright file="SupplierManufacturingPaymentConfiguration.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.SupplierOperations;
 using Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;

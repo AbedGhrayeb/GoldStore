@@ -1,4 +1,8 @@
-﻿using Application.Abstractions.Authentication;
+﻿// <copyright file="AuditableEntityInterceptor.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Application.Abstractions.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -8,19 +12,19 @@ namespace Infrastructure.Database.Interceptors;
 
 public class AuditableEntityInterceptor(IUserContext user, TimeProvider dateTime) : SaveChangesInterceptor
 {
-    private readonly IUserContext _user = user;
-    private readonly TimeProvider _dateTime = dateTime;
+    private readonly IUserContext user = user;
+    private readonly TimeProvider dateTime = dateTime;
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
-        UpdateEntities(eventData.Context);
+        this.UpdateEntities(eventData.Context);
 
         return base.SavingChanges(eventData, result);
     }
 
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        UpdateEntities(eventData.Context);
+        this.UpdateEntities(eventData.Context);
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
@@ -34,7 +38,7 @@ public class AuditableEntityInterceptor(IUserContext user, TimeProvider dateTime
 
         // Host and background flows (seeding, provisioning, migrations) run without
         // an authenticated user; audit fields stay unset for those writes.
-        if (!_user.IsAvailable)
+        if (!this.user.IsAvailable)
         {
             return;
         }
@@ -43,15 +47,15 @@ public class AuditableEntityInterceptor(IUserContext user, TimeProvider dateTime
         {
             if (entry.State is EntityState.Added or EntityState.Modified || entry.HasChangedOwnedEntities())
             {
-                DateTimeOffset utcNow = _dateTime.GetUtcNow();
+                DateTimeOffset utcNow = this.dateTime.GetUtcNow();
 
                 if (entry.State == EntityState.Added)
                 {
-                    entry.Entity.CreatedBy = _user.UserId;
+                    entry.Entity.CreatedBy = this.user.UserId;
                     entry.Entity.CreatedAtUtc = utcNow;
                 }
 
-                entry.Entity.LastModifiedBy = _user.UserId;
+                entry.Entity.LastModifiedBy = this.user.UserId;
                 entry.Entity.LastModifiedUtc = utcNow;
 
                 foreach (ReferenceEntry ownedEntry in entry.References)
@@ -60,11 +64,11 @@ public class AuditableEntityInterceptor(IUserContext user, TimeProvider dateTime
                     {
                         if (ownedEntry.TargetEntry.State == EntityState.Added)
                         {
-                            ownedEntity.CreatedBy = _user.UserId;
+                            ownedEntity.CreatedBy = this.user.UserId;
                             ownedEntity.CreatedAtUtc = utcNow;
                         }
 
-                        ownedEntity.LastModifiedBy = _user.UserId;
+                        ownedEntity.LastModifiedBy = this.user.UserId;
                         ownedEntity.LastModifiedUtc = utcNow;
                     }
                 }

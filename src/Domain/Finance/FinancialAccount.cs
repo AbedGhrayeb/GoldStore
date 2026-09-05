@@ -1,3 +1,7 @@
+// <copyright file="FinancialAccount.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Common;
 using SharedKernel;
 using SharedKernel.Result;
@@ -20,15 +24,16 @@ public sealed class FinancialAccount : AuditableEntity, ITenantEntity
 
     private FinancialAccount()
     {
-
     }
-    private FinancialAccount(Guid id, string name, Currency currency, FinancialAccountType accountType, string? accountNumber, string? notes) : base(id)
+
+    private FinancialAccount(Guid id, string name, Currency currency, FinancialAccountType accountType, string? accountNumber, string? notes)
+        : base(id)
     {
-        Name = name;
-        Currency = currency;
-        AccountType = accountType;
-        AccountNumber = accountNumber;
-        Notes = notes;
+        this.Name = name;
+        this.Currency = currency;
+        this.AccountType = accountType;
+        this.AccountNumber = accountNumber;
+        this.Notes = notes;
     }
 
     public static Result<FinancialAccount> Create(string name, Currency currency, FinancialAccountType accountType, string? accountNumber, string? notes)
@@ -37,23 +42,27 @@ public sealed class FinancialAccount : AuditableEntity, ITenantEntity
         {
             return FinancialAccountErrors.AccountNameRequired;
         }
+
         return new FinancialAccount(Guid.CreateVersion7(), name, currency, accountType, accountNumber, notes);
     }
+
     public Result<Updated> Update(Guid id, string name, Currency currency, FinancialAccountType accountType, string? accountNumber, string? notes)
     {
         if (id == Guid.Empty)
         {
             return FinancialAccountErrors.AccountIdRequired;
         }
+
         if (string.IsNullOrEmpty(name))
         {
             return FinancialAccountErrors.AccountNameRequired;
         }
-        Name = name;
-        Currency = currency;
-        AccountType = accountType;
-        AccountNumber = accountNumber;
-        Notes = notes;
+
+        this.Name = name;
+        this.Currency = currency;
+        this.AccountType = accountType;
+        this.AccountNumber = accountNumber;
+        this.Notes = notes;
         return Result.Updated;
     }
 }

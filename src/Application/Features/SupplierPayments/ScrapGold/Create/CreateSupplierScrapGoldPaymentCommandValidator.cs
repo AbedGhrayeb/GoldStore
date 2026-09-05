@@ -1,3 +1,7 @@
+// <copyright file="CreateSupplierScrapGoldPaymentCommandValidator.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.SupplierPayments.ScrapGold.Create;
 using FluentValidation;
 
@@ -9,9 +13,9 @@ internal sealed class CreateSupplierScrapGoldPaymentCommandValidator : AbstractV
 
     public CreateSupplierScrapGoldPaymentCommandValidator()
     {
-        RuleFor(x => x.SupplierId).NotEmpty();
-        RuleFor(x => x.Karat).Must(k => ValidKarats.Contains(k)).WithMessage("العيار غير صالح");
-        RuleFor(x => x.WeightInGrams).GreaterThan(0).WithMessage("الوزن يجب أن يكون أكبر من صفر");
-        RuleFor(x => x.Notes).MaximumLength(1000).When(x => x.Notes is not null);
+        this.RuleFor(x => x.SupplierId).NotEmpty();
+        this.RuleFor(x => x.Karat).Must(k => ValidKarats.Contains(k)).WithMessage("العيار غير صالح");
+        this.RuleFor(x => x.WeightInGrams).GreaterThan(0).WithMessage("الوزن يجب أن يكون أكبر من صفر");
+        this.RuleFor(x => x.Notes).MaximumLength(1000).When(x => x.Notes is not null);
     }
 }

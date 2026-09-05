@@ -1,3 +1,7 @@
+// <copyright file="TenantSubscriptionResponse.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Application.Features.Subscriptions;
 
 public sealed record SubscriptionPlanSnapshot(

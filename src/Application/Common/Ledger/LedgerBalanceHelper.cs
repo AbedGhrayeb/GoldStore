@@ -1,3 +1,7 @@
+// <copyright file="LedgerBalanceHelper.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Domain.Common;
 using Domain.Finance;

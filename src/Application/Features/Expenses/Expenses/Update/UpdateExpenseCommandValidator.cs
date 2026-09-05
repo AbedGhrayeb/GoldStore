@@ -1,3 +1,7 @@
+// <copyright file="UpdateExpenseCommandValidator.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Features.Expenses.Expenses.Update;
 using FluentValidation;
 
@@ -7,10 +11,10 @@ internal sealed class UpdateExpenseCommandValidator : AbstractValidator<UpdateEx
 {
     public UpdateExpenseCommandValidator()
     {
-        RuleFor(x => x.Id).NotEmpty();
-        RuleFor(x => x.ExpenseDate).NotEmpty().WithMessage("تاريخ المصروف مطلوب");
-        RuleFor(x => x.Amount).GreaterThan(0).WithMessage("المبلغ يجب أن يكون أكبر من صفر");
-        RuleFor(x => x.AccountId).NotEmpty().WithMessage("يجب اختيار حساب الدفع");
-        RuleFor(x => x.Description).MaximumLength(500).When(x => x.Description is not null);
+        this.RuleFor(x => x.Id).NotEmpty();
+        this.RuleFor(x => x.ExpenseDate).NotEmpty().WithMessage("تاريخ المصروف مطلوب");
+        this.RuleFor(x => x.Amount).GreaterThan(0).WithMessage("المبلغ يجب أن يكون أكبر من صفر");
+        this.RuleFor(x => x.AccountId).NotEmpty().WithMessage("يجب اختيار حساب الدفع");
+        this.RuleFor(x => x.Description).MaximumLength(500).When(x => x.Description is not null);
     }
 }

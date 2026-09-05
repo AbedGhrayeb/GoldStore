@@ -1,3 +1,7 @@
+// <copyright file="SupplierDelivery.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Common;
 using Domain.Suppliers;
 using SharedKernel;
@@ -7,7 +11,6 @@ namespace Domain.SupplierOperations;
 public sealed class SupplierDelivery : AuditableEntity, ITenantEntity
 {
     public Guid TenantId { get; private set; }
-
 
     public Guid SupplierId { get; private set; }
 
@@ -23,25 +26,25 @@ public sealed class SupplierDelivery : AuditableEntity, ITenantEntity
 
     public Currency ManufacturingFeeCurrency { get; private set; }
 
-
     public string? Notes { get; set; }
 
     public Supplier Supplier { get; set; }
 
     private SupplierDelivery()
     {
-
     }
-    private SupplierDelivery(Guid id, Guid supplierId, Karat karat, decimal weightInGrams, decimal manufacturingFeePerGram, Currency manufacturingFeeCurrency, string? notes) : base(id)
+
+    private SupplierDelivery(Guid id, Guid supplierId, Karat karat, decimal weightInGrams, decimal manufacturingFeePerGram, Currency manufacturingFeeCurrency, string? notes)
+        : base(id)
     {
-        SupplierId = supplierId;
-        Karat = karat;
-        WeightInGrams = weightInGrams;
-        Equivalent21KWeightInGrams = GoldWeight.CalculateEquivalent21KWeight(weightInGrams, karat);
-        ManufacturingFeePerGram = manufacturingFeePerGram;
-        TotalManufacturingFee = GoldWeight.CalculateEquivalent21KWeight(weightInGrams, karat) * manufacturingFeePerGram;
-        ManufacturingFeeCurrency = manufacturingFeeCurrency;
-        Notes = notes;
+        this.SupplierId = supplierId;
+        this.Karat = karat;
+        this.WeightInGrams = weightInGrams;
+        this.Equivalent21KWeightInGrams = GoldWeight.CalculateEquivalent21KWeight(weightInGrams, karat);
+        this.ManufacturingFeePerGram = manufacturingFeePerGram;
+        this.TotalManufacturingFee = GoldWeight.CalculateEquivalent21KWeight(weightInGrams, karat) * manufacturingFeePerGram;
+        this.ManufacturingFeeCurrency = manufacturingFeeCurrency;
+        this.Notes = notes;
     }
 
     public static SupplierDelivery Create(Guid supplierId, Karat karat, decimal weightInGrams, decimal manufacturingFeePerGram, Currency manufacturingFeeCurrency, string? notes)

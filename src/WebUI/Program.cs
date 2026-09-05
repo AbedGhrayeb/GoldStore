@@ -1,3 +1,7 @@
+// <copyright file="Program.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application;
 using HealthChecks.UI.Client;
 using Infrastructure;
@@ -38,7 +42,7 @@ namespace WebUI
                     "text/html",
                     "text/plain",
                     "image/svg+xml",
-                    "font/woff2"
+                    "font/woff2",
                 };
             });
 
@@ -61,7 +65,7 @@ namespace WebUI
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
-                KnownProxies = { System.Net.IPAddress.Loopback }
+                KnownProxies = { System.Net.IPAddress.Loopback },
             });
 
             app.UseHttpsRedirection();
@@ -83,15 +87,15 @@ namespace WebUI
             // resolution via Tenancy:ExemptPaths.
             app.MapHealthChecks("health", new HealthCheckOptions
             {
-                ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
             });
             app.MapHealthChecks("health/ready", new HealthCheckOptions
             {
-                Predicate = check => check.Tags.Contains("ready")
+                Predicate = check => check.Tags.Contains("ready"),
             });
             app.MapHealthChecks("health/live", new HealthCheckOptions
             {
-                Predicate = _ => false
+                Predicate = _ => false,
             });
 
             app.UseRequestContextLogging();
@@ -102,6 +106,7 @@ namespace WebUI
             {
                 app.UseResponseCompression();
             }
+
             app.UseCors("AllowAngularApp");
 
             app.UseRouting();
@@ -137,6 +142,7 @@ namespace WebUI
         }
     }
 }
+
 // REMARK: Required for functional and integration tests to work.
 namespace WebUI
 {

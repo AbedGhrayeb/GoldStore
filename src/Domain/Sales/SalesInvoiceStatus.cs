@@ -1,3 +1,7 @@
+// <copyright file="SalesInvoiceStatus.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Domain.Sales;
 
 public enum SalesInvoiceStatus
@@ -5,8 +9,9 @@ public enum SalesInvoiceStatus
     Draft = 1,
     Completed = 2,
     PartiallyPaid = 3,
-    Cancelled = 4
+    Cancelled = 4,
 }
+
 public static class SalesInvoiceStatusExtensions
 {
     public static string ToStatusLabel(this SalesInvoiceStatus status)
@@ -17,7 +22,7 @@ public static class SalesInvoiceStatusExtensions
             SalesInvoiceStatus.Completed => "مكتملة",
             SalesInvoiceStatus.PartiallyPaid => "مدفوعة جزئياً",
             SalesInvoiceStatus.Cancelled => "ملغاة",
-            _ => status.ToString()
+            _ => status.ToString(),
         };
     }
 }

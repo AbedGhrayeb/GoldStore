@@ -1,3 +1,7 @@
+// <copyright file="GetPagedSupplierFinancialTransactionsQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -20,10 +24,14 @@ internal sealed class GetPagedSupplierFinancialTransactionsQueryHandler(
             .Where(t => t.TenantId == currentTenant.TenantId);
 
         if (query.SupplierId.HasValue)
-        { transactionsQuery = transactionsQuery.Where(t => t.SupplierId == query.SupplierId.Value); }
+        {
+            transactionsQuery = transactionsQuery.Where(t => t.SupplierId == query.SupplierId.Value);
+        }
 
         if (query.Direction.HasValue)
-        { transactionsQuery = transactionsQuery.Where(t => (int)t.Direction == query.Direction.Value); }
+        {
+            transactionsQuery = transactionsQuery.Where(t => (int)t.Direction == query.Direction.Value);
+        }
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
@@ -78,7 +86,7 @@ internal sealed class GetPagedSupplierFinancialTransactionsQueryHandler(
                 Notes = t.Notes,
                 CreatedAt = t.CreatedAtUtc!.Value.LocalDateTime,
                 OutstandingBalance = balance,
-                OutstandingBalanceDisplay = balance.ToString("N3")
+                OutstandingBalanceDisplay = balance.ToString("N3"),
             };
         }).ToList();
 
@@ -87,7 +95,7 @@ internal sealed class GetPagedSupplierFinancialTransactionsQueryHandler(
             Items = items,
             TotalCount = totalCount,
             Page = page,
-            PageSize = pageSize
+            PageSize = pageSize,
         };
     }
 
@@ -95,6 +103,6 @@ internal sealed class GetPagedSupplierFinancialTransactionsQueryHandler(
     {
         SupplierFinancialTransactionDirection.FromSupplier => "له",
         SupplierFinancialTransactionDirection.ToSupplier => "لنا",
-        _ => direction.ToString()
+        _ => direction.ToString(),
     };
 }

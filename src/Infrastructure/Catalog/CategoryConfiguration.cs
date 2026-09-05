@@ -1,6 +1,11 @@
+// <copyright file="CategoryConfiguration.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Catalog;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
 namespace Infrastructure.Catalog;
 
 internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
@@ -23,4 +28,3 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.HasIndex(category => new { category.TenantId, category.Name });
     }
 }
-

@@ -1,3 +1,7 @@
+// <copyright file="SalaryPayment.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Common;
 using Domain.Finance;
 using SharedKernel;
@@ -39,17 +43,18 @@ public sealed class SalaryPayment : AuditableEntity, ITenantEntity
     }
 
     private SalaryPayment(Guid id, Guid employeeId, Guid accountId, Currency currency, decimal salaryAmount,
-        decimal discountAmount, decimal amount, DateOnly paymentDate, DateOnly scheduledDate, string? notes) : base(id)
+        decimal discountAmount, decimal amount, DateOnly paymentDate, DateOnly scheduledDate, string? notes)
+        : base(id)
     {
-        EmployeeId = employeeId;
-        AccountId = accountId;
-        Currency = currency;
-        SalaryAmount = salaryAmount;
-        DiscountAmount = discountAmount;
-        Amount = amount;
-        PaymentDate = paymentDate;
-        ScheduledDate = scheduledDate;
-        Notes = notes;
+        this.EmployeeId = employeeId;
+        this.AccountId = accountId;
+        this.Currency = currency;
+        this.SalaryAmount = salaryAmount;
+        this.DiscountAmount = discountAmount;
+        this.Amount = amount;
+        this.PaymentDate = paymentDate;
+        this.ScheduledDate = scheduledDate;
+        this.Notes = notes;
     }
 
     public static Result<SalaryPayment> Create(Guid employeeId, Guid accountId, Currency currency, decimal salaryAmount,
@@ -110,7 +115,7 @@ public sealed class SalaryPayment : AuditableEntity, ITenantEntity
         {
             SalaryCycleEnum.Weekly => paymentDate.AddDays(((int)DayOfWeek.Thursday - (int)paymentDate.DayOfWeek + 7) % 7),
             SalaryCycleEnum.Monthly => new DateOnly(paymentDate.Year, paymentDate.Month, 1),
-            _ => throw new ArgumentOutOfRangeException(nameof(salaryCycle), salaryCycle, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(salaryCycle), salaryCycle, null),
         };
     }
 
@@ -122,7 +127,7 @@ public sealed class SalaryPayment : AuditableEntity, ITenantEntity
             SalaryCycleEnum.Monthly => fromDate.Day <= 1
                 ? new DateOnly(fromDate.Year, fromDate.Month, 1)
                 : new DateOnly(fromDate.Year, fromDate.Month, 1).AddMonths(1),
-            _ => throw new ArgumentOutOfRangeException(nameof(salaryCycle), salaryCycle, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(salaryCycle), salaryCycle, null),
         };
     }
 

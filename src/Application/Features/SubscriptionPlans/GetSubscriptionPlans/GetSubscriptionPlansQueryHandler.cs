@@ -1,3 +1,7 @@
+// <copyright file="GetSubscriptionPlansQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Features.SubscriptionPlans;
@@ -29,7 +33,7 @@ internal sealed class GetSubscriptionPlansQueryHandler(IApplicationDbContext con
                 plan.DurationInMonths,
                 plan.Price,
                 plan.DiscountPercent,
-                plan.DiscountPercent == null ? plan.Price : Math.Round(plan.Price * (1 - plan.DiscountPercent.Value / 100m), 2)))
+                plan.DiscountPercent == null ? plan.Price : Math.Round(plan.Price * (1 - (plan.DiscountPercent.Value / 100m)), 2)))
             .ToListAsync(cancellationToken);
 
         return plans;

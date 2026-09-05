@@ -1,3 +1,7 @@
+// <copyright file="FeatureRequirement.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Tenants;
 using Microsoft.AspNetCore.Authorization;
 

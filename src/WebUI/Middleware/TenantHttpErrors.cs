@@ -1,3 +1,7 @@
+// <copyright file="TenantHttpErrors.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Microsoft.AspNetCore.Http;
 
 namespace WebUI.Middleware;

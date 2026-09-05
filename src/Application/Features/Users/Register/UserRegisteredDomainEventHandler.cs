@@ -1,4 +1,8 @@
-﻿using Domain.Users;
+﻿// <copyright file="UserRegisteredDomainEventHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Domain.Users;
 using SharedKernel;
 
 namespace Application.Users.Register;

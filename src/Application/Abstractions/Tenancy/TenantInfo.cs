@@ -1,3 +1,7 @@
+// <copyright file="TenantInfo.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Tenants;
 
 namespace Application.Abstractions.Tenancy;

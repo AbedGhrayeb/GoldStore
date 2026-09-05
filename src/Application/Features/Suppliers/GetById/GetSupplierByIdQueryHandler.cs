@@ -1,3 +1,7 @@
+// <copyright file="GetSupplierByIdQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -25,6 +29,7 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context,
         {
             return SupplierErrors.NotFound(query.Id);
         }
+
         var supplierGoldLedgerEntries = supplier.SupplierGoldLedgerEntries.ToList();
         decimal goldBalance = supplierGoldLedgerEntries
             .Sum(e => e.MovementType == SupplierBalanceMovementType.Increase ? e.Equivalent21KWeightInGrams : -e.Equivalent21KWeightInGrams);
@@ -52,12 +57,13 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context,
                 .Select(g => new FinancialBalanceByCurrency
                 {
                     Currency = g.Key.ToString(),
-                    Balance = g.Sum(t => financialBalances.GetValueOrDefault(t.Id, 0m))
+                    Balance = g.Sum(t => financialBalances.GetValueOrDefault(t.Id, 0m)),
                 })
                 .ToList();
         }
 
-        List<SupplierTransactionResponse> recentTransactions = await GetRecentTransactions(query.Id,
+        List<SupplierTransactionResponse> recentTransactions = await this.GetRecentTransactions(
+            query.Id,
             supplierGoldLedgerEntries,
             supplierManufacturingLedgerEntries,
             financialTxIds, cancellationToken);
@@ -75,15 +81,16 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context,
             GoldBalance = goldBalance,
             ManufacturingBalance = manufacturingBalance,
             FinancialBalancesByCurrency = financialBalancesByCurrency,
-            RecentTransactions = recentTransactions
+            RecentTransactions = recentTransactions,
         };
     }
 
-    private async Task<List<SupplierTransactionResponse>> GetRecentTransactions(Guid supplierId,
-            List<SupplierGoldLedgerEntry> supplierGoldLedgerEntries,
-            List<SupplierManufacturingLedgerEntry> supplierManufacturingLedgerEntries,
-            List<Guid> financialTxIds,
-            CancellationToken cancellationToken)
+    private async Task<List<SupplierTransactionResponse>> GetRecentTransactions(
+        Guid supplierId,
+        List<SupplierGoldLedgerEntry> supplierGoldLedgerEntries,
+        List<SupplierManufacturingLedgerEntry> supplierManufacturingLedgerEntries,
+        List<Guid> financialTxIds,
+        CancellationToken cancellationToken)
     {
         var goldEntries = supplierGoldLedgerEntries
             .OrderByDescending(e => e.CreatedAtUtc)
@@ -98,7 +105,7 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context,
                 Type = "ذهب",
                 Amount = e.Equivalent21KWeightInGrams,
                 Unit = "جم",
-                Direction = e.MovementType == SupplierBalanceMovementType.Increase ? "+" : "-"
+                Direction = e.MovementType == SupplierBalanceMovementType.Increase ? "+" : "-",
             })
             .ToList();
 
@@ -115,7 +122,7 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context,
                 Type = "تصنيع",
                 Amount = e.Amount,
                 Unit = "د.إ",
-                Direction = e.MovementType == SupplierBalanceMovementType.Increase ? "+" : "-"
+                Direction = e.MovementType == SupplierBalanceMovementType.Increase ? "+" : "-",
             })
             .ToList();
 
@@ -132,7 +139,7 @@ internal sealed class GetSupplierByIdQueryHandler(IApplicationDbContext context,
                 Type = "مالي",
                 Amount = e.Amount,
                 Unit = "د.إ",
-                Direction = e.MovementType == SupplierBalanceMovementType.Increase ? "+" : "-"
+                Direction = e.MovementType == SupplierBalanceMovementType.Increase ? "+" : "-",
             })
             .ToListAsync(cancellationToken);
 

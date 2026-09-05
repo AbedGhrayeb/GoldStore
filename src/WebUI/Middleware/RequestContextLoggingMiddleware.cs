@@ -1,4 +1,8 @@
-﻿using Microsoft.Extensions.Primitives;
+﻿// <copyright file="RequestContextLoggingMiddleware.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Microsoft.Extensions.Primitives;
 using Serilog.Context;
 
 namespace WebUI.Middleware;

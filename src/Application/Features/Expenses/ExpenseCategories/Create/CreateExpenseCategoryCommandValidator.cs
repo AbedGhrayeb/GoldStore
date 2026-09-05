@@ -1,3 +1,7 @@
+// <copyright file="CreateExpenseCategoryCommandValidator.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Features.Expenses.ExpenseCategories.Create;
 using FluentValidation;
 
@@ -7,6 +11,6 @@ internal sealed class CreateExpenseCategoryCommandValidator : AbstractValidator<
 {
     public CreateExpenseCategoryCommandValidator()
     {
-        RuleFor(x => x.Name).NotEmpty().WithMessage("اسم التصنيف مطلوب").MaximumLength(200);
+        this.RuleFor(x => x.Name).NotEmpty().WithMessage("اسم التصنيف مطلوب").MaximumLength(200);
     }
 }

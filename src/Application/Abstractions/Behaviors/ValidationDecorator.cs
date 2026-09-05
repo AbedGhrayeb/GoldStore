@@ -1,4 +1,8 @@
-﻿using Application.Abstractions.Messaging;
+﻿// <copyright file="ValidationDecorator.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Application.Abstractions.Messaging;
 using FluentValidation;
 using FluentValidation.Results;
 using SharedKernel.Result;
@@ -49,5 +53,4 @@ internal static class ValidationDecorator
 
         return validationFailures;
     }
-
 }

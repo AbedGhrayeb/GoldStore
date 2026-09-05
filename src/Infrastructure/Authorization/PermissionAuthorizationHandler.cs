@@ -1,4 +1,8 @@
-﻿using Infrastructure.Authentication;
+﻿// <copyright file="PermissionAuthorizationHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Infrastructure.Authorization;

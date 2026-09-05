@@ -1,3 +1,7 @@
+// <copyright file="RefreshToken.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel;
 using SharedKernel.Result;
 
@@ -14,7 +18,7 @@ public sealed class RefreshToken : Entity, ITenantEntity
 
     public Guid UserId { get; private set; }
 
-    /// <summary>SHA-256 hash of the opaque token. The raw token is never stored.</summary>
+    /// <summary>Gets sHA-256 hash of the opaque token. The raw token is never stored.</summary>
     public string TokenHash { get; private set; }
 
     public DateTimeOffset CreatedAtUtc { get; private set; }
@@ -23,25 +27,25 @@ public sealed class RefreshToken : Entity, ITenantEntity
 
     public DateTimeOffset? RevokedAtUtc { get; private set; }
 
-    /// <summary>Hash of the token that replaced this one (rotation chain, plan Phase 4).</summary>
+    /// <summary>Gets hash of the token that replaced this one (rotation chain, plan Phase 4).</summary>
     public string? ReplacedByTokenHash { get; private set; }
 
-    /// <summary>True when the token has not been revoked or replaced (expiry is checked separately).</summary>
-    public bool IsUsable => RevokedAtUtc is null && ReplacedByTokenHash is null;
+    /// <summary>Gets a value indicating whether true when the token has not been revoked or replaced (expiry is checked separately).</summary>
+    public bool IsUsable => this.RevokedAtUtc is null && this.ReplacedByTokenHash is null;
 
     private RefreshToken()
     {
-        TokenHash = string.Empty;
+        this.TokenHash = string.Empty;
     }
 
     private RefreshToken(Guid id, Guid tenantId, Guid userId, string tokenHash, DateTimeOffset createdAtUtc, DateTimeOffset expiresAtUtc)
         : base(id)
     {
-        TenantId = tenantId;
-        UserId = userId;
-        TokenHash = tokenHash;
-        CreatedAtUtc = createdAtUtc;
-        ExpiresAtUtc = expiresAtUtc;
+        this.TenantId = tenantId;
+        this.UserId = userId;
+        this.TokenHash = tokenHash;
+        this.CreatedAtUtc = createdAtUtc;
+        this.ExpiresAtUtc = expiresAtUtc;
     }
 
     public static Result<RefreshToken> Create(
@@ -77,7 +81,7 @@ public sealed class RefreshToken : Entity, ITenantEntity
     /// <summary>Revokes this token, optionally recording the replacement token hash.</summary>
     public void Revoke(DateTimeOffset revokedAtUtc, string? replacedByTokenHash = null)
     {
-        RevokedAtUtc = revokedAtUtc;
-        ReplacedByTokenHash = replacedByTokenHash;
+        this.RevokedAtUtc = revokedAtUtc;
+        this.ReplacedByTokenHash = replacedByTokenHash;
     }
 }

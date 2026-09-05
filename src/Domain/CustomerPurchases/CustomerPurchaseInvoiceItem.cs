@@ -1,3 +1,7 @@
+// <copyright file="CustomerPurchaseInvoiceItem.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Catalog;
 using Domain.Common;
 using SharedKernel;
@@ -8,7 +12,6 @@ namespace Domain.CustomerPurchases;
 public sealed class CustomerPurchaseInvoiceItem : AuditableEntity, ITenantEntity
 {
     public Guid TenantId { get; private set; }
-
 
     public Guid CustomerPurchaseInvoiceId { get; set; }
 
@@ -22,27 +25,29 @@ public sealed class CustomerPurchaseInvoiceItem : AuditableEntity, ITenantEntity
 
     public decimal PricePerGram { get; private set; }
 
-    public decimal GoldAmount => WeightInGrams * PricePerGram;
+    public decimal GoldAmount => this.WeightInGrams * this.PricePerGram;
 
     // Navigation properties
     public CustomerPurchaseInvoice CustomerPurchaseInvoice { get; set; }
+
     public Category? Category { get; set; } = null;
 
     public CustomerPurchaseInvoiceItem()
     {
+    }
 
-    }
-    public CustomerPurchaseInvoiceItem(Guid id, Guid? categoryId, Karat karat, decimal weightInGrams, decimal pricePerGram) : base(id)
+    public CustomerPurchaseInvoiceItem(Guid id, Guid? categoryId, Karat karat, decimal weightInGrams, decimal pricePerGram)
+        : base(id)
     {
-        CategoryId = categoryId;
-        Karat = karat;
-        WeightInGrams = weightInGrams;
-        Equivalent21KWeightInGrams = GoldWeight.CalculateEquivalent21KWeight(weightInGrams, karat);
-        PricePerGram = pricePerGram;
+        this.CategoryId = categoryId;
+        this.Karat = karat;
+        this.WeightInGrams = weightInGrams;
+        this.Equivalent21KWeightInGrams = GoldWeight.CalculateEquivalent21KWeight(weightInGrams, karat);
+        this.PricePerGram = pricePerGram;
     }
+
     public static Result<CustomerPurchaseInvoiceItem> Create(Guid? categoryId, Karat karat, decimal weightInGrams, decimal pricePerGram)
     {
-
         if (categoryId == Guid.Empty)
         {
             return CustomerPurchaseInvoiceItemErrors.CategoryIdRequired;

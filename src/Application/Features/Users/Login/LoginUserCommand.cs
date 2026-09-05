@@ -1,4 +1,8 @@
-﻿using Application.Abstractions.Messaging;
+﻿// <copyright file="LoginUserCommand.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Application.Abstractions.Messaging;
 
 namespace Application.Users.Login;
 

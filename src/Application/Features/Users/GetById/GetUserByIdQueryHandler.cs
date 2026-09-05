@@ -1,4 +1,8 @@
-﻿using Application.Abstractions.Authentication;
+﻿// <copyright file="GetUserByIdQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -28,7 +32,7 @@ internal sealed class GetUserByIdQueryHandler(IApplicationDbContext context, IUs
                 LastName = u.LastName,
                 Email = u.Email,
                 PhoneNumber = u.PhoneNumber,
-                WhatsappNumber = u.WhatsappNumber
+                WhatsappNumber = u.WhatsappNumber,
             })
             .SingleOrDefaultAsync(cancellationToken);
 

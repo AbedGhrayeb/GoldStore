@@ -1,4 +1,8 @@
-﻿namespace SharedKernel.Result.Abstractions;
+﻿// <copyright file="IResult.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+namespace SharedKernel.Result.Abstractions;
 
 public interface IResult
 {

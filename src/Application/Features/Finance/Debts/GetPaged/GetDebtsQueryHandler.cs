@@ -1,3 +1,7 @@
+// <copyright file="GetDebtsQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -15,7 +19,7 @@ internal sealed class GetDebtsQueryHandler(IApplicationDbContext context, ICurre
     {
         DebtDirection.Receivable => "ذمة مدينة",
         DebtDirection.Payable => "ذمة دائنة",
-        _ => direction.ToString()
+        _ => direction.ToString(),
     };
 
     public async Task<Result<PaginatedList<DebtResponse>>> Handle(GetDebtsQuery query, CancellationToken cancellationToken)
@@ -33,9 +37,8 @@ internal sealed class GetDebtsQueryHandler(IApplicationDbContext context, ICurre
             string search = query.Search.ToLower().Trim();
             debtsQuery = debtsQuery.Where(d =>
                 d.Name.ToLower().Contains(search) ||
-                d.Phone != null && d.Phone.Contains(search));
+                (d.Phone != null && d.Phone.Contains(search)));
         }
-
 
         var debtIds = debtsQuery.Select(d => d.Id).ToList();
 
@@ -62,11 +65,10 @@ internal sealed class GetDebtsQueryHandler(IApplicationDbContext context, ICurre
             Notes = d.Notes,
             CreatedAt = d.CreatedAtUtc!.Value.LocalDateTime,
             OutstandingBalance = balances.GetValueOrDefault(d.Id, 0m),
-            OutstandingBalanceDisplay = balances.GetValueOrDefault(d.Id, 0m).ToString("N3")
+            OutstandingBalanceDisplay = balances.GetValueOrDefault(d.Id, 0m).ToString("N3"),
         });
 
         return await PaginatedList<DebtResponse>.CreateAsync(items, query.Page, query.PageSize);
 
-        ;
     }
 }

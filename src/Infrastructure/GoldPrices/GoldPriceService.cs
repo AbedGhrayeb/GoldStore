@@ -1,3 +1,7 @@
+// <copyright file="GoldPriceService.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using System.Text.Json;
 using Application.Abstractions.Services;
 using Domain.Common;
@@ -11,7 +15,7 @@ internal sealed class GoldPriceService(
     IOptions<GoldApiOptions> options,
     HybridCache cache) : IGoldPriceService
 {
-    private readonly GoldApiOptions _options = options.Value;
+    private readonly GoldApiOptions options = options.Value;
 
     public async Task<GoldPriceData> GetCurrentPricesAsync(Currency currency, CancellationToken cancellationToken)
     {
@@ -24,13 +28,13 @@ internal sealed class GoldPriceService(
 
         HybridCacheEntryOptions cacheOptions = new()
         {
-            Expiration = TimeSpan.FromMinutes(_options.CacheDurationMinutes),
-            LocalCacheExpiration = TimeSpan.FromMinutes(_options.CacheDurationMinutes * 2),
+            Expiration = TimeSpan.FromMinutes(this.options.CacheDurationMinutes),
+            LocalCacheExpiration = TimeSpan.FromMinutes(this.options.CacheDurationMinutes * 2),
         };
 
         return await cache.GetOrCreateAsync<GoldPriceData>(
             cacheKey,
-            (token) => FetchFromApiAsync(currency, token),
+            (token) => this.FetchFromApiAsync(currency, token),
             cacheOptions,
             cancellationToken: cancellationToken);
     }
@@ -42,12 +46,12 @@ internal sealed class GoldPriceService(
             Currency.JOD => "JOD",
             Currency.USD => "USD",
             Currency.ILS => "ILS",
-            _ => "USD"
+            _ => "USD",
         };
 
         HttpClient httpClient = httpClientFactory.CreateClient("GoldApi");
         var request = new HttpRequestMessage(HttpMethod.Get, $"/api/XAU/{currencyCode}");
-        request.Headers.Add("x-access-token", _options.ApiKey);
+        request.Headers.Add("x-access-token", this.options.ApiKey);
 
         HttpResponseMessage response = await httpClient.SendAsync(request, cancellationToken);
 

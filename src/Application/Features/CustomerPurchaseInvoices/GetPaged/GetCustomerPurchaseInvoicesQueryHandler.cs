@@ -1,3 +1,7 @@
+// <copyright file="GetCustomerPurchaseInvoicesQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -95,7 +99,7 @@ internal sealed class GetCustomerPurchaseInvoicesQueryHandler(
                 Equivalent21KWeightInGrams = item.Equivalent21KWeightInGrams,
                 PricePerGram = item.PricePerGram,
                 GoldAmount = item.GoldAmount,
-            }).ToList()
+            }).ToList(),
         }).ToList();
 
         return new PaginatedList<CustomerPurchaseInvoiceResponse>(items, page, pageSize, totalCount);

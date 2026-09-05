@@ -1,3 +1,7 @@
+// <copyright file="CreateSalesInvoiceCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Services;
@@ -48,7 +52,7 @@ internal sealed class CreateSalesInvoiceCommandHandler(
         Currency currency = Enum.Parse<Currency>(command.Currency);
         var invoiceId = Guid.CreateVersion7();
 
-        List<SalesInvoiceItem> Items = [];
+        List<SalesInvoiceItem> items = [];
 
         foreach (SalesInvoiceItemDto item in command.Items)
         {
@@ -65,9 +69,8 @@ internal sealed class CreateSalesInvoiceCommandHandler(
             {
                 return saleInvoceItemResult.Errors;
             }
-            Items.Add(saleInvoceItemResult.Value);
 
-
+            items.Add(saleInvoceItemResult.Value);
         }
 
         string invoiceNumber = await invoiceNumberService.AllocateAsync(
@@ -122,7 +125,7 @@ internal sealed class CreateSalesInvoiceCommandHandler(
             0 when amountPaid > 0 => SalesInvoiceStatus.Completed,
             > 0 when amountPaid > 0 => SalesInvoiceStatus.PartiallyPaid,
             > 0 when amountPaid == 0 => SalesInvoiceStatus.Draft,
-            _ => SalesInvoiceStatus.Draft
+            _ => SalesInvoiceStatus.Draft,
         };
         try
         {
@@ -141,16 +144,16 @@ internal sealed class CreateSalesInvoiceCommandHandler(
                 command.Notes,
                 accountId,
                 employeeId ?? Guid.Empty,
-                Items
-                );
+                items);
             if (invoiceResult.IsError)
             {
                 return invoiceResult.Errors;
             }
-            context.SalesInvoices.Add(invoiceResult.Value);
-            await context.SalesInvoiceItems.AddRangeAsync(Items, cancellationToken);
 
-            foreach (IGrouping<Karat, SalesInvoiceItem> karatGroup in Items.GroupBy(i => i.Karat))
+            context.SalesInvoices.Add(invoiceResult.Value);
+            await context.SalesInvoiceItems.AddRangeAsync(items, cancellationToken);
+
+            foreach (IGrouping<Karat, SalesInvoiceItem> karatGroup in items.GroupBy(i => i.Karat))
             {
                 decimal required = karatGroup.Sum(i => i.WeightInGrams);
                 decimal available = await context.GetGoldStockAsync(karatGroup.Key, cancellationToken);
@@ -161,7 +164,7 @@ internal sealed class CreateSalesInvoiceCommandHandler(
                 }
             }
 
-            foreach (SalesInvoiceItem item in Items)
+            foreach (SalesInvoiceItem item in items)
             {
                 var itemId = Guid.CreateVersion7();
                 Result<GoldLedgerEntry> goldLedgerEntryResult = GoldLedgerEntry.Create(
@@ -170,14 +173,15 @@ internal sealed class CreateSalesInvoiceCommandHandler(
                     GoldMovementType.Decrease,
                     GoldReferenceType.Sale,
                     invoiceId,
-                    $"فاتورة مبيعات {invoiceNumber}"
-                );
+                    $"فاتورة مبيعات {invoiceNumber}");
                 if (goldLedgerEntryResult.IsError)
                 {
                     return goldLedgerEntryResult.Errors;
                 }
+
                 context.GoldLedgerEntries.Add(goldLedgerEntryResult.Value);
             }
+
             if (command.PaymentLegs is not { Count: > 0 } && amountPaid > 0 && accountId != Guid.Empty)
             {
                 Result<FinancialTransaction> financialTransactionResult = FinancialTransaction.Create(accountId, currency, amountPaid,
@@ -188,8 +192,8 @@ internal sealed class CreateSalesInvoiceCommandHandler(
                 {
                     return financialTransactionResult.Errors;
                 }
-                context.FinancialTransactions.Add(financialTransactionResult.Value);
 
+                context.FinancialTransactions.Add(financialTransactionResult.Value);
             }
 
             if (remainingBalance > 0)
@@ -202,6 +206,7 @@ internal sealed class CreateSalesInvoiceCommandHandler(
                 {
                     return debtResult.Errors;
                 }
+
                 context.Debts.Add(debtResult.Value);
 
                 Result<DebtLedgerEntry> debtLedgerEntryResult = DebtLedgerEntry.Create(debtResult.Value.Id, remainingBalance,
@@ -211,13 +216,12 @@ internal sealed class CreateSalesInvoiceCommandHandler(
                 {
                     return debtLedgerEntryResult.Errors;
                 }
-                context.DebtLedgerEntries.Add(debtLedgerEntryResult.Value);
 
+                context.DebtLedgerEntries.Add(debtLedgerEntryResult.Value);
             }
 
             await context.SaveChangesAsync(cancellationToken);
             return invoiceId;
-
         }
         catch (Exception ex)
         {
@@ -225,5 +229,4 @@ internal sealed class CreateSalesInvoiceCommandHandler(
             return ApplicationErrors.DatabaseError;
         }
     }
-
 }

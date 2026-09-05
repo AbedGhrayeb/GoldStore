@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿// <copyright file="PermissionAuthorizationPolicyProvider.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Authorization;
@@ -7,12 +11,12 @@ internal sealed class PermissionAuthorizationPolicyProvider : DefaultAuthorizati
 {
     private const string FeaturePolicyPrefix = "feature:";
 
-    private readonly AuthorizationOptions _authorizationOptions;
+    private readonly AuthorizationOptions authorizationOptions;
 
     public PermissionAuthorizationPolicyProvider(IOptions<AuthorizationOptions> options)
         : base(options)
     {
-        _authorizationOptions = options.Value;
+        this.authorizationOptions = options.Value;
     }
 
     public override async Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
@@ -32,7 +36,7 @@ internal sealed class PermissionAuthorizationPolicyProvider : DefaultAuthorizati
                 .AddRequirements(new PermissionRequirement(policyName))
                 .Build();
 
-        _authorizationOptions.AddPolicy(policyName, permissionPolicy);
+        this.authorizationOptions.AddPolicy(policyName, permissionPolicy);
 
         return permissionPolicy;
     }

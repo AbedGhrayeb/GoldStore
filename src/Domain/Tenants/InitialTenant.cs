@@ -1,3 +1,7 @@
+// <copyright file="InitialTenant.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Domain.Tenants;
 
 /// <summary>

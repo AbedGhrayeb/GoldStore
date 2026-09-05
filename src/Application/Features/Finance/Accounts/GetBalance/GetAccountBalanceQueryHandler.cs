@@ -1,3 +1,7 @@
+// <copyright file="GetAccountBalanceQueryHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Tenants;
@@ -34,7 +38,7 @@ internal sealed class GetAccountBalanceQueryHandler(IApplicationDbContext contex
             Name = account.Name,
             Currency = account.Currency.ToString(),
             AccountType = account.AccountType.ToString(),
-            CurrentBalance = currentBalance
+            CurrentBalance = currentBalance,
         };
     }
 }

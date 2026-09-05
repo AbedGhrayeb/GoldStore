@@ -1,3 +1,7 @@
+// <copyright file="SalaryPaymentErrors.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using SharedKernel.Result;
 
 namespace Domain.Employees;

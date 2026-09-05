@@ -1,4 +1,8 @@
-﻿using SharedKernel;
+﻿// <copyright file="UserRegisteredDomainEvent.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using SharedKernel;
 
 namespace Domain.Users;
 

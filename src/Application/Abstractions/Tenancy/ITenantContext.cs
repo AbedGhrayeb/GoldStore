@@ -1,3 +1,7 @@
+// <copyright file="ITenantContext.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Domain.Tenants;
 
 namespace Application.Abstractions.Tenancy;
@@ -20,6 +24,6 @@ public interface ITenantContext
 
     TenantStatus Status { get; }
 
-    /// <summary>Optional dedicated-database connection string (escape hatch). Null = shared database.</summary>
+    /// <summary>Gets optional dedicated-database connection string (escape hatch). Null = shared database.</summary>
     string? ConnectionString { get; }
 }

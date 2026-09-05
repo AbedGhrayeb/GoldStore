@@ -1,3 +1,7 @@
+// <copyright file="ICacheService.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 namespace Application.Abstractions.Caching;
 
 /// <summary>

@@ -1,3 +1,7 @@
+// <copyright file="ProvisionTenantCommandHandler.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -114,7 +118,7 @@ internal sealed class ProvisionTenantCommandHandler(
 
         context.UserRoles.Add(userRoleResult.Value);
 
-        SeedDefaultFinancialAccounts();
+        this.SeedDefaultFinancialAccounts();
 
         await context.SaveChangesAsync(cancellationToken);
 

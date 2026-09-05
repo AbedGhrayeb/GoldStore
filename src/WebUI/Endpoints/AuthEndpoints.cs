@@ -1,4 +1,8 @@
-﻿using System.Security.Claims;
+﻿// <copyright file="AuthEndpoints.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+using System.Security.Claims;
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
@@ -352,9 +356,15 @@ public sealed record TokenResponse(string AccessToken, string RefreshToken, Date
 public sealed record Login2faRequiredResponse(bool RequiresEnrollment, bool RequiresTwoFactor, string? MaskedPhone, string TempTicket);
 
 public sealed record SetupPhone2faRequest(string TempTicket, string IdToken);
+
 public sealed record SetupPhone2faResponse(string PhoneNumber, IReadOnlyList<string> RecoveryCodes);
+
 public sealed record VerifyPhone2faRequest(string TempTicket, string IdToken);
+
 public sealed record VerifyRecoveryRequest(string TempTicket, string RecoveryCode);
+
 public sealed record ForgotPasswordPhoneRequest(string EmailOrPhone, string IdToken, string NewPassword);
+
 public sealed record PhoneStatusResponse(bool TwoFactorEnabled, bool PhoneNumberVerified, string? MaskedPhone);
+
 public sealed record FirebaseConfigResponse(string ProjectId, string WebApiKey, string AuthDomain, string AppId);
