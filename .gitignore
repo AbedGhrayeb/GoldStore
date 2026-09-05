@@ -407,3 +407,8 @@ FodyWeavers.xsd
 **/goldstore-f2729-fireb*.json
 *.bak
 docs/*
+# Angular SPA output copied into src/WebUI/wwwroot by the BuildAngular MSBuild target
+# (WebUI.csproj). Regenerated on every Release build/publish — do not commit.
+# favicon.ico stays tracked (Angular public/ icon, refreshed intentionally).
+src/WebUI/wwwroot/*
+!src/WebUI/wwwroot/favicon.ico

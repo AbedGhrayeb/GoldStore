@@ -161,9 +161,32 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        string issuer = configuration["Jwt:Issuer"]!;
-        string audience = configuration["Jwt:Audience"]!;
-        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Secret"]!));
+        // Fail fast with an actionable message when production secrets are missing
+        // (SmarterASP: App Settings must define Jwt__Secret/Issuer/Audience). Without
+        // this, GetBytes(null) throws a bare ArgumentNullException at startup.
+        // NOTE: Production json ships these as "" (not absent), so empty counts as missing.
+        string secret = configuration["Jwt:Secret"] ?? string.Empty;
+        string issuer = configuration["Jwt:Issuer"] ?? string.Empty;
+        string audience = configuration["Jwt:Audience"] ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(secret))
+        {
+            throw new InvalidOperationException(
+                "Missing required configuration 'Jwt:Secret' (environment variable Jwt__Secret).");
+        }
+
+        if (string.IsNullOrWhiteSpace(issuer))
+        {
+            throw new InvalidOperationException(
+                "Missing required configuration 'Jwt:Issuer' (environment variable Jwt__Issuer).");
+        }
+
+        if (string.IsNullOrWhiteSpace(audience))
+        {
+            throw new InvalidOperationException(
+                "Missing required configuration 'Jwt:Audience' (environment variable Jwt__Audience).");
+        }
+
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
 
         services
             .AddAuthentication(options =>

@@ -70,6 +70,11 @@ namespace WebUI
 
             app.UseHttpsRedirection();
 
+            // SmarterASP (no Docker): serve the Angular SPA built into wwwroot
+            // (see WebUI.csproj BuildAngular). Same-origin /api -> no CORS needed.
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
+
             // Migrate + seed on startup. Always in Development; in other environments only
             // when explicitly enabled via App:MigrateOnStartup (or the App__MigrateOnStartup
             // environment variable) so operators control when production DDL runs. Seeding is
@@ -130,6 +135,11 @@ namespace WebUI
             // endpoints live under /api/v1 (JWT), host endpoints under /host/api/v1
             // (host cookie). Adding a new group never changes this file.
             app.MapEndpoints();
+
+            // Angular client-side routes (/login, /dashboard/*, /host/* pages) fall back
+            // to index.html. API (/api/*), host (/host/api/*) and health (/health*)
+            // matched above and are never shadowed.
+            app.MapFallbackToFile("index.html");
 
             // Built-in OpenAPI document + Scalar API reference UI (plan Phase 7a).
             if (app.Environment.IsDevelopment())

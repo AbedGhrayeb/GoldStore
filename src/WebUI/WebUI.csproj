@@ -31,5 +31,27 @@
     <ProjectReference Include="..\SharedKernel\SharedKernel.csproj" />
   </ItemGroup>
 
+  <!-- SmarterASP (no Docker): build the Angular SPA and copy it into wwwroot so a
+       single `dotnet publish` produces backend + frontend together (same-origin /api).
+       Angular output is src/Client/dist/client/browser (see angular.json production).
+       Runs before BeforeBuild/PrepareForPublish (NOT Publish): files copied during the
+       Publish phase itself miss ComputeFilesToPublish and would be silently dropped. -->
+  <Target Name="BuildAngular" BeforeTargets="BeforeBuild;PrepareForPublish">
+    <Exec Command="npm ci" WorkingDirectory="../Client" Condition="!Exists('../Client/node_modules')" />
+    <Exec Command="npm run build" WorkingDirectory="../Client" Condition="'$(Configuration)' == 'Release'" />
+    <ItemGroup>
+      <AngularFiles Include="../Client/dist/client/browser/**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AngularFiles)" DestinationFiles="@(AngularFiles->'wwwroot/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- Never publish Firebase/service-account secrets even if dropped into wwwroot locally. -->
+  <ItemGroup>
+    <Content Remove="wwwroot/**/*firebase*.json" />
+    <Content Remove="wwwroot/**/*fireb*.json" />
+    <None Remove="wwwroot/**/*firebase*.json" />
+    <None Remove="wwwroot/**/*fireb*.json" />
+  </ItemGroup>
+
 </Project>
 
