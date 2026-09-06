@@ -412,3 +412,4 @@ docs/*
 # favicon.ico stays tracked (Angular public/ icon, refreshed intentionally).
 src/WebUI/wwwroot/*
 !src/WebUI/wwwroot/favicon.ico
+publish-breeqapp-001/*
