@@ -8,6 +8,8 @@ export interface CategoryTreeRow {
   parentCategoryId: string | null;
   parentCategoryName: string | null;
   isActive: boolean;
+  weightInGrams: number | null;
+  karat: number | null;
   depth: number;
   hasChildren: boolean;
 }
@@ -43,6 +45,8 @@ export function buildCategoryRows(categories: readonly CategoryResponse[]): Cate
         parentCategoryId: category.parentCategoryId ?? null,
         parentCategoryName: category.parentCategoryName ?? null,
         isActive: category.isActive ?? true,
+        weightInGrams: typeof category.weightInGrams === 'number' ? category.weightInGrams : null,
+        karat: typeof category.karat === 'number' ? category.karat : null,
         depth,
         hasChildren: (byParent.get(id) ?? []).length > 0,
       });

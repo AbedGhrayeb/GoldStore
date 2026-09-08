@@ -87,6 +87,15 @@ const PAYMENTS: SupplierFinancialPaymentResponse[] = [
 
 const BASE = apiUrl('/api/v1');
 const SUPPLIERS = `${BASE}/suppliers`;
+const PAGED_SUPPLIERS = {
+  items: [SUPPLIER_1, SUPPLIER_2],
+  pageNumber: 1,
+  pageSize: 15,
+  totalCount: 2,
+  totalPages: 1,
+  hasPreviousPage: false,
+  hasNextPage: false,
+};
 const DELIVERIES = `${BASE}/supplier-deliveries`;
 const PAYMENTS_ENDPOINT = `${BASE}/supplier-payments`;
 const TRANSACTIONS = `${BASE}/supplier-financial-transactions`;
@@ -99,6 +108,7 @@ describe('SuppliersStore', () => {
 
   const server = setupServer(
     http.get(SUPPLIERS, () => HttpResponse.json(suppliers)),
+    http.get(`${SUPPLIERS}/paged`, () => HttpResponse.json(PAGED_SUPPLIERS)),
     http.post(SUPPLIERS, async ({ request }) => {
       const body = (await request.json()) as Record<string, unknown>;
       expect(Object.keys(body)).not.toContain('tenantId');
@@ -124,23 +134,51 @@ describe('SuppliersStore', () => {
     ),
     http.post(DELIVERIES, async ({ request }) => {
       const body = (await request.json()) as {
-        lines: { karat: number; weightInGrams: number }[];
+        lines: {
+          karat: number;
+          weightInGrams: number;
+          categoryId: string | null;
+        }[];
       };
       expect(Object.keys(body)).not.toContain('tenantId');
+      expect(Object.keys(body).sort()).toEqual(
+        [
+          'amountDue',
+          'amountDueCurrency',
+          'lines',
+          'manufacturingFeeCurrency',
+          'manufacturingFeePerGram',
+          'notes',
+          'paymentLegs',
+          'supplierId',
+        ].sort(),
+      );
       for (const line of body.lines) {
-        expect(Object.keys(line).sort()).toEqual(['karat', 'weightInGrams']);
+        expect(Object.keys(line).sort()).toEqual(['categoryId', 'karat', 'weightInGrams']);
       }
       return HttpResponse.json('delivery-1', { status: 201 });
     }),
     http.post(`${PAYMENTS_ENDPOINT}/scrap-gold`, async ({ request }) => {
       const body = (await request.json()) as Record<string, unknown>;
-      expect(Object.keys(body).sort()).toEqual(['karat', 'notes', 'supplierId', 'weightInGrams']);
+      for (const key of ['karat', 'notes', 'supplierId', 'weightInGrams']) {
+        expect(key in body).toBe(true);
+      }
+      for (const key of Object.keys(body)) {
+        expect(['karat', 'notes', 'supplierId', 'weightInGrams', 'categoryId']).toContain(key);
+      }
       expect(Object.keys(body)).not.toContain('tenantId');
       return HttpResponse.json('payment-1', { status: 201 });
     }),
     http.post(`${PAYMENTS_ENDPOINT}/manufacturing`, async ({ request }) => {
       const body = (await request.json()) as Record<string, unknown>;
-      expect(Object.keys(body).sort()).toEqual(['accountId', 'amount', 'currency', 'notes', 'supplierId']);
+      expect(Object.keys(body).sort()).toEqual([
+        'accountId',
+        'amount',
+        'currency',
+        'notes',
+        'paymentLegs',
+        'supplierId',
+      ]);
       expect(Object.keys(body)).not.toContain('tenantId');
       return HttpResponse.json('payment-2', { status: 201 });
     }),
@@ -183,6 +221,15 @@ describe('SuppliersStore', () => {
     expect(store.error()).toBeNull();
   });
 
+  it('loads the paged supplier list with search and status filter', async () => {
+    await store.loadSuppliersPage({ page: 1, pageSize: 15, search: 'ذهب', activeOnly: true });
+
+    expect(store.suppliersPage()?.totalCount).toBe(2);
+    expect(store.suppliersPage()?.items).toHaveLength(2);
+    expect(store.suppliersPageLoading()).toBe(false);
+    expect(store.suppliersPageError()).toBeNull();
+  });
+
   it('creates a supplier with a tenantId-free payload and reloads', async () => {
     const ok = await store.createSupplier({
       name: 'مورد جديد',
@@ -213,15 +260,18 @@ describe('SuppliersStore', () => {
     expect(store.suppliers()).toHaveLength(2);
   });
 
-  it('posts a delivery whose lines carry only karat and weightInGrams', async () => {
+  it('posts a delivery with header-level due amount and payment legs', async () => {
     const ok = await store.createDelivery({
       supplierId: 'supplier-1',
       lines: [
-        { karat: 21, weightInGrams: 50.5 },
-        { karat: 18, weightInGrams: 10 },
+        { karat: 21, weightInGrams: 50.5, categoryId: 'cat-1' },
+        { karat: 18, weightInGrams: 10, categoryId: null },
       ],
       manufacturingFeePerGram: 0.5,
       manufacturingFeeCurrency: 'JOD',
+      amountDue: 100,
+      amountDueCurrency: 'JOD',
+      paymentLegs: [{ accountId: 'account-1', currency: 'JOD', amount: 40, exchangeRate: 1 }],
       notes: 'تسليم أول',
     });
 
@@ -246,6 +296,7 @@ describe('SuppliersStore', () => {
       accountId: 'account-1',
       amount: 120,
       currency: 'JOD',
+      paymentLegs: null,
       notes: null,
     });
 
@@ -258,7 +309,7 @@ describe('SuppliersStore', () => {
     await store.ensureAccounts();
 
     expect(store.kpis()?.byCurrency?.[0]?.netBalanceDisplay).toBe('400.000');
-    expect((store.page() as any)?.items?.[0]?.supplierName).toBe('مؤسسة الذهب');
+    expect(store.page()?.items?.[0]?.supplierName).toBe('مؤسسة الذهب');
     expect(store.accounts()).toHaveLength(1);
     expect(store.accountsError()).toBeNull();
   });

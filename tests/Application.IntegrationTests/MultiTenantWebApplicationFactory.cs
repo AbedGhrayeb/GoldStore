@@ -194,7 +194,7 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
     // ─── Helpers for tests ────────────────────────────────────────────────────
 
     /// <summary>Opens a scoped DbContext bound to the given ambient tenant.</summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task<(IServiceScope Scope, ApplicationDbContext Db)> OpenTenantContextAsync(
         Guid tenantId, string tenantKey)
     {
@@ -214,7 +214,7 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
     }
 
     /// <summary>Performs a real cookie login (GET login page, POST credentials, follow redirects).</summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task<HttpClient> CreateAuthenticatedClientAsync(string email, string password)
     {
         HttpClient client = this.CreateClient();
@@ -228,7 +228,7 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
     /// client with the <c>Authorization: Bearer &lt;token&gt;</c> header pre-set. Mirrors
     /// <see cref="CreateAuthenticatedClientAsync"/> for the tenant API surface (plan Phase 7a).
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task<HttpClient> CreateJwtClientAsync(string email, string password)
     {
         HttpClient client = this.CreateClient();
@@ -270,7 +270,7 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
         db.Users.Add(userB);
         db.UserRoles.Add(UserRole.Create(this.TenantBId, userB.Id, storeAdmin.Id).Value);
         this.SupplierB = Supplier.Create("Gold House", "0791111111", secondaryPhone: null, bankAccountNumber: null, notes: "second store").Value;
-        this.CategoryB = Category.Create(parentCategoryId: null, name: "خواتم", description: "rings").Value;
+        this.CategoryB = Category.Create(parentCategoryId: null, name: "خواتم", description: "rings", weightInGrams: 5M, karat: Karat.K21).Value;
         this.EmployeeB = Employee.Create(
             "Second", "Seller", RoleEnum.Salesperson, 1000M, Currency.JOD, SalaryCycleEnum.Monthly, userId: null).Value;
         this.FinancialAccountB = FinancialAccount.Create(
@@ -290,7 +290,7 @@ public class MultiTenantWebApplicationFactory : WebApplicationFactory<Program>, 
         // ── Tenant A: deliberately similar rows, saved under A's ambient tenant ──
         setter.Set(tenantAId, TenantAKey);
         this.SupplierA = Supplier.Create("Gold House", "0790000000", secondaryPhone: null, bankAccountNumber: null, notes: "initial store").Value;
-        this.CategoryA = Category.Create(parentCategoryId: null, name: "خواتم", description: "rings").Value;
+        this.CategoryA = Category.Create(parentCategoryId: null, name: "خواتم", description: "rings", weightInGrams: 5M, karat: Karat.K21).Value;
         this.EmployeeA = Employee.Create(
             "Initial", "Seller", RoleEnum.Salesperson, 1000M, Currency.JOD, SalaryCycleEnum.Monthly, userId: null).Value;
         this.FinancialAccountA = await db.FinancialAccounts

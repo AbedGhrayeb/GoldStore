@@ -25,10 +25,18 @@ export interface SupplierInput {
   notes: string | null;
 }
 
-/** One delivery line — the server computes the 21K-equivalent; only karat + weight are sent. */
+/** One delivery line: karat + weight + optional category; totals are header-level. */
 export interface DeliveryLineInput {
   karat: number;
   weightInGrams: number;
+  categoryId: string | null;
+}
+
+export interface DeliveryPaymentLegInput {
+  accountId: string;
+  currency: string;
+  amount: number;
+  exchangeRate: number;
 }
 
 export interface DeliveryInput {
@@ -36,6 +44,9 @@ export interface DeliveryInput {
   lines: DeliveryLineInput[];
   manufacturingFeePerGram: number;
   manufacturingFeeCurrency: string;
+  amountDue: number;
+  amountDueCurrency: string;
+  paymentLegs: DeliveryPaymentLegInput[] | null;
   notes: string | null;
 }
 
@@ -44,6 +55,14 @@ export interface ScrapGoldPaymentInput {
   karat: number;
   weightInGrams: number;
   notes: string | null;
+  categoryId?: string | null;
+}
+
+export interface ManufacturingPaymentLegInput {
+  accountId: string;
+  currency: string;
+  amount: number;
+  exchangeRate: number;
 }
 
 export interface ManufacturingPaymentInput {
@@ -51,7 +70,53 @@ export interface ManufacturingPaymentInput {
   accountId: string;
   amount: number;
   currency: string;
+  paymentLegs: ManufacturingPaymentLegInput[] | null;
   notes: string | null;
+}
+
+export interface SupplierTransactionResponse {
+  id?: string;
+  description?: string;
+  date?: string;
+  type?: string;
+  amount?: number | string;
+  unit?: string;
+  direction?: string;
+}
+
+/** Paginated supplier detail transactions (server: PaginatedList<SupplierTransactionResponse>). */
+export interface PagedSupplierTransactionsResponse {
+  items: SupplierTransactionResponse[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+export interface SupplierDetailTransactionsQuery {
+  page?: number;
+  pageSize?: number;
+  /** 'gold' | 'manufacturing' | 'financial' — omitted/unknown returns all types. */
+  type?: string;
+}
+
+/** Per-karat / per-currency dues for one supplier (GET /suppliers/{id}/balances). */
+export interface SupplierGoldDue {
+  karat: number | string;
+  netWeight: number | string;
+}
+
+export interface SupplierManufacturingDue {
+  currency: string;
+  netAmount: number | string;
+}
+
+export interface SupplierBalancesResponse {
+  supplierId: string;
+  goldByKarat: SupplierGoldDue[];
+  manufacturingByCurrency: SupplierManufacturingDue[];
 }
 
 /** 1 = FromSupplier (له), 2 = ToSupplier (لنا). */
@@ -80,6 +145,24 @@ export interface SupplierTransactionQuery {
   supplierId?: string;
   direction?: FinancialDirection;
   search?: string;
+}
+
+export interface SupplierListQuery {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  activeOnly?: boolean;
+}
+
+/** Paginated supplier list (server: PaginatedList<SupplierResponse>). */
+export interface PagedSuppliersResponse {
+  items: SupplierResponse[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }
 
 function toQueryString(params: object): string {
@@ -114,9 +197,51 @@ export class SuppliersApi {
     return this.api.get<SupplierResponse[]>(SuppliersApi.suppliers, options);
   }
 
+  getSuppliersPaged(
+    query: SupplierListQuery,
+    options?: ApiRequestOptions,
+  ): Observable<PagedSuppliersResponse> {
+    const queryString = toQueryString({
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 15,
+      search: query.search ?? '',
+      activeOnly: query.activeOnly ?? '',
+    });
+    return this.api.get<PagedSuppliersResponse>(
+      `${SuppliersApi.suppliers}/paged${queryString}`,
+      options,
+    );
+  }
+
   getSupplier(id: string, options?: ApiRequestOptions): Observable<SupplierDetailResponse> {
     return this.api.get<SupplierDetailResponse>(
       `${SuppliersApi.suppliers}/${encodeURIComponent(id)}`,
+      options,
+    );
+  }
+
+  getSupplierBalances(
+    id: string,
+    options?: ApiRequestOptions,
+  ): Observable<SupplierBalancesResponse> {
+    return this.api.get<SupplierBalancesResponse>(
+      `${SuppliersApi.suppliers}/${encodeURIComponent(id)}/balances`,
+      options,
+    );
+  }
+
+  getSupplierTransactions(
+    id: string,
+    query: SupplierDetailTransactionsQuery,
+    options?: ApiRequestOptions,
+  ): Observable<PagedSupplierTransactionsResponse> {
+    const queryString = toQueryString({
+      type: query.type ?? '',
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 15,
+    });
+    return this.api.get<PagedSupplierTransactionsResponse>(
+      `${SuppliersApi.suppliers}/${encodeURIComponent(id)}/transactions${queryString}`,
       options,
     );
   }
@@ -162,10 +287,7 @@ export class SuppliersApi {
   }
 
   getKpis(options?: ApiRequestOptions): Observable<SupplierFinancialKpiResponse> {
-    return this.api.get<SupplierFinancialKpiResponse>(
-      `${SuppliersApi.transactions}/kpis`,
-      options,
-    );
+    return this.api.get<SupplierFinancialKpiResponse>(`${SuppliersApi.transactions}/kpis`, options);
   }
 
   getTransactions(
@@ -179,11 +301,17 @@ export class SuppliersApi {
     );
   }
 
-  createTransaction(input: FinancialTransactionInput, options?: ApiRequestOptions): Observable<string> {
+  createTransaction(
+    input: FinancialTransactionInput,
+    options?: ApiRequestOptions,
+  ): Observable<string> {
     return this.api.post<string>(SuppliersApi.transactions, input, options);
   }
 
-  getPayments(transactionId: string, options?: ApiRequestOptions): Observable<SupplierFinancialPaymentResponse[]> {
+  getPayments(
+    transactionId: string,
+    options?: ApiRequestOptions,
+  ): Observable<SupplierFinancialPaymentResponse[]> {
     return this.api.get<SupplierFinancialPaymentResponse[]>(
       `${SuppliersApi.transactions}/${encodeURIComponent(transactionId)}/payments`,
       options,

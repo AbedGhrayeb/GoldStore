@@ -16,7 +16,7 @@ public interface ITokenProvider
     /// Creates an access token carrying immutable claims: user id, tenant id and key,
     /// roles, permissions, and the user's current security stamp (plan Phase 4 items 3-4).
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task<AccessTokenResponse> CreateAccessTokenAsync(Guid userId, CancellationToken cancellationToken);
 }
 

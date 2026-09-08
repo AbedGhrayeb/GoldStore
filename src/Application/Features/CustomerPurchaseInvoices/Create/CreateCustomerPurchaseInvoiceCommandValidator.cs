@@ -16,8 +16,8 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandValidator : AbstractVa
             .MaximumLength(200)
             .WithMessage("اسم البائع مطلوب");
         this.RuleFor(x => x.SellerIdNumber)
-            .MaximumLength(9).When(x => x.SellerIdNumber is not null)
-            .WithMessage("رقم الهوية مطلوب");
+            .MaximumLength(10).When(x => !string.IsNullOrEmpty(x.SellerIdNumber))
+            .WithMessage("رقم الهوية يجب ألا يتجاوز 10 أحرف");
 
         this.RuleFor(x => x.SellerPhone)
             .MaximumLength(10)

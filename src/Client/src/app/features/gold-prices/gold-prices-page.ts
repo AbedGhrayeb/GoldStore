@@ -7,7 +7,7 @@ import { environment } from '../../environment/environment';
 import type { GoldPriceInfo, GoldPricesResponse } from '../../core/gold-prices/gold-price-store';
 import { Button, Card, EmptyState, RetryButton, Skeleton } from '../../shared/ui';
 
-const GOLD_PRICE_REFRESH_MS = 5 * 60_000;
+const GOLD_PRICE_REFRESH_MS = 24 * 60 * 60_000;
 
 interface PriceTile {
   key: 'spot' | 'karat24' | 'karat21';
@@ -18,9 +18,9 @@ interface PriceTile {
 }
 
 /**
- * P3.4 — Gold prices (auth only, no feature gate). Reads the live external feed from
- * `/gold-prices/current` via `httpResource` (fetch-based so the service worker's
- * `gold-prices` dataGroup serves stale-while-revalidate up to 5 minutes) and auto-refreshes
+ * P3.4 — Gold prices (auth only, no feature gate). Reads the daily external feed (JOD-only)
+ * from `/gold-prices/current` via `httpResource` (fetch-based so the service worker's
+ * `gold-prices` dataGroup serves stale-while-revalidate up to a day) and auto-refreshes
  * on the same interval. The tiles update in place through signals — no page reload.
  */
 @Component({
@@ -33,7 +33,7 @@ interface PriceTile {
         <div>
           <h1 class="text-2xl font-bold text-gray-900">أسعار الذهب</h1>
           <p class="mt-1 text-sm text-gray-600">
-            سعر الذهب المباشر — تغذية خارجية تُحدَّث تلقائيًا كل 5 دقائق.
+            سعر الذهب — تغذية خارجية (دينار) تُحدَّث تلقائيًا مرة يوميًا.
           </p>
         </div>
         <app-button variant="secondary" icon="refresh-cw" (clicked)="refresh()">تحديث</app-button>
@@ -147,9 +147,20 @@ export class GoldPricesPage implements OnDestroy {
   });
 
   readonly errorMessage = computed(() => {
-    const error = this.prices.error();
-    return typeof error === 'object' && error !== null && 'message' in error
-      ? String(error.message)
+    const error = this.prices.error() as {
+      message?: unknown;
+      error?: { detail?: unknown; title?: unknown };
+    } | null;
+    const detail = error?.error?.detail;
+    if (typeof detail === 'string' && detail !== '') {
+      return detail;
+    }
+    const title = error?.error?.title;
+    if (typeof title === 'string' && title !== '') {
+      return title;
+    }
+    return typeof error?.message === 'string' && error.message !== ''
+      ? error.message
       : 'حدث خطأ أثناء جلب الأسعار.';
   });
 

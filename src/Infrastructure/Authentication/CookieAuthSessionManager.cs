@@ -55,8 +55,8 @@ internal sealed class CookieAuthSessionManager(
                 : DateTimeOffset.UtcNow.AddHours(8),
             AllowRefresh = true,
         };
-        HttpContext _httpContext = httpContextAccessor.HttpContext ?? throw new NullReferenceException();
-        await _httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
+        HttpContext httpContext = httpContextAccessor.HttpContext ?? throw new NullReferenceException();
+        await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
     }
 
     public Task SignOutAsync() => httpContextAccessor.HttpContext!.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

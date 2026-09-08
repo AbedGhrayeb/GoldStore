@@ -10,7 +10,7 @@ namespace Application.Features.CustomerPurchaseInvoices.Create;
 public sealed record CreateCustomerPurchaseInvoiceCommand(
     string SellerName,
     string? SellerPhone,
-    string SellerIdNumber,
+    string? SellerIdNumber,
     int? SellerYearOfBirth,
     string? SellerAddress,
     Guid EmployeeId,

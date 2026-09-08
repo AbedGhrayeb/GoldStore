@@ -17,4 +17,8 @@ public sealed record CategoryResponse
     public string? ParentCategoryName { get; init; }
 
     public bool IsActive { get; init; }
+
+    public decimal? WeightInGrams { get; init; }
+
+    public int? Karat { get; init; }
 }

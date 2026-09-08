@@ -30,7 +30,10 @@ export interface PurchaseTableRow extends CustomerPurchaseInvoiceResponse {
   remainingText: string;
 }
 
-function amountText(value: number | string | null | undefined, currency: string | null | undefined): string {
+function amountText(
+  value: number | string | null | undefined,
+  currency: string | null | undefined,
+): string {
   const amount = Number(value ?? 0);
   const text = Number.isFinite(amount) ? amount.toFixed(3) : '0.000';
   return currency ? `${text} ${currency}` : text;
@@ -78,7 +81,8 @@ function toPurchaseRow(invoice: CustomerPurchaseInvoiceResponse): PurchaseTableR
           icon="shopping-bag"
           [disabled]="!canManagePurchases()"
           [title]="!canManagePurchases() ? 'ليس لديك صلاحية إنشاء فاتورة شراء' : ''"
-          (clicked)="canManagePurchases() && purchaseDialogOpen.set(true)">
+          (clicked)="canManagePurchases() && purchaseDialogOpen.set(true)"
+        >
           فاتورة شراء جديدة
         </app-button>
       </div>
@@ -116,7 +120,7 @@ function toPurchaseRow(invoice: CustomerPurchaseInvoiceResponse): PurchaseTableR
 
       <app-card title="فواتير الشراء">
         <form class="mb-4 space-y-4" novalidate (submit)="applyFilters(); $event.preventDefault()">
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
             <label class="block">
               <span class="mb-2 block text-sm font-medium text-gray-700">بحث</span>
               <div class="relative">
@@ -130,10 +134,24 @@ function toPurchaseRow(invoice: CustomerPurchaseInvoiceResponse): PurchaseTableR
                   autocomplete="off"
                   placeholder="رقم الفاتورة أو اسم البائع"
                   [value]="searchFilter()"
-                  (input)="searchFilter.set($any($event.target).value)"
+                  (input)="onSearchInput($any($event.target).value)"
                   class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 pe-10 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
                 />
               </div>
+            </label>
+
+            <label class="block">
+              <span class="mb-2 block text-sm font-medium text-gray-700">الصنف</span>
+              <select
+                [value]="categoryFilter()"
+                (change)="onCategoryChange($any($event.target).value)"
+                class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
+              >
+                <option value="">كل الأصناف</option>
+                @for (category of activeCategories(); track category.id) {
+                  <option [value]="category.id">{{ category.name }}</option>
+                }
+              </select>
             </label>
 
             <label class="block">
@@ -141,7 +159,7 @@ function toPurchaseRow(invoice: CustomerPurchaseInvoiceResponse): PurchaseTableR
               <input
                 type="date"
                 [value]="fromDateFilter()"
-                (change)="fromDateFilter.set($any($event.target).value)"
+                (change)="onDateChange('from', $any($event.target).value)"
                 class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
               />
             </label>
@@ -151,7 +169,7 @@ function toPurchaseRow(invoice: CustomerPurchaseInvoiceResponse): PurchaseTableR
               <input
                 type="date"
                 [value]="toDateFilter()"
-                (change)="toDateFilter.set($any($event.target).value)"
+                (change)="onDateChange('to', $any($event.target).value)"
                 class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
               />
             </label>
@@ -225,7 +243,9 @@ function toPurchaseRow(invoice: CustomerPurchaseInvoiceResponse): PurchaseTableR
                 </tr>
               } @else {
                 @for (invoice of rows(); track invoice.id) {
-                  <tr class="border-b border-gray-100 transition-colors last:border-0 hover:bg-gold-container/15">
+                  <tr
+                    class="border-b border-gray-100 transition-colors last:border-0 hover:bg-gold-container/15"
+                  >
                     <td class="px-4 py-3">
                       <button
                         type="button"
@@ -305,7 +325,9 @@ function toPurchaseRow(invoice: CustomerPurchaseInvoiceResponse): PurchaseTableR
 })
 export class PurchasesPage {
   private readonly auth = inject(AuthStore);
-  readonly canManagePurchases = computed(() => this.auth.hasPermission('purchases.manage') || this.auth.hasRole('store_admin'));
+  readonly canManagePurchases = computed(
+    () => this.auth.hasPermission('purchases.manage') || this.auth.hasRole('store_admin'),
+  );
   readonly store = inject(PurchasesStore);
 
   readonly kpis = this.store.kpis;
@@ -318,11 +340,18 @@ export class PurchasesPage {
   readonly detailInvoice = signal<CustomerPurchaseInvoiceResponse | null>(null);
 
   readonly searchFilter = signal('');
+  readonly categoryFilter = signal('');
   readonly fromDateFilter = signal('');
   readonly toDateFilter = signal('');
   readonly pageSizeFilter = signal(PAGE_SIZE);
 
   private readonly query = signal<CustomerPurchaseInvoiceQuery>({ page: 1, pageSize: PAGE_SIZE });
+
+  private searchDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  readonly activeCategories = computed(() =>
+    (this.store.categories() ?? []).filter((category) => category.isActive !== false),
+  );
 
   readonly rows = computed(() => (this.store.page()?.items ?? []).map(toPurchaseRow));
   readonly totalCount = computed(() => Number(this.store.page()?.totalCount ?? 0));
@@ -339,6 +368,7 @@ export class PurchasesPage {
   constructor() {
     void this.store.loadKpis();
     void this.store.loadInvoices(this.query());
+    void this.store.refreshOptions();
   }
 
   applyFilters(): void {
@@ -346,14 +376,38 @@ export class PurchasesPage {
       page: 1,
       pageSize: this.pageSizeFilter(),
       search: this.searchFilter().trim() || undefined,
+      categoryId: this.categoryFilter() || undefined,
       fromDate: this.fromDateFilter() || undefined,
       toDate: this.toDateFilter() || undefined,
     });
     void this.store.loadInvoices(this.query());
   }
 
+  onSearchInput(value: string): void {
+    this.searchFilter.set(value);
+    if (this.searchDebounce !== null) {
+      clearTimeout(this.searchDebounce);
+    }
+    this.searchDebounce = setTimeout(() => this.applyFilters(), 400);
+  }
+
+  onCategoryChange(value: string): void {
+    this.categoryFilter.set(value);
+    this.applyFilters();
+  }
+
+  onDateChange(field: 'from' | 'to', value: string): void {
+    if (field === 'from') {
+      this.fromDateFilter.set(value);
+    } else {
+      this.toDateFilter.set(value);
+    }
+    this.applyFilters();
+  }
+
   resetFilters(): void {
     this.searchFilter.set('');
+    this.categoryFilter.set('');
     this.fromDateFilter.set('');
     this.toDateFilter.set('');
     this.pageSizeFilter.set(PAGE_SIZE);
@@ -388,6 +442,5 @@ export class PurchasesPage {
     this.purchaseDialogOpen.set(false);
     void this.store.loadInvoices(this.query());
     void this.store.loadKpis();
-    void this.store.loadNextNumber();
   }
 }

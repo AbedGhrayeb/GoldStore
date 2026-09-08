@@ -91,7 +91,6 @@ const ACCOUNTS = `${BASE}/finance/accounts`;
 describe('SalesPage', () => {
   const server = setupServer(
     http.get(`${INVOICES}/kpis`, () => HttpResponse.json(KPIS)),
-    http.get(`${INVOICES}/next-number`, () => HttpResponse.json('INV-2026-08-0005')),
     http.get(`${INVOICES}/:id`, () => HttpResponse.json(INVOICE_DETAIL)),
     http.get(INVOICES, () => HttpResponse.json(INVOICES_PAGE)),
     http.post(INVOICES, async ({ request }) => {
@@ -102,13 +101,23 @@ describe('SalesPage', () => {
     http.get(EMPLOYEES, () =>
       HttpResponse.json([{ id: 'emp-1', fullName: 'عمر حسن', isActive: true }]),
     ),
-    http.get(CATEGORIES, () =>
-      HttpResponse.json([{ id: 'cat-1', name: 'خواتم', isActive: true }]),
-    ),
+    http.get(CATEGORIES, () => HttpResponse.json([{ id: 'cat-1', name: 'خواتم', isActive: true }])),
     http.get(ACCOUNTS, () =>
       HttpResponse.json([
-        { id: 'acc-1', name: 'صندوق النقدية', currency: 'JOD', accountType: 'Cash', isActive: true },
-        { id: 'acc-2', name: 'الحساب البنكي', currency: 'JOD', accountType: 'Bank', isActive: true },
+        {
+          id: 'acc-1',
+          name: 'صندوق النقدية',
+          currency: 'JOD',
+          accountType: 'Cash',
+          isActive: true,
+        },
+        {
+          id: 'acc-2',
+          name: 'الحساب البنكي',
+          currency: 'JOD',
+          accountType: 'Bank',
+          isActive: true,
+        },
       ]),
     ),
     http.get(`${BASE}/reference/karats`, () =>
@@ -149,12 +158,9 @@ describe('SalesPage', () => {
     return fixture.nativeElement.textContent as string;
   }
 
-  function buttonByText(
-    fixture: ComponentFixture<SalesPage>,
-    label: string,
-  ): HTMLButtonElement {
-    return [...fixture.nativeElement.querySelectorAll('button')].find(
-      (button: HTMLButtonElement) => button.textContent?.includes(label),
+  function buttonByText(fixture: ComponentFixture<SalesPage>, label: string): HTMLButtonElement {
+    return [...fixture.nativeElement.querySelectorAll('button')].find((button: HTMLButtonElement) =>
+      button.textContent?.includes(label),
     ) as HTMLButtonElement;
   }
 
@@ -241,11 +247,14 @@ describe('SalesPage', () => {
     search.value = 'مريم';
     search.dispatchEvent(new Event('input'));
     const status = [...fixture.nativeElement.querySelectorAll('select')].find(
-      (select: HTMLSelectElement) => [...select.options].some((option) => option.value === 'PartiallyPaid'),
+      (select: HTMLSelectElement) =>
+        [...select.options].some((option) => option.value === 'PartiallyPaid'),
     ) as HTMLSelectElement;
     status.value = 'PartiallyPaid';
     status.dispatchEvent(new Event('change'));
-    const dateInputs = [...fixture.nativeElement.querySelectorAll('input[type="date"]')] as HTMLInputElement[];
+    const dateInputs = [
+      ...fixture.nativeElement.querySelectorAll('input[type="date"]'),
+    ] as HTMLInputElement[];
     dateInputs[0]!.value = '2026-08-01';
     dateInputs[0]!.dispatchEvent(new Event('change'));
     dateInputs[1]!.value = '2026-08-31';
@@ -253,11 +262,11 @@ describe('SalesPage', () => {
     fixture.detectChanges();
 
     buttonByText(fixture, 'تصفية').click();
-    await vi.waitFor(() => expect((captured as any)?.get('search')).toBe('مريم'));
+    await vi.waitFor(() => expect((captured ?? new URLSearchParams()).get('search')).toBe('مريم'));
 
-    expect((captured as any)?.get('status')).toBe('PartiallyPaid');
-    expect((captured as any)?.get('fromDate')).toBe('2026-08-01');
-    expect((captured as any)?.get('toDate')).toBe('2026-08-31');
+    expect((captured ?? new URLSearchParams()).get('status')).toBe('PartiallyPaid');
+    expect((captured ?? new URLSearchParams()).get('fromDate')).toBe('2026-08-01');
+    expect((captured ?? new URLSearchParams()).get('toDate')).toBe('2026-08-31');
   });
 
   it('opens the detail dialog from a row and shows the refreshed invoice', async () => {
@@ -278,7 +287,9 @@ describe('SalesPage', () => {
 
   it('shows an inline retry state when the invoices fetch fails', async () => {
     const store = TestBed.inject(SalesStore);
-    server.use(http.get(INVOICES, () => HttpResponse.json({ detail: 'خطأ خادم' }, { status: 500 })));
+    server.use(
+      http.get(INVOICES, () => HttpResponse.json({ detail: 'خطأ خادم' }, { status: 500 })),
+    );
     await store.loadInvoices({ page: 1, pageSize: 15 });
 
     const fixture = TestBed.createComponent(SalesPage);

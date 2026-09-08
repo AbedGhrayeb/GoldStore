@@ -53,7 +53,8 @@ public sealed class SupplierPaymentsEndpoints : IEndpoint
                 request.SupplierId,
                 request.Karat,
                 request.WeightInGrams,
-                request.Notes),
+                request.Notes,
+                request.CategoryId),
             cancellationToken);
 
         return ApiResults.Created(result);
@@ -100,7 +101,8 @@ public sealed record CreateSupplierScrapGoldPaymentRequest(
     Guid SupplierId,
     int Karat,
     decimal WeightInGrams,
-    string? Notes);
+    string? Notes,
+    Guid? CategoryId = null);
 
 public sealed record CreateSupplierManufacturingPaymentRequest(
     Guid SupplierId,

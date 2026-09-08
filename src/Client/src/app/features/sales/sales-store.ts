@@ -24,7 +24,7 @@ function asApiError(error: unknown): ApiError {
 
 /**
  * Signal-backed facade for the sales feature (`feature: sales`). Owns the paged invoice list,
- * the invoice KPIs, the next-number prefill, the invoice detail, the create-invoice mutation,
+ * the invoice KPIs, the invoice detail, the create-invoice mutation,
  * and the best-effort option lists (employees/categories/accounts) the invoice dialog needs.
  * Components consume only this store — never {@link SalesApi} directly.
  */
@@ -44,9 +44,6 @@ export class SalesStore {
   private readonly detailSignal = signal<SalesInvoiceResponse | null>(null);
   private readonly detailLoadingSignal = signal(false);
   private readonly detailErrorSignal = signal<ApiError | null>(null);
-
-  private readonly nextNumberSignal = signal('');
-  private readonly nextNumberErrorSignal = signal(false);
 
   private readonly employeesSignal = signal<EmployeeResponse[]>([]);
   private readonly employeesErrorSignal = signal<string | null>(null);
@@ -72,8 +69,6 @@ export class SalesStore {
   readonly detail = this.detailSignal.asReadonly();
   readonly detailLoading = this.detailLoadingSignal.asReadonly();
   readonly detailError = this.detailErrorSignal.asReadonly();
-  readonly nextNumber = this.nextNumberSignal.asReadonly();
-  readonly nextNumberError = this.nextNumberErrorSignal.asReadonly();
   readonly employees = this.employeesSignal.asReadonly();
   readonly employeesError = this.employeesErrorSignal.asReadonly();
   readonly categories = this.categoriesSignal.asReadonly();
@@ -125,16 +120,6 @@ export class SalesStore {
   clearDetail(): void {
     this.detailSignal.set(null);
     this.detailErrorSignal.set(null);
-  }
-
-  async loadNextNumber(): Promise<void> {
-    this.nextNumberErrorSignal.set(false);
-    try {
-      this.nextNumberSignal.set(await firstValueFrom(this.api.getNextNumber()));
-    } catch {
-      this.nextNumberSignal.set('');
-      this.nextNumberErrorSignal.set(true);
-    }
   }
 
   /**
@@ -216,6 +201,21 @@ export class SalesStore {
     } finally {
       this.accountsPromise = null;
     }
+  }
+
+  /**
+   * Forces a reload of the cached dropdown options (employees/categories/accounts) so that
+   * returning to the page always shows freshly created options without a hard refresh.
+   */
+  async refreshOptions(): Promise<void> {
+    this.employeesSignal.set([]);
+    this.categoriesSignal.set([]);
+    this.accountsSignal.set([]);
+    await Promise.allSettled([
+      this.ensureEmployees(),
+      this.ensureCategories(),
+      this.ensureAccounts(),
+    ]);
   }
 
   clearSaveError(): void {

@@ -5,13 +5,15 @@
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Services;
 using Domain.Common;
+using Microsoft.Extensions.Logging;
 using SharedKernel;
 using SharedKernel.Result;
 
 namespace Application.Features.GoldPrices.GetCurrent;
 
 internal sealed class GetGoldPricesQueryHandler(
-    IGoldPriceService goldPriceService)
+    IGoldPriceService goldPriceService,
+    ILogger<GetGoldPricesQueryHandler> logger)
     : IQueryHandler<GetGoldPricesQuery, GoldPricesResponse>
 {
     private static string FormatCurrency(decimal amount) => $"{amount:N0}";
@@ -23,9 +25,15 @@ internal sealed class GetGoldPricesQueryHandler(
         {
             priceData = await goldPriceService.GetCurrentPricesAsync(Currency.JOD, cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
-            // If gold price API is unavailable, KPIs will show without live pricing
+            // Surface feed outages to the caller instead of silent "—" tiles: the
+            // gold-prices page renders this as an error card with retry. KPIs that
+            // embed pricing keep their own graceful degradation.
+            logger.LogWarning(ex, "Gold price feed unavailable");
+            return Error.Failure(
+                "GoldPrices.Unavailable",
+                "تعذّر جلب أسعار الذهب من المزوّد الخارجي. تحقق من إعداد مفتاح GoldApi__ApiKey ثم أعد المحاولة.");
         }
 
         return new GoldPricesResponse
@@ -63,7 +71,7 @@ internal sealed class GetGoldPricesQueryHandler(
                 ChangeDirection = "none",
                 Currency = "JOD",
                 CurrencySymbol = "د.أ",
-                Unit = "جم"
+                Unit = "جم",
             },
         };
     }

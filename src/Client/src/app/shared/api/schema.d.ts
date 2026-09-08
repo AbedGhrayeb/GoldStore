@@ -373,69 +373,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/customer-purchases/invoices/next-number': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Return the next tenant-local customer purchase invoice number. */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description OK */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': string;
-          };
-        };
-        /** @description Unauthorized */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/problem+json': components['schemas']['ProblemDetails'];
-          };
-        };
-        /** @description Forbidden */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/problem+json': components['schemas']['ProblemDetails'];
-          };
-        };
-        /** @description Internal Server Error */
-        500: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/problem+json': components['schemas']['ProblemDetails'];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/v1/employees': {
     parameters: {
       query?: never;
@@ -3755,69 +3692,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/sales-invoices/next-number': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Return the next tenant-local sales invoice number. */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description OK */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': string;
-          };
-        };
-        /** @description Unauthorized */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/problem+json': components['schemas']['ProblemDetails'];
-          };
-        };
-        /** @description Forbidden */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/problem+json': components['schemas']['ProblemDetails'];
-          };
-        };
-        /** @description Internal Server Error */
-        500: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/problem+json': components['schemas']['ProblemDetails'];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/v1/sales-invoices/kpis': {
     parameters: {
       query?: never;
@@ -5017,6 +4891,83 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/suppliers/paged': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Return paged suppliers with search and status filter. */
+    get: {
+      parameters: {
+        query?: {
+          page?: number | string;
+          pageSize?: number | string;
+          search?: string;
+          activeOnly?: boolean;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['PaginatedListOfSupplierResponse'];
+          };
+        };
+        /** @description Bad Request */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/problem+json': components['schemas']['HttpValidationProblemDetails'];
+          };
+        };
+        /** @description Unauthorized */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/problem+json': components['schemas']['ProblemDetails'];
+          };
+        };
+        /** @description Forbidden */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/problem+json': components['schemas']['ProblemDetails'];
+          };
+        };
+        /** @description Internal Server Error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/problem+json': components['schemas']['ProblemDetails'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/suppliers/{id}': {
     parameters: {
       query?: never;
@@ -5480,6 +5431,10 @@ export interface components {
       parentCategoryId?: null | string;
       parentCategoryName?: null | string;
       isActive?: boolean;
+      /** Format: double */
+      weightInGrams?: null | number | string;
+      /** Format: int32 */
+      karat?: null | number | string;
     };
     CreateCategoryRequest: {
       name: string;
@@ -5488,11 +5443,15 @@ export interface components {
       parentCategoryId: null | string;
       /** @default true */
       isActive: boolean;
+      /** Format: double */
+      weightInGrams: number | string;
+      /** Format: int32 */
+      karat: number | string;
     };
     CreateCustomerPurchaseInvoiceRequest: {
       sellerName: string;
       sellerPhone: null | string;
-      sellerIdNumber: string;
+      sellerIdNumber: null | string;
       /** Format: int32 */
       sellerYearOfBirth: null | number | string;
       sellerAddress: null | string;
@@ -5616,6 +5575,10 @@ export interface components {
       /** Format: double */
       manufacturingFeePerGram: number | string;
       manufacturingFeeCurrency: string;
+      /** Format: double */
+      amountDue: number | string;
+      amountDueCurrency: string;
+      paymentLegs: null | components['schemas']['DeliveryPaymentLegRequest'][];
       notes: null | string;
     };
     CreateSupplierFinancialPaymentRequest: {
@@ -5669,6 +5632,8 @@ export interface components {
       /** Format: double */
       weightInGrams: number | string;
       notes: null | string;
+      /** Format: uuid */
+      categoryId?: null | string;
     };
     CreateUserRequest: {
       email: string;
@@ -5824,6 +5789,15 @@ export interface components {
       /** Format: double */
       net: number | string;
     };
+    DeliveryPaymentLegRequest: {
+      /** Format: uuid */
+      accountId: string;
+      currency: string;
+      /** Format: double */
+      amount: number | string;
+      /** Format: double */
+      exchangeRate: number | string;
+    };
     Deleted: Record<string, never>;
     EmployeeDayStatsResponse: {
       /** Format: uuid */
@@ -5923,6 +5897,11 @@ export interface components {
       balance: number | string;
     };
     FinancialBalanceByCurrency: {
+      currency?: string;
+      /** Format: double */
+      balance?: number | string;
+    };
+    ManufacturingBalanceByCurrency: {
       currency?: string;
       /** Format: double */
       balance?: number | string;
@@ -6191,6 +6170,19 @@ export interface components {
       hasPreviousPage?: boolean;
       hasNextPage?: boolean;
     };
+    PaginatedListOfSupplierResponse: {
+      /** Format: int32 */
+      pageNumber: number | string;
+      /** Format: int32 */
+      pageSize: number | string;
+      /** Format: int32 */
+      totalPages?: number | string;
+      /** Format: int32 */
+      totalCount?: number | string;
+      items: null | components['schemas']['SupplierResponse'][];
+      hasPreviousPage?: boolean;
+      hasNextPage?: boolean;
+    };
     PaySalaryRequest: {
       /** Format: uuid */
       accountId: string;
@@ -6447,6 +6439,18 @@ export interface components {
       todayPurchasesCount?: number | string;
       todaySalesTotals?: components['schemas']['CurrencyTotal'][];
       todayPurchasesTotals?: components['schemas']['CurrencyTotal'][];
+      salesByCategory?: components['schemas']['CategoryKpi'][];
+      purchasesByCategory?: components['schemas']['CategoryKpi'][];
+    };
+    CategoryKpi: {
+      /** Format: uuid */
+      categoryId?: null | string;
+      categoryName?: null | string;
+      /** Format: double */
+      weightInGrams?: number | string;
+      /** Format: int32 */
+      count?: number | string;
+      totals?: components['schemas']['CurrencyTotal'][];
     };
     SubscriptionBillingCycle: number;
     SupplierDeliveryLineRequest: {
@@ -6454,6 +6458,8 @@ export interface components {
       karat: number | string;
       /** Format: double */
       weightInGrams: number | string;
+      /** Format: uuid */
+      categoryId?: null | string;
     };
     SupplierDetailResponse: {
       /** Format: uuid */
@@ -6562,6 +6568,8 @@ export interface components {
       goldBalance?: number | string;
       /** Format: double */
       manufacturingBalance?: number | string;
+      manufacturingBalancesByCurrency?: components['schemas']['ManufacturingBalanceByCurrency'][];
+      financialBalancesByCurrency?: components['schemas']['FinancialBalanceByCurrency'][];
       /** Format: date-time */
       lastTransactionDate?: null | string;
     };
@@ -6619,6 +6627,10 @@ export interface components {
       /** Format: uuid */
       parentCategoryId: null | string;
       isActive: boolean;
+      /** Format: double */
+      weightInGrams: number | string;
+      /** Format: int32 */
+      karat: number | string;
     };
     Updated: Record<string, never>;
     UpdateDebtRequest: {

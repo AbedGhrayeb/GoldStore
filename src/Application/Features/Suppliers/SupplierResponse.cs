@@ -26,5 +26,9 @@ public sealed record SupplierResponse
 
     public decimal ManufacturingBalance { get; init; }
 
+    public List<ManufacturingBalanceByCurrency> ManufacturingBalancesByCurrency { get; init; } = [];
+
+    public List<FinancialBalanceByCurrency> FinancialBalancesByCurrency { get; init; } = [];
+
     public DateTime? LastTransactionDate { get; init; }
 }

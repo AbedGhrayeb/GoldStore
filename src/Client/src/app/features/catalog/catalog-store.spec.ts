@@ -120,6 +120,8 @@ describe('CatalogStore', () => {
       description: null,
       parentCategoryId: 'cat-1',
       isActive: true,
+      weightInGrams: 12.5,
+      karat: 21,
     });
 
     expect(ok).toBe(true);
@@ -150,6 +152,8 @@ describe('CatalogStore', () => {
       description: null,
       parentCategoryId: null,
       isActive: true,
+      weightInGrams: 8,
+      karat: 18,
     });
 
     expect(ok).toBe(false);
@@ -163,6 +167,8 @@ describe('CatalogStore', () => {
       description: null,
       parentCategoryId: null,
       isActive: false,
+      weightInGrams: 10,
+      karat: 21,
     });
 
     expect(ok).toBe(true);

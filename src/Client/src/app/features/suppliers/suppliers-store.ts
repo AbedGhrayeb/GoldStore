@@ -12,12 +12,17 @@ import {
   type FinancialTransactionInput,
   type ManufacturingPaymentInput,
   type PagedSupplierFinancialTransactionResponse,
+  type PagedSuppliersResponse,
   type ScrapGoldPaymentInput,
+  type SupplierBalancesResponse,
   type SupplierDetailResponse,
+  type PagedSupplierTransactionsResponse,
+  type SupplierDetailTransactionsQuery,
   type SupplierFinancialKpiResponse,
   type SupplierFinancialPaymentResponse,
   type SupplierInput,
   type SupplierFinancialPaymentInput,
+  type SupplierListQuery,
   type SupplierResponse,
   type SupplierTransactionQuery,
 } from './suppliers-api.service';
@@ -46,6 +51,11 @@ export class SuppliersStore {
   private readonly loadingSignal = signal(false);
   private readonly errorSignal = signal<ApiError | null>(null);
 
+  private readonly suppliersPageSignal = signal<PagedSuppliersResponse | null>(null);
+  private readonly suppliersPageLoadingSignal = signal(false);
+  private readonly suppliersPageErrorSignal = signal<ApiError | null>(null);
+  private readonly lastSuppliersPageQuerySignal = signal<SupplierListQuery | null>(null);
+
   private readonly kpisSignal = signal<SupplierFinancialKpiResponse | null>(null);
   private readonly kpisLoadingSignal = signal(false);
 
@@ -57,9 +67,18 @@ export class SuppliersStore {
   private readonly detailLoadingSignal = signal(false);
   private readonly detailErrorSignal = signal<ApiError | null>(null);
 
+  private readonly detailTransactionsSignal = signal<PagedSupplierTransactionsResponse | null>(
+    null,
+  );
+  private readonly detailTransactionsLoadingSignal = signal(false);
+  private readonly detailTransactionsErrorSignal = signal<ApiError | null>(null);
+
   private readonly paymentsSignal = signal<SupplierFinancialPaymentResponse[]>([]);
   private readonly paymentsLoadingSignal = signal(false);
   private readonly paymentsErrorSignal = signal<ApiError | null>(null);
+
+  private readonly balancesSignal = signal<SupplierBalancesResponse | null>(null);
+  private readonly balancesForSupplierSignal = signal<string | null>(null);
 
   private readonly accountsSignal = signal<FinancialAccountResponse[]>([]);
   private readonly accountsErrorSignal = signal<string | null>(null);
@@ -69,10 +88,15 @@ export class SuppliersStore {
   private readonly mutatingIdSignal = signal<string | null>(null);
   private loadPromise: Promise<void> | null = null;
   private accountsPromise: Promise<void> | null = null;
+  private balancesPromise: Promise<void> | null = null;
+  private balancesWanted: string | null = null;
 
   readonly suppliers = this.suppliersSignal.asReadonly();
   readonly loading = this.loadingSignal.asReadonly();
   readonly error = this.errorSignal.asReadonly();
+  readonly suppliersPage = this.suppliersPageSignal.asReadonly();
+  readonly suppliersPageLoading = this.suppliersPageLoadingSignal.asReadonly();
+  readonly suppliersPageError = this.suppliersPageErrorSignal.asReadonly();
   readonly kpis = this.kpisSignal.asReadonly();
   readonly kpisLoading = this.kpisLoadingSignal.asReadonly();
   readonly page = this.pageSignal.asReadonly();
@@ -81,9 +105,14 @@ export class SuppliersStore {
   readonly detail = this.detailSignal.asReadonly();
   readonly detailLoading = this.detailLoadingSignal.asReadonly();
   readonly detailError = this.detailErrorSignal.asReadonly();
+  readonly detailTransactions = this.detailTransactionsSignal.asReadonly();
+  readonly detailTransactionsLoading = this.detailTransactionsLoadingSignal.asReadonly();
+  readonly detailTransactionsError = this.detailTransactionsErrorSignal.asReadonly();
   readonly payments = this.paymentsSignal.asReadonly();
   readonly paymentsLoading = this.paymentsLoadingSignal.asReadonly();
   readonly paymentsError = this.paymentsErrorSignal.asReadonly();
+  readonly supplierBalances = this.balancesSignal.asReadonly();
+  readonly supplierBalancesFor = this.balancesForSupplierSignal.asReadonly();
   readonly accounts = this.accountsSignal.asReadonly();
   readonly accountsError = this.accountsErrorSignal.asReadonly();
   readonly saving = this.savingSignal.asReadonly();
@@ -112,6 +141,33 @@ export class SuppliersStore {
     } finally {
       this.loadingSignal.set(false);
       this.loadPromise = null;
+    }
+  }
+
+  /** Server-side paged supplier list for the suppliers tab (search + status filter). */
+  async loadSuppliersPage(query: SupplierListQuery): Promise<void> {
+    this.lastSuppliersPageQuerySignal.set(query);
+    this.suppliersPageLoadingSignal.set(true);
+    this.suppliersPageErrorSignal.set(null);
+    try {
+      this.suppliersPageSignal.set(
+        await firstValueFrom(
+          this.api.getSuppliersPaged(query, { context: SuppliersStore.NO_TOAST }),
+        ),
+      );
+    } catch (error) {
+      this.suppliersPageErrorSignal.set(asApiError(error));
+    } finally {
+      this.suppliersPageLoadingSignal.set(false);
+    }
+  }
+
+  /** Reloads the full list (selects) plus the active suppliers page, if any. */
+  private async refreshSuppliers(): Promise<void> {
+    await this.load();
+    const query = this.lastSuppliersPageQuerySignal();
+    if (query !== null) {
+      await this.loadSuppliersPage(query);
     }
   }
 
@@ -157,6 +213,24 @@ export class SuppliersStore {
   clearDetail(): void {
     this.detailSignal.set(null);
     this.detailErrorSignal.set(null);
+    this.detailTransactionsSignal.set(null);
+    this.detailTransactionsErrorSignal.set(null);
+  }
+
+  async loadDetailTransactions(id: string, query: SupplierDetailTransactionsQuery): Promise<void> {
+    this.detailTransactionsLoadingSignal.set(true);
+    this.detailTransactionsErrorSignal.set(null);
+    try {
+      this.detailTransactionsSignal.set(
+        await firstValueFrom(
+          this.api.getSupplierTransactions(id, query, { context: SuppliersStore.NO_TOAST }),
+        ),
+      );
+    } catch (error) {
+      this.detailTransactionsErrorSignal.set(asApiError(error));
+    } finally {
+      this.detailTransactionsLoadingSignal.set(false);
+    }
   }
 
   async loadPayments(transactionId: string): Promise<void> {
@@ -178,6 +252,54 @@ export class SuppliersStore {
   clearPayments(): void {
     this.paymentsSignal.set([]);
     this.paymentsErrorSignal.set(null);
+  }
+
+  /**
+   * Best-effort fetch of one supplier's payment dues (gold per karat, manufacturing per
+   * currency) for the payment dialogs. Cached per supplier and cleared after a payment is
+   * saved. Race-safe: a response is applied only when its supplier is still wanted.
+   */
+  ensureSupplierBalances(supplierId: string): Promise<void> {
+    if (supplierId === '') {
+      return Promise.resolve();
+    }
+    this.balancesWanted = supplierId;
+    if (this.balancesForSupplierSignal() === supplierId) {
+      return Promise.resolve();
+    }
+    this.balancesPromise ??= this.loadSupplierBalances(supplierId);
+    return this.balancesPromise;
+  }
+
+  clearSupplierBalances(): void {
+    this.balancesWanted = null;
+    this.balancesSignal.set(null);
+    this.balancesForSupplierSignal.set(null);
+  }
+
+  private async loadSupplierBalances(supplierId: string): Promise<void> {
+    try {
+      const balances = await firstValueFrom(
+        this.api.getSupplierBalances(supplierId, { context: SuppliersStore.NO_TOAST }),
+      );
+      if (this.balancesWanted === supplierId) {
+        this.balancesSignal.set(balances);
+        this.balancesForSupplierSignal.set(supplierId);
+      }
+    } catch {
+      // Best-effort: the dialogs hide the due banner when balances are unavailable.
+      // balancesFor stays null so a later retry is possible and stale dues are never shown.
+      if (this.balancesWanted === supplierId) {
+        this.balancesSignal.set(null);
+        this.balancesForSupplierSignal.set(null);
+      }
+    } finally {
+      this.balancesPromise = null;
+      const wanted = this.balancesWanted;
+      if (wanted !== null && wanted !== this.balancesForSupplierSignal()) {
+        void this.ensureSupplierBalances(wanted);
+      }
+    }
   }
 
   /**
@@ -217,7 +339,7 @@ export class SuppliersStore {
     try {
       await firstValueFrom(this.api.createSupplier(input, { context: SuppliersStore.NO_TOAST }));
       this.toasts.success('تمت إضافة المورد بنجاح');
-      await this.load();
+      await this.refreshSuppliers();
       return true;
     } catch (error) {
       this.saveErrorSignal.set(asApiError(error));
@@ -235,7 +357,7 @@ export class SuppliersStore {
         this.api.updateSupplier(id, input, { context: SuppliersStore.NO_TOAST }),
       );
       this.toasts.success('تم تحديث المورد بنجاح');
-      await this.load();
+      await this.refreshSuppliers();
       return true;
     } catch (error) {
       this.saveErrorSignal.set(asApiError(error));
@@ -250,7 +372,7 @@ export class SuppliersStore {
     try {
       await firstValueFrom(this.api.toggleActive(id));
       this.toasts.success('تم تحديث حالة المورد');
-      await this.load();
+      await this.refreshSuppliers();
     } catch {
       // The global error interceptor already toasted the failure.
     } finally {
@@ -264,7 +386,7 @@ export class SuppliersStore {
     try {
       await firstValueFrom(this.api.createDelivery(input, { context: SuppliersStore.NO_TOAST }));
       this.toasts.success('تم تسجيل التسليم بنجاح');
-      await this.load();
+      await this.refreshSuppliers();
       return true;
     } catch (error) {
       this.saveErrorSignal.set(asApiError(error));
@@ -282,7 +404,8 @@ export class SuppliersStore {
         this.api.createScrapGoldPayment(input, { context: SuppliersStore.NO_TOAST }),
       );
       this.toasts.success('تم تسجيل دفعة الكسر بنجاح');
-      await this.load();
+      await this.refreshSuppliers();
+      this.clearSupplierBalances();
       return true;
     } catch (error) {
       this.saveErrorSignal.set(asApiError(error));
@@ -300,7 +423,8 @@ export class SuppliersStore {
         this.api.createManufacturingPayment(input, { context: SuppliersStore.NO_TOAST }),
       );
       this.toasts.success('تم تسجيل دفعة التصنيع بنجاح');
-      await this.load();
+      await this.refreshSuppliers();
+      this.clearSupplierBalances();
       return true;
     } catch (error) {
       this.saveErrorSignal.set(asApiError(error));

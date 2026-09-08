@@ -3,6 +3,7 @@
 // </copyright>
 
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 using Application.SupplierDeliveries.Create;
 using Domain.Tenants;
 using Microsoft.AspNetCore.Builder;
@@ -49,9 +50,25 @@ public sealed class SupplierDeliveriesEndpoints : IEndpoint
             });
         }
 
+        if (request.PaymentLegs?.Any(leg => leg is null) is true)
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["paymentLegs"] = ["Payment legs cannot contain null items."],
+            });
+        }
+
         List<DeliveryLineDto> lines = request.Lines?
-            .Select(line => new DeliveryLineDto(line!.Karat, line.WeightInGrams))
+            .Select(line => new DeliveryLineDto(line!.Karat, line.WeightInGrams, line.CategoryId))
             .ToList() ?? [];
+
+        List<PaymentLegDto>? paymentLegs = request.PaymentLegs?
+            .Select(leg => new PaymentLegDto(
+                leg!.AccountId,
+                leg.Currency,
+                leg.Amount,
+                leg.ExchangeRate))
+            .ToList();
 
         Result<string> result = await dispatcher.DispatchAsync<CreateSupplierDeliveryCommand, string>(
             new CreateSupplierDeliveryCommand(
@@ -59,6 +76,9 @@ public sealed class SupplierDeliveriesEndpoints : IEndpoint
                 lines,
                 request.ManufacturingFeePerGram,
                 request.ManufacturingFeeCurrency,
+                request.AmountDue,
+                request.AmountDueCurrency,
+                paymentLegs,
                 request.Notes),
             cancellationToken);
 
@@ -71,6 +91,15 @@ public sealed record CreateSupplierDeliveryRequest(
     List<SupplierDeliveryLineRequest?>? Lines,
     decimal ManufacturingFeePerGram,
     string ManufacturingFeeCurrency,
+    decimal AmountDue,
+    string AmountDueCurrency,
+    List<DeliveryPaymentLegRequest?>? PaymentLegs,
     string? Notes);
 
-public sealed record SupplierDeliveryLineRequest(int Karat, decimal WeightInGrams);
+public sealed record SupplierDeliveryLineRequest(int Karat, decimal WeightInGrams, Guid? CategoryId = null);
+
+public sealed record DeliveryPaymentLegRequest(
+    Guid AccountId,
+    string Currency,
+    decimal Amount,
+    decimal ExchangeRate);

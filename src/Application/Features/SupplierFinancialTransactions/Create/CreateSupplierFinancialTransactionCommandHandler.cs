@@ -77,12 +77,10 @@ internal sealed class CreateSupplierFinancialTransactionCommandHandler(
                 return SupplierFinancialErrors.AccountNotFound(command.AccountId);
             }
 
-
             if (!account.IsActive)
             {
                 return SupplierFinancialErrors.AccountNotActive;
             }
-
 
             if (account.Currency != currency)
             {

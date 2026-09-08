@@ -1,12 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  signal,
-  viewChild,
-  type TemplateRef,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { AuthStore } from '../../core/auth/auth-store';
 
@@ -17,9 +9,7 @@ import {
   EmptyState,
   RetryButton,
   Skeleton,
-  Table,
   resolveIcon,
-  type TableColumn,
 } from '../../shared/ui';
 import { formatDate } from '../../shared/format/formatters';
 import type {
@@ -35,6 +25,14 @@ import { SetBalanceDialog } from './set-balance-dialog';
 
 const PAGE_SIZE = 15;
 const SKELETON_TABLE_COLUMNS = [0, 1, 2, 3, 4, 5];
+
+/** Currency display order for the accounts cards (unknown currencies last). */
+const CURRENCY_ORDER = ['JOD', 'USD', 'ILS'];
+
+function currencyRank(currency: string | null | undefined): number {
+  const index = CURRENCY_ORDER.indexOf(currency ?? '');
+  return index === -1 ? CURRENCY_ORDER.length : index;
+}
 
 /** Finance page tabs — operations (transactions) first, then debts, then accounts. */
 type FinanceTab = 'operations' | 'debts' | 'accounts';
@@ -76,7 +74,6 @@ interface TransactionTableRow extends RecentTransactionResponse {
     RetryButton,
     SetBalanceDialog,
     Skeleton,
-    Table,
   ],
   template: `
     <main class="space-y-6">
@@ -88,10 +85,22 @@ interface TransactionTableRow extends RecentTransactionResponse {
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <app-button variant="secondary" icon="wallet" [disabled]="!canManageFinance()" [title]="!canManageFinance() ? 'ليس لديك صلاحية' : ''" (clicked)="canManageFinance() && accountOpen.set(true)">
+          <app-button
+            variant="secondary"
+            icon="wallet"
+            [disabled]="!canManageFinance()"
+            [title]="!canManageFinance() ? 'ليس لديك صلاحية' : ''"
+            (clicked)="canManageFinance() && accountOpen.set(true)"
+          >
             حساب جديد
           </app-button>
-          <app-button icon="plus" [disabled]="!canManageFinance()" [title]="!canManageFinance() ? 'ليس لديك صلاحية' : ''" (clicked)="canManageFinance() && debtOpen.set(true)">ذمة جديدة</app-button>
+          <app-button
+            icon="plus"
+            [disabled]="!canManageFinance()"
+            [title]="!canManageFinance() ? 'ليس لديك صلاحية' : ''"
+            (clicked)="canManageFinance() && debtOpen.set(true)"
+            >ذمة جديدة</app-button
+          >
         </div>
       </div>
 
@@ -133,7 +142,7 @@ interface TransactionTableRow extends RecentTransactionResponse {
                   <input
                     type="text"
                     [value]="txFilterAccountName()"
-                    (input)="txFilterAccountName.set($any($event.target).value)"
+                    (input)="onTxSearchInput($any($event.target).value)"
                     placeholder="اسم الحساب..."
                     class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
                   />
@@ -144,7 +153,7 @@ interface TransactionTableRow extends RecentTransactionResponse {
                   <select
                     id="tx-account-type-filter"
                     [value]="txFilterAccountType()"
-                    (change)="txFilterAccountType.set($any($event.target).value)"
+                    (change)="onTxSelectChange('accountType', $any($event.target).value)"
                     class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
                   >
                     <option value="">الكل</option>
@@ -158,7 +167,7 @@ interface TransactionTableRow extends RecentTransactionResponse {
                   <select
                     id="tx-currency-filter"
                     [value]="txFilterCurrency()"
-                    (change)="txFilterCurrency.set($any($event.target).value)"
+                    (change)="onTxSelectChange('currency', $any($event.target).value)"
                     class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
                   >
                     <option value="">الكل</option>
@@ -174,7 +183,7 @@ interface TransactionTableRow extends RecentTransactionResponse {
                     type="date"
                     dir="ltr"
                     [value]="txFilterFrom()"
-                    (change)="txFilterFrom.set($any($event.target).value)"
+                    (change)="onTxSelectChange('from', $any($event.target).value)"
                     class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-left text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
                   />
                 </label>
@@ -185,7 +194,7 @@ interface TransactionTableRow extends RecentTransactionResponse {
                     type="date"
                     dir="ltr"
                     [value]="txFilterTo()"
-                    (change)="txFilterTo.set($any($event.target).value)"
+                    (change)="onTxSelectChange('to', $any($event.target).value)"
                     class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-left text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
                   />
                 </label>
@@ -360,7 +369,14 @@ interface TransactionTableRow extends RecentTransactionResponse {
           <app-card>
             <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h2 class="text-sm font-semibold text-gray-700">الذمم (الديون)</h2>
-              <app-button size="sm" icon="plus" [disabled]="!canManageFinance()" [title]="!canManageFinance() ? 'ليس لديك صلاحية' : ''" (clicked)="canManageFinance() && debtOpen.set(true)">ذمة جديدة</app-button>
+              <app-button
+                size="sm"
+                icon="plus"
+                [disabled]="!canManageFinance()"
+                [title]="!canManageFinance() ? 'ليس لديك صلاحية' : ''"
+                (clicked)="canManageFinance() && debtOpen.set(true)"
+                >ذمة جديدة</app-button
+              >
             </div>
 
             <form
@@ -374,7 +390,7 @@ interface TransactionTableRow extends RecentTransactionResponse {
                   <select
                     id="debt-direction-filter"
                     [value]="debtFilterDirection()"
-                    (change)="debtFilterDirection.set($any($event.target).value)"
+                    (change)="onDebtDirectionChange($any($event.target).value)"
                     class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
                   >
                     <option value="">الكل</option>
@@ -388,7 +404,7 @@ interface TransactionTableRow extends RecentTransactionResponse {
                   <input
                     type="text"
                     [value]="debtFilterSearch()"
-                    (input)="debtFilterSearch.set($any($event.target).value)"
+                    (input)="onDebtSearchInput($any($event.target).value)"
                     (keydown)="onDebtSearchKeydown($event)"
                     placeholder="اسم صاحب الذمة أو رقم الهاتف..."
                     class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
@@ -548,47 +564,58 @@ interface TransactionTableRow extends RecentTransactionResponse {
                   }
                 </div>
               }
-              <app-table
-                [columns]="accountColumns()"
-                [rows]="accountRows()"
-                [loading]="accountsLoading()"
-                emptyIcon="wallet"
-                emptyTitle="لا توجد حسابات"
-                emptyDescription="أنشئ أول حساب مالي لتسجيل الحركات والذمم عليه."
-              >
-                <ng-template #nameCell let-row>
-                  <span class="flex items-center gap-2">
-                    <span class="font-semibold">{{ row.name }}</span>
-                    @if (!row.isActive) {
-                      <app-badge variant="neutral">متوقف</app-badge>
-                    }
-                  </span>
-                </ng-template>
-                <ng-template #typeCell let-row>
-                  @if (row.accountType === 'Cash') {
-                    <app-badge variant="gold">نقدي</app-badge>
-                  } @else {
-                    <app-badge variant="neutral">مصرفي</app-badge>
+              @if (accountsLoading() && accountRows().length === 0) {
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  @for (row of skeletonRows; track $index) {
+                    <app-skeleton height="9rem" />
                   }
-                </ng-template>
-                <ng-template #balanceCell let-row>
-                  <span dir="ltr" class="data-mono">{{ row.balanceText }}</span>
-                </ng-template>
-                <ng-template #actionsCell let-row>
-                  <div class="flex justify-center gap-1">
-                    <button
-                      type="button"
-                      class="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gold-container/40 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
-                      title="تعديل الرصيد"
-                      [attr.aria-label]="'تعديل رصيد ' + (row.name ?? '')"
-                      [disabled]="!canManageFinance()"
-                      (click)="canManageFinance() && openSetBalance(row)"
-                    >
-                      <lucide-icon [img]="pencilIcon" [size]="16" />
-                    </button>
-                  </div>
-                </ng-template>
-              </app-table>
+                </div>
+              } @else if (accountRows().length === 0) {
+                <app-empty-state
+                  icon="wallet"
+                  title="لا توجد حسابات"
+                  description="أنشئ أول حساب مالي لتسجيل الحركات والذمم عليه."
+                />
+              } @else {
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  @for (account of accountRows(); track account.id) {
+                    <div class="rounded-lg border border-gray-200 p-4">
+                      <div class="flex items-start justify-between gap-2">
+                        <p class="flex items-center gap-2 font-semibold text-gray-900">
+                          {{ account.name }}
+                          @if (!account.isActive) {
+                            <app-badge variant="neutral">متوقف</app-badge>
+                          }
+                        </p>
+                        @if (account.accountType === 'Cash') {
+                          <app-badge variant="gold">نقدي</app-badge>
+                        } @else {
+                          <app-badge variant="neutral">مصرفي</app-badge>
+                        }
+                      </div>
+                      <p class="mt-3 text-2xl font-semibold text-gray-900 data-mono" dir="ltr">
+                        {{ account.balanceText }}
+                      </p>
+                      <div class="mt-2 flex items-center justify-between text-xs text-gray-500">
+                        <span>{{ account.currency }}</span>
+                        <span class="data-mono" dir="ltr">{{ account.accountNumber ?? '—' }}</span>
+                      </div>
+                      <div class="mt-3 border-t border-gray-100 pt-3">
+                        <app-button
+                          variant="secondary"
+                          size="sm"
+                          icon="pencil"
+                          [disabled]="!canManageFinance()"
+                          [title]="!canManageFinance() ? 'ليس لديك صلاحية' : 'تعديل الرصيد'"
+                          (clicked)="canManageFinance() && openSetBalance(account)"
+                        >
+                          تعديل الرصيد
+                        </app-button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
             }
           </app-card>
         }
@@ -607,11 +634,7 @@ interface TransactionTableRow extends RecentTransactionResponse {
         (saved)="onSaved()"
       />
 
-      <app-debt-dialog
-        [open]="debtOpen()"
-        (openChange)="debtOpen.set(false)"
-        (saved)="onSaved()"
-      />
+      <app-debt-dialog [open]="debtOpen()" (openChange)="debtOpen.set(false)" (saved)="onSaved()" />
 
       <app-debt-payment-dialog
         [open]="paymentOpen()"
@@ -624,7 +647,9 @@ interface TransactionTableRow extends RecentTransactionResponse {
 })
 export class FinancePage {
   private readonly auth = inject(AuthStore);
-  readonly canManageFinance = computed(() => this.auth.hasPermission('finance.manage') || this.auth.hasRole('store_admin'));
+  readonly canManageFinance = computed(
+    () => this.auth.hasPermission('finance.manage') || this.auth.hasRole('store_admin'),
+  );
   readonly store = inject(FinanceStore);
 
   readonly accounts = this.store.accounts;
@@ -644,21 +669,19 @@ export class FinancePage {
   readonly paymentDebt = signal<DebtResponse | null>(null);
 
   readonly activeTab = signal<FinanceTab>('operations');
-  private readonly loadedTabs = new Set<FinanceTab>(['operations']);
 
   readonly walletIcon = resolveIcon('wallet');
-  readonly pencilIcon = resolveIcon('pencil');
   readonly trendingUpIcon = resolveIcon('trending-up');
   readonly trendingDownIcon = resolveIcon('trending-down');
   private readonly receiptIcon = resolveIcon('receipt');
   private readonly coinsIcon = resolveIcon('coins');
 
   /** Tab bar definition — operations first per the finance workflow. */
-  readonly tabs: ReadonlyArray<{
+  readonly tabs: readonly {
     key: FinanceTab;
     label: string;
     icon: ReturnType<typeof resolveIcon>;
-  }> = [
+  }[] = [
     { key: 'operations', label: 'الحركات المالية', icon: this.receiptIcon },
     { key: 'debts', label: 'الذمم', icon: this.coinsIcon },
     { key: 'accounts', label: 'الحسابات', icon: this.walletIcon },
@@ -689,7 +712,21 @@ export class FinancePage {
     accountType?: string;
   }>({ page: 1, pageSize: PAGE_SIZE });
 
-  readonly accountRows = computed(() => (this.accounts() ?? []).map(toAccountRow));
+  /** Accounts ordered for cards: cash accounts first, then by currency (JOD/USD/ILS), then name. */
+  readonly accountRows = computed(() =>
+    (this.accounts() ?? []).map(toAccountRow).sort((a, b) => {
+      const aCash = a.accountType === 'Cash' ? 0 : 1;
+      const bCash = b.accountType === 'Cash' ? 0 : 1;
+      if (aCash !== bCash) {
+        return aCash - bCash;
+      }
+      const currencyCompare = currencyRank(a.currency) - currencyRank(b.currency);
+      if (currencyCompare !== 0) {
+        return currencyCompare;
+      }
+      return (a.name ?? '').localeCompare(b.name ?? '', 'ar');
+    }),
+  );
 
   /** Per-currency totals across all accounts — mirrors the ledger-sum invariant visually. */
   readonly currencyTotals = computed(() => {
@@ -724,65 +761,20 @@ export class FinancePage {
   readonly txCurrentPage = computed(() => Number(this.store.txPage()?.pageNumber ?? 1));
   readonly txTotalPages = computed(() => Number(this.store.txPage()?.totalPages ?? 0));
 
-  private readonly nameCell = viewChild<TemplateRef<{ $implicit: AccountTableRow }>>('nameCell');
-  private readonly typeCell = viewChild<TemplateRef<{ $implicit: AccountTableRow }>>('typeCell');
-  private readonly balanceCell =
-    viewChild<TemplateRef<{ $implicit: AccountTableRow }>>('balanceCell');
-  private readonly actionsCell =
-    viewChild<TemplateRef<{ $implicit: AccountTableRow }>>('actionsCell');
-
-  readonly accountColumns = computed<TableColumn<AccountTableRow>[]>(() => [
-    {
-      key: 'name',
-      header: 'اسم الحساب',
-      cell: (row) => row.name ?? '',
-      cellTemplate: this.nameCell(),
-      sortable: true,
-      sortValue: (row) => row.name ?? '',
-    },
-    {
-      key: 'accountType',
-      header: 'النوع',
-      cell: (row) => row.accountType ?? '',
-      cellTemplate: this.typeCell(),
-    },
-    {
-      key: 'currency',
-      header: 'العملة',
-      cell: (row) => row.currency ?? '',
-    },
-    {
-      key: 'accountNumber',
-      header: 'رقم الحساب',
-      cell: (row) => row.accountNumber ?? '—',
-    },
-    {
-      key: 'balance',
-      header: 'الرصيد',
-      cell: (row) => row.balanceText,
-      numeric: true,
-      sortable: true,
-      sortValue: (row) => Number(row.balance ?? 0),
-      cellTemplate: this.balanceCell(),
-    },
-    {
-      key: 'actions',
-      header: 'إجراءات',
-      cell: () => '',
-      align: 'center',
-      cellTemplate: this.actionsCell(),
-    },
-  ]);
-
   readonly skeletonRows = [0, 1, 2, 3, 4];
   readonly skeletonTableColumns = SKELETON_TABLE_COLUMNS;
 
   readonly formatDate = formatDate;
   readonly Number = Number;
 
+  private searchDebounce: ReturnType<typeof setTimeout> | null = null;
+
   constructor() {
-    // The operations tab is the landing tab — only its data loads up-front.
+    // Fresh data on every navigation — the component is recreated per visit.
     void this.store.loadTransactions(this.txQuery());
+    void this.store.loadAccounts();
+    void this.store.loadDebtKpis();
+    void this.store.loadDebts(this.debtsQuery());
   }
 
   tabClass(key: FinanceTab): string {
@@ -801,12 +793,8 @@ export class FinancePage {
     this.loadForTab(tab);
   }
 
-  /** Loads a tab's data once on first activation (lazy tabs). */
+  /** Reloads a tab's data on every activation so switching tabs always shows fresh data. */
   private loadForTab(tab: FinanceTab): void {
-    if (this.loadedTabs.has(tab)) {
-      return;
-    }
-    this.loadedTabs.add(tab);
     if (tab === 'accounts') {
       void this.store.loadAccounts();
     } else if (tab === 'debts') {
@@ -841,12 +829,52 @@ export class FinancePage {
     this.paymentDebt.set(null);
   }
 
-  /** Any successful mutation changes balances/debts/transactions — refresh everything. */
+  /** Any successful mutation changes balances/debts/transactions — close dialogs, refresh everything. */
   onSaved(): void {
+    this.accountOpen.set(false);
+    this.debtOpen.set(false);
+    this.closeSetBalance();
+    this.closePayment();
     void this.store.loadAccounts();
     void this.store.loadDebtKpis();
     void this.store.loadDebts(this.debtsQuery());
     void this.store.loadTransactions(this.txQuery());
+  }
+
+  /** Runs a filter apply after a short pause so typing in search boxes refetches live. */
+  private scheduleDebouncedApply(apply: () => void): void {
+    if (this.searchDebounce !== null) {
+      clearTimeout(this.searchDebounce);
+    }
+    this.searchDebounce = setTimeout(apply, 400);
+  }
+
+  onDebtSearchInput(value: string): void {
+    this.debtFilterSearch.set(value);
+    this.scheduleDebouncedApply(() => this.applyDebtFilters());
+  }
+
+  onDebtDirectionChange(value: string): void {
+    this.debtFilterDirection.set(value);
+    this.applyDebtFilters();
+  }
+
+  onTxSearchInput(value: string): void {
+    this.txFilterAccountName.set(value);
+    this.scheduleDebouncedApply(() => this.applyTxFilters());
+  }
+
+  onTxSelectChange(field: 'accountType' | 'currency' | 'from' | 'to', value: string): void {
+    if (field === 'accountType') {
+      this.txFilterAccountType.set(value);
+    } else if (field === 'currency') {
+      this.txFilterCurrency.set(value);
+    } else if (field === 'from') {
+      this.txFilterFrom.set(value);
+    } else {
+      this.txFilterTo.set(value);
+    }
+    this.applyTxFilters();
   }
 
   applyDebtFilters(): void {

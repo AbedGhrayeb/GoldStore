@@ -1,6 +1,7 @@
-import { formatCurrency, formatDateTime } from '../../shared/format/formatters';
+import { formatCurrency, formatDateTime, formatWeight } from '../../shared/format/formatters';
 import type { BadgeVariant } from '../../shared/ui';
 import type {
+  CategoryKpi,
   CurrencyTotal,
   EmployeeDayStatsResponse,
   OperationType,
@@ -94,6 +95,27 @@ export interface EmployeeStatRow {
   purchasesCount: number;
   purchasesWeight: number;
   purchasesTotals: string;
+}
+
+/** Display model for one per-category KPI row (weight = raw row weight in grams). */
+export interface CategoryKpiRow {
+  id: string;
+  name: string;
+  weight: number;
+  weightText: string;
+  count: number;
+  totals: string;
+}
+
+export function toCategoryKpiRow(entry: CategoryKpi): CategoryKpiRow {
+  return {
+    id: entry.categoryId ?? entry.categoryName ?? '',
+    name: entry.categoryName ?? 'بدون تصنيف',
+    weight: num(entry.weightInGrams),
+    weightText: formatWeight(num(entry.weightInGrams)),
+    count: num(entry.count),
+    totals: joinCurrencyTotals(entry.totals),
+  };
 }
 
 export function toEmployeeStatRow(stat: EmployeeDayStatsResponse): EmployeeStatRow {

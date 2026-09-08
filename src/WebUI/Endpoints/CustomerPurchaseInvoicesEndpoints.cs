@@ -9,7 +9,6 @@ using Application.Features.CustomerPurchaseInvoices;
 using Application.Features.CustomerPurchaseInvoices.Create;
 using Application.Features.CustomerPurchaseInvoices.GetById;
 using Application.Features.CustomerPurchaseInvoices.GetKpis;
-using Application.Features.CustomerPurchaseInvoices.GetNextNumber;
 using Application.Features.CustomerPurchaseInvoices.GetPaged;
 using Domain.Tenants;
 using Microsoft.AspNetCore.Builder;
@@ -42,10 +41,6 @@ public sealed class CustomerPurchaseInvoicesEndpoints : IEndpoint
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
-
-        group.MapGet("/next-number", GetNextNumber)
-            .WithSummary("Return the next tenant-local customer purchase invoice number.")
-            .Produces<string>(StatusCodes.Status200OK);
 
         group.MapGet("/", GetInvoices)
             .WithSummary("Return paged customer purchase invoices.")
@@ -112,23 +107,13 @@ public sealed class CustomerPurchaseInvoicesEndpoints : IEndpoint
         return ApiResults.Created(result);
     }
 
-    private static async Task<IResult> GetNextNumber(
-        IQueryDispatcher dispatcher,
-        CancellationToken cancellationToken)
-    {
-        Result<string> result = await dispatcher
-            .DispatchAsync<GetNextCustomerPurchaseInvoiceNumberQuery, string>(
-                new GetNextCustomerPurchaseInvoiceNumberQuery(), cancellationToken);
-
-        return ApiResults.From(result);
-    }
-
     private static async Task<IResult> GetInvoices(
         int? page,
         int? pageSize,
         DateTime? fromDate,
         DateTime? toDate,
         string? search,
+        Guid? categoryId,
         IQueryDispatcher dispatcher,
         CancellationToken cancellationToken)
     {
@@ -139,7 +124,8 @@ public sealed class CustomerPurchaseInvoicesEndpoints : IEndpoint
                     pageSize ?? 20,
                     fromDate,
                     toDate,
-                    search),
+                    search,
+                    categoryId),
                 cancellationToken);
 
         return ApiResults.From(result);
@@ -195,7 +181,7 @@ public sealed class CustomerPurchaseInvoicesEndpoints : IEndpoint
 public sealed record CreateCustomerPurchaseInvoiceRequest(
     string SellerName,
     string? SellerPhone,
-    string SellerIdNumber,
+    string? SellerIdNumber,
     int? SellerYearOfBirth,
     string? SellerAddress,
     Guid EmployeeId,

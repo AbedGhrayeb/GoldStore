@@ -9,7 +9,6 @@ using Application.Features.SalesInvoices;
 using Application.Features.SalesInvoices.Create;
 using Application.Features.SalesInvoices.GetById;
 using Application.Features.SalesInvoices.GetKpis;
-using Application.Features.SalesInvoices.GetNextNumber;
 using Application.Features.SalesInvoices.GetPaged;
 using Domain.Tenants;
 using Microsoft.AspNetCore.Builder;
@@ -52,10 +51,6 @@ public sealed class SalesInvoicesEndpoints : IEndpoint
             .WithSummary("Return a sales invoice by ID.")
             .Produces<SalesInvoiceResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound);
-
-        group.MapGet("/next-number", GetNextNumber)
-            .WithSummary("Return the next tenant-local sales invoice number.")
-            .Produces<string>(StatusCodes.Status200OK);
 
         group.MapGet("/kpis", GetKpis)
             .WithSummary("Return sales invoice KPIs.")
@@ -141,16 +136,6 @@ public sealed class SalesInvoicesEndpoints : IEndpoint
         Result<SalesInvoiceResponse> result = await dispatcher
             .DispatchAsync<GetSalesInvoiceByIdQuery, SalesInvoiceResponse>(
                 new GetSalesInvoiceByIdQuery(id), cancellationToken);
-
-        return ApiResults.From(result);
-    }
-
-    private static async Task<IResult> GetNextNumber(
-        IQueryDispatcher dispatcher,
-        CancellationToken cancellationToken)
-    {
-        Result<string> result = await dispatcher.DispatchAsync<GetNextInvoiceNumberQuery, string>(
-            new GetNextInvoiceNumberQuery(), cancellationToken);
 
         return ApiResults.From(result);
     }

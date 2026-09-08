@@ -38,6 +38,13 @@ public sealed record FinancialBalanceByCurrency
     public decimal Balance { get; init; }
 }
 
+public sealed record ManufacturingBalanceByCurrency
+{
+    public string Currency { get; init; } = string.Empty;
+
+    public decimal Balance { get; init; }
+}
+
 public sealed record SupplierTransactionResponse
 {
     public Guid Id { get; init; }

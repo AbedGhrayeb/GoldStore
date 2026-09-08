@@ -14,8 +14,8 @@ internal sealed class CreateSupplierManufacturingPaymentCommandValidator : Abstr
     public CreateSupplierManufacturingPaymentCommandValidator()
     {
         this.RuleFor(x => x.SupplierId).NotEmpty();
-        this.RuleFor(x => x.AccountId).NotEmpty().WithMessage("يجب اختيار حساب الدفع");
-        this.RuleFor(x => x.Amount).GreaterThan(0).WithMessage("المبلغ يجب أن يكون أكبر من صفر");
+        this.RuleFor(x => x.AccountId).NotEmpty().WithMessage("يجب اختيار حساب الدفع").When(x => x.PaymentLegs is not { Count: > 0 });
+        this.RuleFor(x => x.Amount).GreaterThan(0).WithMessage("المبلغ يجب أن يكون أكبر من صفر").When(x => x.PaymentLegs is not { Count: > 0 });
         this.RuleFor(x => x.Currency).Must(c => ValidCurrencies.Contains(c, System.StringComparer.OrdinalIgnoreCase)).WithMessage("العملة غير صالحة");
         this.RuleFor(x => x.Notes).MaximumLength(1000).When(x => x.Notes is not null);
     }

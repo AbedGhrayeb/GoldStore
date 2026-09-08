@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
@@ -13,6 +14,7 @@ import type { ApiError } from '../../core/http/api-error';
 import { Button, Dialog } from '../../shared/ui';
 import type { CategoryParentOption } from './catalog.model';
 import { CatalogStore, type CategoryResponse } from './catalog-store';
+import { ReferenceStore } from '../../core/reference/reference-store';
 
 export type CategoryFormMode = 'create' | 'edit';
 
@@ -75,9 +77,69 @@ function firstValidationMessage(error: ApiError): string | null {
           ></textarea>
         </div>
 
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-2 block text-sm font-medium text-gray-700" for="category-weight"
+              >الوزن (غ) <span class="text-error">*</span></label
+            >
+            <input
+              id="category-weight"
+              type="number"
+              dir="ltr"
+              step="0.001"
+              min="0"
+              [value]="weight()"
+              (input)="weight.set($any($event.target).value)"
+              placeholder="0.000"
+              class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-left text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
+            />
+            @if (invalidWeight()) {
+              <p class="mt-1 text-xs text-error">أدخل وزناً أكبر من صفر.</p>
+            }
+          </div>
+          <div>
+            <label class="mb-2 block text-sm font-medium text-gray-700" for="category-karat"
+              >العيار <span class="text-error">*</span></label
+            >
+            @if (karats().length > 0) {
+              <select
+                id="category-karat"
+                [value]="karat() ?? ''"
+                (change)="
+                  karat.set($any($event.target).value === '' ? null : +$any($event.target).value)
+                "
+                class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
+              >
+                <option value="">—</option>
+                @for (karatOption of karats(); track karatOption.value) {
+                  <option [value]="karatOption.value" [selected]="karatOption.value === karat()">
+                    {{ karatOption.label }}
+                  </option>
+                }
+              </select>
+            } @else {
+              <select
+                id="category-karat-loading"
+                disabled
+                class="w-full rounded-input border border-gray-300 bg-gray-100 px-3 py-2.5 text-sm outline-none transition"
+              >
+                <option>جاري التحميل...</option>
+              </select>
+            }
+            @if (missingKarat()) {
+              <p class="mt-1 text-xs text-error">اختر العيار.</p>
+            }
+          </div>
+        </div>
+        <p class="rounded-input bg-gold-container/40 px-3 py-2 text-xs leading-5 text-gray-700">
+          الوزن والعيار يؤثران على مخزون الذهب: الحفظ يسجّل تسوية مخزنية بالفرق، وتُرفض التخفيضات
+          التي تتجاوز الرصيد المتاح.
+        </p>
+
         <div>
           <span class="mb-2 block text-sm font-medium text-gray-700">التصنيف الأب</span>
           <select
+            id="category-parent"
             [value]="parentId()"
             (change)="parentId.set($any($event.target).value)"
             class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
@@ -122,6 +184,7 @@ function firstValidationMessage(error: ApiError): string | null {
 })
 export class CategoryFormDialog {
   private readonly store = inject(CatalogStore);
+  private readonly reference = inject(ReferenceStore);
 
   readonly open = input(false);
   readonly mode = input<CategoryFormMode>('create');
@@ -138,12 +201,22 @@ export class CategoryFormDialog {
   readonly draft = signal({ name: '', description: '' });
   readonly parentId = signal('');
   readonly isActive = signal(true);
+  readonly weight = signal('');
+  readonly karat = signal<number | null>(null);
+  readonly karats = this.reference.karats;
 
   readonly categoryForm = form(this.draft, (schema) => {
     required(schema.name, { message: 'اسم التصنيف مطلوب.' });
   });
 
+  readonly invalidWeight = computed(() => {
+    const value = Number(this.weight());
+    return this.weight() === '' || !Number.isFinite(value) || value <= 0;
+  });
+  readonly missingKarat = computed(() => this.karat() === null);
+
   constructor() {
+    void this.reference.ensureLoaded();
     effect(() => {
       if (this.open()) {
         const category = this.category();
@@ -153,6 +226,10 @@ export class CategoryFormDialog {
         });
         this.parentId.set(category?.parentCategoryId ?? '');
         this.isActive.set(category?.isActive ?? true);
+        const weight = category?.weightInGrams;
+        this.weight.set(typeof weight === 'number' ? String(weight) : '');
+        const karatValue = category?.karat;
+        this.karat.set(typeof karatValue === 'number' ? karatValue : null);
         this.store.clearSaveError();
       }
     });
@@ -168,11 +245,20 @@ export class CategoryFormDialog {
 
   onSubmit(): void {
     submit(this.categoryForm, async () => {
+      if (this.invalidWeight() || this.missingKarat()) {
+        return;
+      }
+      const karat = this.karat();
+      if (karat === null) {
+        return;
+      }
       const input = {
         name: this.draft().name.trim(),
         description: this.draft().description.trim() || null,
         parentCategoryId: this.parentId() || null,
         isActive: this.isActive(),
+        weightInGrams: Number(this.weight()),
+        karat,
       };
       const ok =
         this.mode() === 'edit' && this.category() !== null

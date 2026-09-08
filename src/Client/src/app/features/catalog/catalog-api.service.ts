@@ -15,6 +15,8 @@ export interface CategoryInput {
   description: string | null;
   parentCategoryId: string | null;
   isActive: boolean;
+  weightInGrams: number;
+  karat: number;
 }
 
 /**

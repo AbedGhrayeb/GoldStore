@@ -20,7 +20,7 @@ import { SalesStore } from './sales-store';
 
 const PAGE_SIZE = 15;
 
-export const SALES_STATUS_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
+export const SALES_STATUS_OPTIONS: readonly { value: string; label: string }[] = [
   { value: 'Draft', label: 'مسودة' },
   { value: 'Completed', label: 'مكتملة' },
   { value: 'PartiallyPaid', label: 'مدفوعة جزئياً' },
@@ -42,7 +42,10 @@ export interface SalesTableRow extends SalesInvoiceResponse {
   remainingText: string;
 }
 
-function amountText(value: number | string | null | undefined, currency: string | null | undefined): string {
+function amountText(
+  value: number | string | null | undefined,
+  currency: string | null | undefined,
+): string {
   const amount = Number(value ?? 0);
   const text = Number.isFinite(amount) ? amount.toFixed(3) : '0.000';
   return currency ? `${text} ${currency}` : text;
@@ -92,7 +95,8 @@ function toSalesRow(invoice: SalesInvoiceResponse): SalesTableRow {
           [disabled]="!canCreateSales()"
           [title]="!canCreateSales() ? 'ليس لديك صلاحية إنشاء فاتورة مبيعات' : ''"
           (clicked)="canCreateSales() && invoiceDialogOpen.set(true)"
-          >فاتورة جديدة</app-button>
+          >فاتورة جديدة</app-button
+        >
       </div>
 
       @if (kpisLoading() && kpis() === null) {
@@ -103,11 +107,7 @@ function toSalesRow(invoice: SalesInvoiceResponse): SalesTableRow {
         </section>
       } @else if (kpis(); as kpis) {
         <section class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <app-kpi-card
-            title="مبيعات اليوم"
-            [value]="kpis.todayCount ?? '0'"
-            icon="receipt"
-          />
+          <app-kpi-card title="مبيعات اليوم" [value]="kpis.todayCount ?? '0'" icon="receipt" />
           <app-kpi-card
             title="إجمالي المبيعات"
             [value]="kpis.totalSalesDisplay ?? '0.000'"
@@ -142,7 +142,7 @@ function toSalesRow(invoice: SalesInvoiceResponse): SalesTableRow {
                   autocomplete="off"
                   placeholder="رقم الفاتورة أو اسم العميل"
                   [value]="searchFilter()"
-                  (input)="searchFilter.set($any($event.target).value)"
+                  (input)="onSearchInput($any($event.target).value)"
                   class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 pe-10 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
                 />
               </div>
@@ -152,7 +152,7 @@ function toSalesRow(invoice: SalesInvoiceResponse): SalesTableRow {
               <span class="mb-2 block text-sm font-medium text-gray-700">الحالة</span>
               <select
                 [value]="statusFilter()"
-                (change)="statusFilter.set($any($event.target).value)"
+                (change)="onSelectChange('status', $any($event.target).value)"
                 class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
               >
                 <option value="">الكل</option>
@@ -167,7 +167,7 @@ function toSalesRow(invoice: SalesInvoiceResponse): SalesTableRow {
               <input
                 type="date"
                 [value]="fromDateFilter()"
-                (change)="fromDateFilter.set($any($event.target).value)"
+                (change)="onSelectChange('from', $any($event.target).value)"
                 class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
               />
             </label>
@@ -177,7 +177,7 @@ function toSalesRow(invoice: SalesInvoiceResponse): SalesTableRow {
               <input
                 type="date"
                 [value]="toDateFilter()"
-                (change)="toDateFilter.set($any($event.target).value)"
+                (change)="onSelectChange('to', $any($event.target).value)"
                 class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
               />
             </label>
@@ -238,7 +238,9 @@ function toSalesRow(invoice: SalesInvoiceResponse): SalesTableRow {
                 </tr>
               } @else {
                 @for (invoice of rows(); track invoice.id) {
-                  <tr class="border-b border-gray-100 transition-colors last:border-0 hover:bg-gold-container/15">
+                  <tr
+                    class="border-b border-gray-100 transition-colors last:border-0 hover:bg-gold-container/15"
+                  >
                     <td class="px-4 py-3">
                       <button
                         type="button"
@@ -322,8 +324,12 @@ function toSalesRow(invoice: SalesInvoiceResponse): SalesTableRow {
 })
 export class SalesPage {
   private readonly auth = inject(AuthStore);
-  readonly canCreateSales = computed(() => this.auth.hasPermission('sales.manage') || this.auth.hasRole('store_admin'));
-  readonly canViewSales = computed(() => this.auth.hasPermission('sales.view') || this.auth.hasRole('store_admin'));
+  readonly canCreateSales = computed(
+    () => this.auth.hasPermission('sales.manage') || this.auth.hasRole('store_admin'),
+  );
+  readonly canViewSales = computed(
+    () => this.auth.hasPermission('sales.view') || this.auth.hasRole('store_admin'),
+  );
   readonly store = inject(SalesStore);
 
   readonly kpis = this.store.kpis;
@@ -342,6 +348,8 @@ export class SalesPage {
 
   private readonly query = signal<SalesInvoiceQuery>({ page: 1, pageSize: PAGE_SIZE });
 
+  private searchDebounce: ReturnType<typeof setTimeout> | null = null;
+
   readonly statusOptions = SALES_STATUS_OPTIONS;
 
   readonly rows = computed(() => (this.store.page()?.items ?? []).map(toSalesRow));
@@ -359,6 +367,7 @@ export class SalesPage {
   constructor() {
     void this.store.loadKpis();
     void this.store.loadInvoices(this.query());
+    void this.store.refreshOptions();
   }
 
   statusVariant(status: string | undefined): 'success' | 'warning' | 'neutral' | 'error' {
@@ -375,6 +384,25 @@ export class SalesPage {
       toDate: this.toDateFilter() || undefined,
     });
     void this.store.loadInvoices(this.query());
+  }
+
+  onSearchInput(value: string): void {
+    this.searchFilter.set(value);
+    if (this.searchDebounce !== null) {
+      clearTimeout(this.searchDebounce);
+    }
+    this.searchDebounce = setTimeout(() => this.applyFilters(), 400);
+  }
+
+  onSelectChange(field: 'status' | 'from' | 'to', value: string): void {
+    if (field === 'status') {
+      this.statusFilter.set(value);
+    } else if (field === 'from') {
+      this.fromDateFilter.set(value);
+    } else {
+      this.toDateFilter.set(value);
+    }
+    this.applyFilters();
   }
 
   resetFilters(): void {
@@ -408,6 +436,5 @@ export class SalesPage {
     this.invoiceDialogOpen.set(false);
     void this.store.loadInvoices(this.query());
     void this.store.loadKpis();
-    void this.store.loadNextNumber();
   }
 }

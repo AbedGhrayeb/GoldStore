@@ -25,6 +25,7 @@ internal sealed class UpdateDebtCommandHandler(
         {
             return DebtErrors.NotFound(command.Id);
         }
+
         try
         {
             // --- Determine target account ---

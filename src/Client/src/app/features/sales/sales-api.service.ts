@@ -86,12 +86,12 @@ export class SalesApi {
   private static readonly categories = '/api/v1/categories';
   private static readonly accounts = '/api/v1/finance/accounts';
 
-  getInvoices(query: SalesInvoiceQuery, options?: ApiRequestOptions): Observable<PaginatedSalesInvoices> {
+  getInvoices(
+    query: SalesInvoiceQuery,
+    options?: ApiRequestOptions,
+  ): Observable<PaginatedSalesInvoices> {
     const queryString = toQueryString(query);
-    return this.api.get<PaginatedSalesInvoices>(
-      `${SalesApi.invoices}${queryString}`,
-      options,
-    );
+    return this.api.get<PaginatedSalesInvoices>(`${SalesApi.invoices}${queryString}`, options);
   }
 
   getInvoice(id: string, options?: ApiRequestOptions): Observable<SalesInvoiceResponse> {
@@ -99,10 +99,6 @@ export class SalesApi {
       `${SalesApi.invoices}/${encodeURIComponent(id)}`,
       options,
     );
-  }
-
-  getNextNumber(options?: ApiRequestOptions): Observable<string> {
-    return this.api.get<string>(`${SalesApi.invoices}/next-number`, options);
   }
 
   getKpis(options?: ApiRequestOptions): Observable<SalesInvoiceKpiResponse> {

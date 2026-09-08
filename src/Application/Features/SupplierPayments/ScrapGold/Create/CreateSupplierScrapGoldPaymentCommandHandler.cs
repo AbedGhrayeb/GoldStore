@@ -52,17 +52,62 @@ internal sealed class CreateSupplierScrapGoldPaymentCommandHandler(
             return SupplierErrors.InsufficientGoldBalance(karat, supplierGoldBalance, command.WeightInGrams);
         }
 
+        // Decrease the scrap (كسر) category weight. The general gold ledger below already
+        // posts one Decrease — the category update here is weight-only on purpose
+        // (no InventoryAdjustment posting) to avoid double-counting the store.
+        Domain.Catalog.Category? scrapCategory = null;
+        if (command.CategoryId.HasValue)
+        {
+            scrapCategory = await context.Categories
+                .FirstOrDefaultAsync(c => c.Id == command.CategoryId.Value, cancellationToken);
+            if (scrapCategory is null)
+            {
+                return Domain.Catalog.CategoryErrors.NotFound(command.CategoryId.Value);
+            }
+        }
+        else
+        {
+            // Back-compat: no category supplied → fall back to the category named "كسر".
+            // Prefer the one matching the payment karat so mixed-karat scrap stays correct.
+            List<Domain.Catalog.Category> candidates = await context.Categories
+                .Where(c => c.Name == "كسر")
+                .ToListAsync(cancellationToken);
+            scrapCategory = candidates.FirstOrDefault(c => c.Karat == karat)
+                ?? candidates.FirstOrDefault();
+        }
+
+        if (scrapCategory is not null)
+        {
+            if (scrapCategory.Karat.HasValue && scrapCategory.Karat.Value != karat)
+            {
+                return Error.Validation(
+                    "SupplierScrapGold.CategoryKaratMismatch",
+                    $"عيار الدفعة ({karat.KaratLabel()}) لا يطابق عيار التصنيف {scrapCategory.Name} ({scrapCategory.Karat.Value.KaratLabel()})");
+            }
+
+            Result<Updated> adjusted = scrapCategory.DecreaseWeight(command.WeightInGrams);
+            if (adjusted.IsError)
+            {
+                return adjusted.Errors;
+            }
+        }
+
         DateTime paymentDate = dateTimeProvider.UtcNow;
         var payment = SupplierScrapGoldPayment.Create(command.SupplierId, karat, command.WeightInGrams, command.Notes);
 
         context.SupplierScrapGoldPayments.Add(payment);
+
+        // Record the scrap category in the gold movement notes so the movement
+        // shows which catalog category it belongs to alongside the user notes.
+        string? movementNotes = WithCategoryNote(command.Notes, scrapCategory?.Name);
+
         var supplierGoldLedgerEntry = SupplierGoldLedgerEntry.Create(command.SupplierId, karat, command.WeightInGrams,
             SupplierBalanceMovementType.Decrease, SupplierGoldReferenceType.SupplierScrapPayment,
-            payment.Id, command.Notes);
+            payment.Id, movementNotes);
         context.SupplierGoldLedgerEntries.Add(supplierGoldLedgerEntry);
         Result<GoldLedgerEntry> goldLedgerEntry = GoldLedgerEntry.Create(karat, command.WeightInGrams,
             GoldMovementType.Decrease, GoldReferenceType.SupplierScrapPayment,
-            payment.Id, command.Notes);
+            payment.Id, movementNotes);
 
         if (goldLedgerEntry.IsError)
         {
@@ -74,5 +119,16 @@ internal sealed class CreateSupplierScrapGoldPaymentCommandHandler(
         await context.SaveChangesAsync(cancellationToken);
 
         return payment.Id;
+    }
+
+    private static string? WithCategoryNote(string? notes, string? categoryName)
+    {
+        if (string.IsNullOrWhiteSpace(categoryName))
+        {
+            return notes;
+        }
+
+        string prefix = $"صنف: {categoryName.Trim()}";
+        return string.IsNullOrWhiteSpace(notes) ? prefix : $"{prefix} - {notes.Trim()}";
     }
 }

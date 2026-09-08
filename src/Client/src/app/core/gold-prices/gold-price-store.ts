@@ -7,12 +7,13 @@ import { ApiClient } from '../http/api-client.service';
 export type GoldPricesResponse = components['schemas']['GoldPricesResponse'];
 export type GoldPriceInfo = components['schemas']['GoldPriceInfo'];
 
-export const GOLD_PRICE_REFRESH_MS = 5 * 60_000;
+export const GOLD_PRICE_REFRESH_MS = 24 * 60 * 60_000;
 
 /**
- * Live gold price feed (external, not tenant-owned). The topbar chip shows the 21K per-gram
- * price when present, falling back to the global spot price. Auto-refreshes every 5 minutes
- * (P3.4 refines this with a service worker stale-while-revalidate).
+ * Daily gold price feed (external, not tenant-owned; JOD-only). The topbar chip shows the
+ * 21K per-gram price when present, falling back to the global spot price. Auto-refreshes
+ * once per day — the backend caches the feed for a fixed 24 hours, so at most one
+ * GoldAPI call happens per day.
  */
 @Injectable({ providedIn: 'root' })
 export class GoldPriceStore {

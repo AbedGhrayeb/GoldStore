@@ -41,6 +41,19 @@ internal sealed class GetInventoryAdjustmentsQueryHandler(IApplicationDbContext 
             adjustments = adjustments.Where(a => a.Type == adjType);
         }
 
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            string search = query.Search.Trim();
+            adjustments = adjustments.Where(a =>
+                a.Reason.Contains(search) ||
+                (a.Notes != null && a.Notes.Contains(search)));
+        }
+
+        if (query.Karat.HasValue)
+        {
+            adjustments = adjustments.Where(a => a.Karat == (Karat)query.Karat.Value);
+        }
+
         int page = Math.Max(query.Page, 1);
         int pageSize = Math.Clamp(query.PageSize, 1, 100);
 

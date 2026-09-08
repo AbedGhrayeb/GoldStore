@@ -216,7 +216,7 @@ public class ApplicationDbContextInitializer(
                 Permissions.SalesView, Permissions.SalesManage,
                 Permissions.PurchasesView, Permissions.PurchasesManage,
                 Permissions.ExpensesView, Permissions.ExpensesManage,
-                Permissions.ReportsView, Permissions.SettingsView
+                Permissions.ReportsView, Permissions.SettingsView,
             },
             },
             new
@@ -225,7 +225,7 @@ public class ApplicationDbContextInitializer(
             {
                 Permissions.SalesView, Permissions.SalesManage,
                 Permissions.PurchasesView, Permissions.FinanceView, Permissions.InventoryView,
-                Permissions.ExpensesView
+                Permissions.ExpensesView,
             },
             },
             new
@@ -234,7 +234,7 @@ public class ApplicationDbContextInitializer(
             {
                 Permissions.UsersView, Permissions.EmployeesView, Permissions.SuppliersView,
                 Permissions.InventoryView, Permissions.FinanceView, Permissions.SalesView,
-                Permissions.PurchasesView, Permissions.ExpensesView, Permissions.ReportsView, Permissions.SettingsView
+                Permissions.PurchasesView, Permissions.ExpensesView, Permissions.ReportsView, Permissions.SettingsView,
             },
             },
             new
@@ -243,7 +243,7 @@ public class ApplicationDbContextInitializer(
             {
                 Permissions.InventoryView, Permissions.InventoryManage,
                 Permissions.SuppliersView, Permissions.SuppliersManage,
-                Permissions.PurchasesView
+                Permissions.PurchasesView,
             },
             },
         };

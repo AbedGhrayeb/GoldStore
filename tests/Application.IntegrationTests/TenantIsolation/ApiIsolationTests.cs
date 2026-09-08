@@ -7,8 +7,10 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Domain.Common;
 using Domain.Debts;
+using Domain.Finance;
 using Domain.Inventory;
 using Domain.SupplierOperations;
+using Domain.Suppliers;
 using Domain.Tenants;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
@@ -253,6 +255,9 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             },
             manufacturingFeePerGram = 0M,
             manufacturingFeeCurrency = "JOD",
+            amountDue = 0M,
+            amountDueCurrency = "JOD",
+            paymentLegs = (object?)null,
             notes,
             tenantId = this.factory.TenantBId,
         });
@@ -271,6 +276,217 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
             GoldWeight.CalculateEquivalent21KWeight(12.5M, Karat.K24),
             delivery.Equivalent21KWeightInGrams);
         Assert.NotEqual(9999M, delivery.Equivalent21KWeightInGrams);
+    }
+
+    [Fact]
+    public async Task SupplierDelivery_WithDueAmountAndLegs_PostsDebtAndPartialPayment()
+    {
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        Guid accountId;
+
+        using (IServiceScope scope = this.factory.Services.CreateScope())
+        {
+            ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            accountId = await db.FinancialAccounts
+                .IgnoreQueryFilters()
+                .Where(account => account.TenantId == InitialTenant.Id && account.Currency == Currency.JOD)
+                .Select(account => account.Id)
+                .SingleAsync();
+        }
+
+        const string notes = "api-b2-delivery-legs";
+
+        using var payload = JsonContent.Create(new
+        {
+            supplierId = this.factory.SupplierA.Id,
+            lines = new[]
+            {
+                new
+                {
+                    karat = 21,
+                    weightInGrams = 10M,
+                    categoryId = (Guid?)null,
+                },
+            },
+            manufacturingFeePerGram = 2M,
+            manufacturingFeeCurrency = "JOD",
+            amountDue = 20M,
+            amountDueCurrency = "JOD",
+            paymentLegs = new[]
+            {
+                new
+                {
+                    accountId,
+                    currency = "JOD",
+                    amount = 8M,
+                    exchangeRate = 1M,
+                },
+            },
+            notes,
+            tenantId = this.factory.TenantBId,
+        });
+
+        HttpResponseMessage response = await clientA.PostAsync("/api/v1/supplier-deliveries", payload);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        using IServiceScope verifyScope = this.factory.Services.CreateScope();
+        ApplicationDbContext verifyDb = verifyScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        List<SupplierManufacturingLedgerEntry> entries = await verifyDb.SupplierManufacturingLedgerEntries
+            .IgnoreQueryFilters()
+            .Where(entry => entry.Notes == notes)
+            .OrderBy(entry => entry.Amount)
+            .ToListAsync();
+
+        Assert.Equal(2, entries.Count);
+        Assert.Contains(entries, entry =>
+            entry.MovementType == SupplierBalanceMovementType.Decrease && entry.Amount == 8M);
+        Assert.Contains(entries, entry =>
+            entry.MovementType == SupplierBalanceMovementType.Increase && entry.Amount == 20M);
+
+        FinancialTransaction outflow = await verifyDb.FinancialTransactions
+            .IgnoreQueryFilters()
+            .SingleAsync(entry =>
+                entry.ReferenceType == FinancialReferenceType.SupplierManufacturingPayment &&
+                entry.Notes == notes);
+        Assert.Equal(FinancialTransactionType.Outflow, outflow.TransactionType);
+        Assert.Equal(8M, outflow.Amount);
+        Assert.Equal(accountId, outflow.AccountId);
+    }
+
+    [Fact]
+    public async Task SupplierBalances_ReturnsPerKaratGoldAndPerCurrencyManufacturingDues()
+    {
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+
+        using JsonContent created = CreateSupplierPayload("API B2 Balances", "0796666666", "JO00BAL");
+        HttpResponseMessage createdResponse = await clientA.PostAsync("/api/v1/suppliers", created);
+        Assert.Equal(HttpStatusCode.Created, createdResponse.StatusCode);
+        Guid supplierId = (await createdResponse.Content.ReadFromJsonAsync<Guid>())!;
+
+        const string notes = "api-b2-balances-delivery";
+        using var delivery = JsonContent.Create(new
+        {
+            supplierId,
+            lines = new[]
+            {
+                new
+                {
+                    karat = 21,
+                    weightInGrams = 10M,
+                    categoryId = (Guid?)null,
+                },
+                new
+                {
+                    karat = 18,
+                    weightInGrams = 7M,
+                    categoryId = (Guid?)null,
+                },
+            },
+            manufacturingFeePerGram = 2M,
+            manufacturingFeeCurrency = "JOD",
+            amountDue = 20M,
+            amountDueCurrency = "JOD",
+            paymentLegs = (object?)null,
+            notes,
+        });
+
+        HttpResponseMessage deliveryResponse = await clientA.PostAsync("/api/v1/supplier-deliveries", delivery);
+        Assert.Equal(HttpStatusCode.Created, deliveryResponse.StatusCode);
+
+        JsonElement balances = await clientA.GetFromJsonAsync<JsonElement>($"/api/v1/suppliers/{supplierId}/balances");
+        Assert.Equal(supplierId, balances.GetProperty("supplierId").GetGuid());
+
+        Dictionary<int, decimal> gold = balances.GetProperty("goldByKarat").EnumerateArray()
+            .ToDictionary(
+                entry => entry.GetProperty("karat").GetInt32(),
+                entry => entry.GetProperty("netWeight").GetDecimal());
+        Assert.Equal(10M, gold[21]);
+        Assert.Equal(7M, gold[18]);
+
+        Dictionary<string, decimal> manufacturing = balances.GetProperty("manufacturingByCurrency").EnumerateArray()
+            .ToDictionary(
+                entry => entry.GetProperty("currency").GetString()!,
+                entry => entry.GetProperty("netAmount").GetDecimal());
+        Assert.Equal(20M, manufacturing["JOD"]);
+
+        HttpResponseMessage missing = await clientA.GetAsync($"/api/v1/suppliers/{Guid.NewGuid()}/balances");
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+    }
+
+    [Fact]
+    public async Task SupplierManufacturingPayment_WithLegs_SettlesWithoutTopLevelAccount()
+    {
+        HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
+        Guid accountId;
+
+        using (IServiceScope scope = this.factory.Services.CreateScope())
+        {
+            ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            accountId = await db.FinancialAccounts
+                .IgnoreQueryFilters()
+                .Where(account => account.TenantId == InitialTenant.Id && account.Currency == Currency.JOD)
+                .Select(account => account.Id)
+                .SingleAsync();
+        }
+
+        using JsonContent created = CreateSupplierPayload("API B2 Mfg Legs", "0797777777", "JO00MFG");
+        HttpResponseMessage createdResponse = await clientA.PostAsync("/api/v1/suppliers", created);
+        Assert.Equal(HttpStatusCode.Created, createdResponse.StatusCode);
+        Guid supplierId = (await createdResponse.Content.ReadFromJsonAsync<Guid>())!;
+
+        using var delivery = JsonContent.Create(new
+        {
+            supplierId,
+            lines = new[]
+            {
+                new
+                {
+                    karat = 21,
+                    weightInGrams = 10M,
+                    categoryId = (Guid?)null,
+                },
+            },
+            manufacturingFeePerGram = 2M,
+            manufacturingFeeCurrency = "JOD",
+            amountDue = 20M,
+            amountDueCurrency = "JOD",
+            paymentLegs = (object?)null,
+            notes = "api-b2-mfg-legs-delivery",
+        });
+
+        HttpResponseMessage deliveryResponse = await clientA.PostAsync("/api/v1/supplier-deliveries", delivery);
+        Assert.Equal(HttpStatusCode.Created, deliveryResponse.StatusCode);
+
+        using var payment = JsonContent.Create(new
+        {
+            supplierId,
+            accountId = Guid.Empty,
+            amount = 0M,
+            currency = "JOD",
+            notes = "api-b2-mfg-legs",
+            paymentLegs = new[]
+            {
+                new
+                {
+                    accountId,
+                    currency = "JOD",
+                    amount = 8M,
+                    exchangeRate = 1M,
+                },
+            },
+        });
+
+        HttpResponseMessage paymentResponse = await clientA.PostAsync(
+            "/api/v1/supplier-payments/manufacturing", payment);
+        Assert.Equal(HttpStatusCode.Created, paymentResponse.StatusCode);
+
+        JsonElement balances = await clientA.GetFromJsonAsync<JsonElement>($"/api/v1/suppliers/{supplierId}/balances");
+        Dictionary<string, decimal> manufacturing = balances.GetProperty("manufacturingByCurrency").EnumerateArray()
+            .ToDictionary(
+                entry => entry.GetProperty("currency").GetString()!,
+                entry => entry.GetProperty("netAmount").GetDecimal());
+        Assert.Equal(12M, manufacturing["JOD"]);
     }
 
     [Fact]
@@ -589,46 +805,89 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
         HttpClient clientA = await this.factory.CreateJwtClientAsync(TenantAAdmin, TenantAAdminPassword);
         HttpClient clientB = await this.factory.CreateJwtClientAsync(TenantBAdmin, MultiTenantWebApplicationFactory.TestPassword);
 
-        string salesNumberA = (await clientA.GetFromJsonAsync<string>("/api/v1/sales-invoices/next-number"))!;
-        string salesNumberB = (await clientB.GetFromJsonAsync<string>("/api/v1/sales-invoices/next-number"))!;
+        static async Task<string> CreateSaleNumberAsync(
+            HttpClient client,
+            Guid employeeId,
+            Guid accountId,
+            Guid categoryId,
+            string notes,
+            Guid forgedTenantId)
+        {
+            using JsonContent payload = CreateSalesInvoicePayload(
+                employeeId, accountId, categoryId, notes, forgedTenantId);
+            HttpResponseMessage create = await client.PostAsync("/api/v1/sales-invoices", payload);
+            Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+            Guid id = await create.Content.ReadFromJsonAsync<Guid>();
+            JsonElement invoice = (await client.GetFromJsonAsync<JsonElement>($"/api/v1/sales-invoices/{id}"))!;
+            return invoice.GetProperty("invoiceNumber").GetString()!;
+        }
 
-        using (JsonContent payload = CreateSalesInvoicePayload(
+        static async Task<string> CreatePurchaseNumberAsync(
+            HttpClient client,
+            Guid employeeId,
+            Guid accountId,
+            string notes,
+            Guid forgedTenantId)
+        {
+            using JsonContent payload = CreateCustomerPurchaseInvoicePayload(
+                employeeId, accountId, notes, forgedTenantId);
+            HttpResponseMessage create = await client.PostAsync("/api/v1/customer-purchases/invoices", payload);
+            Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+            Guid id = await create.Content.ReadFromJsonAsync<Guid>();
+            JsonElement invoice = (await client.GetFromJsonAsync<JsonElement>($"/api/v1/customer-purchases/invoices/{id}"))!;
+            return invoice.GetProperty("invoiceNumber").GetString()!;
+        }
+
+        string salesNumberA1 = await CreateSaleNumberAsync(
+            clientA,
             this.factory.EmployeeA.Id,
             this.factory.FinancialAccountA.Id,
             this.factory.CategoryA.Id,
-            "api-b3-number-scope-sale",
-            this.factory.TenantBId))
-        {
-            HttpResponseMessage create = await clientA.PostAsync("/api/v1/sales-invoices", payload);
-            Assert.Equal(HttpStatusCode.Created, create.StatusCode);
-        }
-
-        string nextSalesNumberA = (await clientA.GetFromJsonAsync<string>("/api/v1/sales-invoices/next-number"))!;
-        string unchangedSalesNumberB = (await clientB.GetFromJsonAsync<string>("/api/v1/sales-invoices/next-number"))!;
-        Assert.Equal(IncrementInvoiceNumber(salesNumberA), nextSalesNumberA);
-        Assert.Equal(salesNumberB, unchangedSalesNumberB);
-
-        string purchaseNumberA = (await clientA.GetFromJsonAsync<string>(
-            "/api/v1/customer-purchases/invoices/next-number"))!;
-        string purchaseNumberB = (await clientB.GetFromJsonAsync<string>(
-            "/api/v1/customer-purchases/invoices/next-number"))!;
-
-        using (JsonContent payload = CreateCustomerPurchaseInvoicePayload(
+            "api-b3-number-scope-sale-1",
+            this.factory.TenantBId);
+        string salesNumberA2 = await CreateSaleNumberAsync(
+            clientA,
             this.factory.EmployeeA.Id,
             this.factory.FinancialAccountA.Id,
-            "api-b3-number-scope-purchase",
-            this.factory.TenantBId))
-        {
-            HttpResponseMessage create = await clientA.PostAsync("/api/v1/customer-purchases/invoices", payload);
-            Assert.Equal(HttpStatusCode.Created, create.StatusCode);
-        }
+            this.factory.CategoryA.Id,
+            "api-b3-number-scope-sale-2",
+            this.factory.TenantBId);
+        Assert.Equal(IncrementInvoiceNumber(salesNumberA1), salesNumberA2);
+        Assert.StartsWith("INV-", salesNumberA1, StringComparison.Ordinal);
 
-        string nextPurchaseNumberA = (await clientA.GetFromJsonAsync<string>(
-            "/api/v1/customer-purchases/invoices/next-number"))!;
-        string unchangedPurchaseNumberB = (await clientB.GetFromJsonAsync<string>(
-            "/api/v1/customer-purchases/invoices/next-number"))!;
-        Assert.Equal(IncrementInvoiceNumber(purchaseNumberA), nextPurchaseNumberA);
-        Assert.Equal(purchaseNumberB, unchangedPurchaseNumberB);
+        string purchaseNumberA1 = await CreatePurchaseNumberAsync(
+            clientA,
+            this.factory.EmployeeA.Id,
+            this.factory.FinancialAccountA.Id,
+            "api-b3-number-scope-purchase-1",
+            this.factory.TenantBId);
+        string purchaseNumberA2 = await CreatePurchaseNumberAsync(
+            clientA,
+            this.factory.EmployeeA.Id,
+            this.factory.FinancialAccountA.Id,
+            "api-b3-number-scope-purchase-2",
+            this.factory.TenantBId);
+        Assert.Equal(IncrementInvoiceNumber(purchaseNumberA1), purchaseNumberA2);
+        Assert.StartsWith("PUR-", purchaseNumberA1, StringComparison.Ordinal);
+
+        // Tenant B allocates from its own sequence: creating in B must not disturb A's sequence.
+        string salesNumberB1 = await CreateSaleNumberAsync(
+            clientB,
+            this.factory.EmployeeB.Id,
+            this.factory.FinancialAccountB.Id,
+            this.factory.CategoryB.Id,
+            "api-b3-number-scope-sale-b",
+            InitialTenant.Id);
+        Assert.StartsWith("INV-", salesNumberB1, StringComparison.Ordinal);
+
+        string salesNumberA3 = await CreateSaleNumberAsync(
+            clientA,
+            this.factory.EmployeeA.Id,
+            this.factory.FinancialAccountA.Id,
+            this.factory.CategoryA.Id,
+            "api-b3-number-scope-sale-3",
+            this.factory.TenantBId);
+        Assert.Equal(IncrementInvoiceNumber(salesNumberA2), salesNumberA3);
     }
 
     [Fact]
@@ -809,8 +1068,6 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
 
         HttpResponseMessage salesList = await noSalesClient.GetAsync("/api/v1/sales-invoices");
         Assert.Equal(HttpStatusCode.Forbidden, salesList.StatusCode);
-        HttpResponseMessage salesNext = await noSalesClient.GetAsync("/api/v1/sales-invoices/next-number");
-        Assert.Equal(HttpStatusCode.Forbidden, salesNext.StatusCode);
         HttpResponseMessage salesKpis = await noSalesClient.GetAsync("/api/v1/sales-invoices/kpis");
         Assert.Equal(HttpStatusCode.Forbidden, salesKpis.StatusCode);
         using var emptySale = JsonContent.Create(new { });
@@ -818,22 +1075,22 @@ public sealed class ApiIsolationTests : IClassFixture<MultiTenantWebApplicationF
         Assert.Equal(HttpStatusCode.Forbidden, salesCreate.StatusCode);
 
         HttpResponseMessage allowedPurchases = await noSalesClient.GetAsync(
-            "/api/v1/customer-purchases/invoices/next-number");
+            "/api/v1/customer-purchases/invoices/kpis");
         Assert.Equal(HttpStatusCode.OK, allowedPurchases.StatusCode);
 
         HttpClient noPurchasesClient = await this.factory.CreateJwtClientAsync(
             MultiTenantWebApplicationFactory.NoPurchasesAdmin,
             MultiTenantWebApplicationFactory.TestPassword);
 
-        HttpResponseMessage purchaseNext = await noPurchasesClient.GetAsync(
-            "/api/v1/customer-purchases/invoices/next-number");
-        Assert.Equal(HttpStatusCode.Forbidden, purchaseNext.StatusCode);
+        HttpResponseMessage purchaseKpis = await noPurchasesClient.GetAsync(
+            "/api/v1/customer-purchases/invoices/kpis");
+        Assert.Equal(HttpStatusCode.Forbidden, purchaseKpis.StatusCode);
         using var emptyPurchase = JsonContent.Create(new { });
         HttpResponseMessage purchaseCreate = await noPurchasesClient.PostAsync(
             "/api/v1/customer-purchases/invoices", emptyPurchase);
         Assert.Equal(HttpStatusCode.Forbidden, purchaseCreate.StatusCode);
 
-        HttpResponseMessage allowedSales = await noPurchasesClient.GetAsync("/api/v1/sales-invoices/next-number");
+        HttpResponseMessage allowedSales = await noPurchasesClient.GetAsync("/api/v1/sales-invoices/kpis");
         Assert.Equal(HttpStatusCode.OK, allowedSales.StatusCode);
     }
 

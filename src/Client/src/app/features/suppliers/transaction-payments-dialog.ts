@@ -13,6 +13,7 @@ import { FormField, form, required, submit } from '@angular/forms/signals';
 import type { ApiError } from '../../core/http/api-error';
 import { Button, Dialog, EmptyState, Skeleton } from '../../shared/ui';
 import { formatCurrency, formatDateTime } from '../../shared/format/formatters';
+import { filterAccountsByCurrency } from '../../shared/finance/account-filters';
 import type { SupplierFinancialTransactionResponse } from './suppliers-api.service';
 import { SuppliersStore } from './suppliers-store';
 
@@ -78,10 +79,14 @@ function toIsoDateTime(dateInput: string): string {
             title="تعذّر تحميل الدفعات"
             [description]="error.detail ?? ''"
           >
-            <app-button variant="secondary" size="sm" (clicked)="retryLoad()">إعادة المحاولة</app-button>
+            <app-button variant="secondary" size="sm" (clicked)="retryLoad()"
+              >إعادة المحاولة</app-button
+            >
           </app-empty-state>
         } @else if (payments().length === 0) {
-          <p class="rounded-lg border border-dashed border-gray-300 px-3 py-4 text-center text-sm text-gray-500">
+          <p
+            class="rounded-lg border border-dashed border-gray-300 px-3 py-4 text-center text-sm text-gray-500"
+          >
             لا توجد دفعات بعد.
           </p>
         } @else {
@@ -89,11 +94,15 @@ function toIsoDateTime(dateInput: string): string {
             @for (payment of payments(); track payment.id) {
               <div class="flex items-center justify-between gap-3 px-3 py-2.5">
                 <div class="min-w-0">
-                  <p class="truncate text-sm font-medium text-gray-800">{{ payment.accountName }}</p>
+                  <p class="truncate text-sm font-medium text-gray-800">
+                    {{ payment.accountName }}
+                  </p>
                   <p class="text-xs text-gray-500">{{ formatDateTime(payment.date ?? '') }}</p>
                 </div>
                 <p class="shrink-0 text-sm font-semibold text-gray-900 data-mono" dir="ltr">
-                  {{ formatCurrency(Number(payment.amount ?? 0), transaction()?.currency ?? 'JOD') }}
+                  {{
+                    formatCurrency(Number(payment.amount ?? 0), transaction()?.currency ?? 'JOD')
+                  }}
                 </p>
               </div>
             }
@@ -101,7 +110,11 @@ function toIsoDateTime(dateInput: string): string {
         }
       </div>
 
-      <form class="mt-5 space-y-4 border-t border-gray-100 pt-5" novalidate (submit)="onSubmit(); $event.preventDefault()">
+      <form
+        class="mt-5 space-y-4 border-t border-gray-100 pt-5"
+        novalidate
+        (submit)="onSubmit(); $event.preventDefault()"
+      >
         <p class="text-sm font-medium text-gray-700">تسجيل دفعة جديدة</p>
 
         <div>
@@ -212,7 +225,10 @@ export class TransactionPaymentsDialog {
   readonly accountsError = this.store.accountsError;
 
   readonly activeAccounts = computed(() =>
-    (this.accounts() ?? []).filter((account) => account.isActive !== false),
+    filterAccountsByCurrency(
+      (this.accounts() ?? []).filter((account) => account.isActive !== false),
+      this.transaction()?.currency ?? null,
+    ),
   );
 
   readonly amountError = signal<string | null>(null);

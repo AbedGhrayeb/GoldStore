@@ -95,7 +95,7 @@ public sealed class CategoriesEndpoints : IEndpoint
         CancellationToken cancellationToken)
     {
         Result<Guid> result = await dispatcher.DispatchAsync<CreateCategoryCommand, Guid>(
-            new CreateCategoryCommand(request.Name, request.Description, request.ParentCategoryId, request.IsActive),
+            new CreateCategoryCommand(request.Name, request.Description, request.ParentCategoryId, request.IsActive, request.WeightInGrams, request.Karat),
             cancellationToken);
 
         return ApiResults.Created($"/{ApiRoutes.Tenant}/categories/{result.Value}", result);
@@ -108,7 +108,7 @@ public sealed class CategoriesEndpoints : IEndpoint
         CancellationToken cancellationToken)
     {
         Result<Updated> result = await dispatcher.DispatchAsync<UpdateCategoryCommand, Updated>(
-            new UpdateCategoryCommand(id, request.Name, request.Description, request.ParentCategoryId, request.IsActive),
+            new UpdateCategoryCommand(id, request.Name, request.Description, request.ParentCategoryId, request.IsActive, request.WeightInGrams, request.Karat),
             cancellationToken);
 
         return ApiResults.From(result);
@@ -137,6 +137,6 @@ public sealed class CategoriesEndpoints : IEndpoint
     }
 }
 
-public sealed record CreateCategoryRequest(string Name, string? Description, Guid? ParentCategoryId, bool IsActive = true);
+public sealed record CreateCategoryRequest(string Name, string? Description, Guid? ParentCategoryId, bool IsActive, decimal WeightInGrams, int Karat);
 
-public sealed record UpdateCategoryRequest(string Name, string? Description, Guid? ParentCategoryId, bool IsActive);
+public sealed record UpdateCategoryRequest(string Name, string? Description, Guid? ParentCategoryId, bool IsActive, decimal WeightInGrams, int Karat);

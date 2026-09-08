@@ -40,7 +40,6 @@ describe('PurchasesStore', () => {
   let toasts: ToastStore;
 
   const server = setupServer(
-    http.get(`${INVOICES}/next-number`, () => HttpResponse.json('PUR-2026-08-0005')),
     http.get(`${INVOICES}/kpis`, () =>
       HttpResponse.json({
         todayCount: 3,
@@ -150,13 +149,23 @@ describe('PurchasesStore', () => {
     http.get(EMPLOYEES, () =>
       HttpResponse.json([{ id: 'emp-1', fullName: 'عمر حسن', isActive: true }]),
     ),
-    http.get(CATEGORIES, () =>
-      HttpResponse.json([{ id: 'cat-1', name: 'خواتم', isActive: true }]),
-    ),
+    http.get(CATEGORIES, () => HttpResponse.json([{ id: 'cat-1', name: 'خواتم', isActive: true }])),
     http.get(ACCOUNTS, () =>
       HttpResponse.json([
-        { id: 'acc-1', name: 'صندوق النقدية', currency: 'JOD', accountType: 'Cash', isActive: true },
-        { id: 'acc-2', name: 'الحساب البنكي', currency: 'JOD', accountType: 'Bank', isActive: true },
+        {
+          id: 'acc-1',
+          name: 'صندوق النقدية',
+          currency: 'JOD',
+          accountType: 'Cash',
+          isActive: true,
+        },
+        {
+          id: 'acc-2',
+          name: 'الحساب البنكي',
+          currency: 'JOD',
+          accountType: 'Bank',
+          isActive: true,
+        },
       ]),
     ),
   );
@@ -171,13 +180,11 @@ describe('PurchasesStore', () => {
   afterEach(() => server.resetHandlers());
   afterAll(() => server.close());
 
-  it('loads the next number and the option lists', async () => {
-    await store.loadNextNumber();
+  it('loads the option lists', async () => {
     await store.ensureEmployees();
     await store.ensureCategories();
     await store.ensureAccounts();
 
-    expect(store.nextNumber()).toBe('PUR-2026-08-0005');
     expect(store.employees()[0]?.fullName).toBe('عمر حسن');
     expect(store.categories()[0]?.name).toBe('خواتم');
     expect(store.accounts()).toHaveLength(2);
@@ -188,12 +195,14 @@ describe('PurchasesStore', () => {
 
     expect(store.loading()).toBe(false);
     expect(store.error()).toBeNull();
-    expect((store.page() as any)?.items[0]?.invoiceNumber).toBe('PUR-2026-08-0001');
+    expect(store.page()?.items?.[0]?.invoiceNumber).toBe('PUR-2026-08-0001');
     expect(store.page()?.totalCount).toBe(1);
   });
 
   it('surfaces a list load failure without a toast', async () => {
-    server.use(http.get(INVOICES, () => HttpResponse.json({ detail: 'خطأ داخلي' }, { status: 500 })));
+    server.use(
+      http.get(INVOICES, () => HttpResponse.json({ detail: 'خطأ داخلي' }, { status: 500 })),
+    );
 
     await store.loadInvoices({ page: 1 });
 
@@ -215,14 +224,18 @@ describe('PurchasesStore', () => {
 
     expect(store.detailLoading()).toBe(false);
     expect(store.detail()?.invoiceNumber).toBe('PUR-2026-08-0001');
-    expect((store.detail() as any)?.items[0]?.goldAmount).toBe(600);
+    expect(store.detail()?.items?.[0]?.goldAmount).toBe(600);
 
     store.clearDetail();
     expect(store.detail()).toBeNull();
   });
 
   it('surfaces a detail load failure', async () => {
-    server.use(http.get(`${INVOICES}/pur-1`, () => HttpResponse.json({ detail: 'غير موجود' }, { status: 404 })));
+    server.use(
+      http.get(`${INVOICES}/pur-1`, () =>
+        HttpResponse.json({ detail: 'غير موجود' }, { status: 404 }),
+      ),
+    );
 
     await store.loadDetail('pur-1');
 

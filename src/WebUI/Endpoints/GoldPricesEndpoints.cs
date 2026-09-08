@@ -25,7 +25,8 @@ public sealed class GoldPricesEndpoints : IEndpoint
 
         group.MapGet("/current", GetCurrent)
             .WithSummary("Return the current gold price feed.")
-            .Produces<GoldPricesResponse>(StatusCodes.Status200OK);
+            .Produces<GoldPricesResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
     }
 
     private static async Task<IResult> GetCurrent(

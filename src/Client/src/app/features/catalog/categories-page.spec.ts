@@ -16,6 +16,8 @@ const CATEGORIES: CategoryResponse[] = [
     parentCategoryId: null,
     parentCategoryName: null,
     isActive: true,
+    weightInGrams: 10,
+    karat: 21,
   },
   {
     id: 'cat-2',
@@ -24,6 +26,8 @@ const CATEGORIES: CategoryResponse[] = [
     parentCategoryId: null,
     parentCategoryName: null,
     isActive: true,
+    weightInGrams: 20,
+    karat: 18,
   },
   {
     id: 'cat-3',
@@ -32,15 +36,26 @@ const CATEGORIES: CategoryResponse[] = [
     parentCategoryId: 'cat-1',
     parentCategoryName: 'خواتم',
     isActive: false,
+    weightInGrams: 15,
+    karat: 21,
   },
 ];
 
 const BASE = apiUrl('/api/v1/categories');
+const REFERENCE = apiUrl('/api/v1/reference');
 
 describe('CategoriesPage', () => {
   let categories: CategoryResponse[];
 
   const server = setupServer(
+    http.get(`${REFERENCE}/karats`, () =>
+      HttpResponse.json([
+        { value: 18, label: 'عيار 18' },
+        { value: 21, label: 'عيار 21' },
+        { value: 24, label: 'عيار 24' },
+      ]),
+    ),
+    http.get(`${REFERENCE}/currencies`, () => HttpResponse.json([])),
     http.get(BASE, () => HttpResponse.json(categories)),
     http.post(BASE, async ({ request }) => {
       const body = (await request.json()) as { name: string; parentCategoryId: string | null };
@@ -127,6 +142,12 @@ describe('CategoriesPage', () => {
     const input = fixture.nativeElement.querySelector('#category-name') as HTMLInputElement;
     input.value = 'سلاسل';
     input.dispatchEvent(new Event('input'));
+    const weight = fixture.nativeElement.querySelector('#category-weight') as HTMLInputElement;
+    weight.value = '12.5';
+    weight.dispatchEvent(new Event('input'));
+    const karat = fixture.nativeElement.querySelector('#category-karat') as HTMLSelectElement;
+    karat.value = '21';
+    karat.dispatchEvent(new Event('change'));
     fixture.detectChanges();
 
     const saveButton = [...fixture.nativeElement.querySelectorAll('button')].find(

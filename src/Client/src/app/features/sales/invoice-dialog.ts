@@ -81,13 +81,6 @@ function firstValidationMessage(error: ApiError): string | null {
       (openChange)="onDismiss()"
     >
       <form class="space-y-5" novalidate (submit)="onSubmit(); $event.preventDefault()">
-        <p class="text-xs text-gray-500">
-          الرقم القادم:
-          <span class="data-mono font-medium text-gray-800" dir="ltr">
-            {{ nextNumber() || (nextNumberError() ? 'غير متاح' : 'جاري التحميل...') }}
-          </span>
-        </p>
-
         <!-- Customer -->
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
@@ -101,8 +94,12 @@ function firstValidationMessage(error: ApiError): string | null {
               [formField]="draftForm.customerName"
               class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
             />
-            @if (draftForm.customerName().touched() && draftForm.customerName().errors().length > 0) {
-              <p class="mt-1 text-xs text-error">{{ draftForm.customerName().errors()[0].message }}</p>
+            @if (
+              draftForm.customerName().touched() && draftForm.customerName().errors().length > 0
+            ) {
+              <p class="mt-1 text-xs text-error">
+                {{ draftForm.customerName().errors()[0].message }}
+              </p>
             }
           </div>
           <div>
@@ -136,7 +133,15 @@ function firstValidationMessage(error: ApiError): string | null {
             </app-button>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full min-w-[640px] border-collapse text-sm">
+            <table class="w-full min-w-[640px] table-fixed border-collapse text-sm">
+              <colgroup>
+                <col style="width: 32%" />
+                <col style="width: 17%" />
+                <col style="width: 13%" />
+                <col style="width: 13%" />
+                <col style="width: 18%" />
+                <col style="width: 7%" />
+              </colgroup>
               <thead>
                 <tr class="border-b border-gray-200 bg-gray-50 text-gray-600">
                   <th class="px-4 py-2.5 text-start font-semibold">الصنف</th>
@@ -243,7 +248,9 @@ function firstValidationMessage(error: ApiError): string | null {
             >البائع (الموظف) <span class="text-error">*</span></label
           >
           @if (employeesError(); as message) {
-            <p class="mb-2 rounded-input bg-error/10 px-3 py-2 text-xs text-red-700">{{ message }}</p>
+            <p class="mb-2 rounded-input bg-error/10 px-3 py-2 text-xs text-red-700">
+              {{ message }}
+            </p>
           }
           <select
             id="invoice-employee"
@@ -264,7 +271,7 @@ function firstValidationMessage(error: ApiError): string | null {
         <!-- Currency + total -->
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label class="mb-2 block text-sm font-medium text-gray-700">عملة الفاتورة</label>
+            <span class="mb-2 block text-sm font-medium text-gray-700">عملة الفاتورة</span>
             <div class="flex gap-2">
               @for (option of currencyOptions(); track option.code) {
                 <label class="flex-1 cursor-pointer">
@@ -354,7 +361,9 @@ function firstValidationMessage(error: ApiError): string | null {
               </div>
               <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label class="mb-2 block text-sm font-medium text-gray-700" for="invoice-amount-paid"
+                  <label
+                    class="mb-2 block text-sm font-medium text-gray-700"
+                    for="invoice-amount-paid"
                     >المبلغ المدفوع الآن</label
                   >
                   <input
@@ -372,10 +381,14 @@ function firstValidationMessage(error: ApiError): string | null {
                 </div>
                 <div class="space-y-3 rounded-input bg-gray-50 p-3">
                   @if (accountsError(); as message) {
-                    <p class="rounded-input bg-error/10 px-2 py-1.5 text-xs text-red-700">{{ message }}</p>
+                    <p class="rounded-input bg-error/10 px-2 py-1.5 text-xs text-red-700">
+                      {{ message }}
+                    </p>
                   }
                   <div>
-                    <label class="mb-1.5 block text-xs font-medium text-gray-600" for="invoice-account"
+                    <label
+                      class="mb-1.5 block text-xs font-medium text-gray-600"
+                      for="invoice-account"
                       >حساب الدفع <span class="text-error">*</span></label
                     >
                     <select
@@ -386,7 +399,9 @@ function firstValidationMessage(error: ApiError): string | null {
                     >
                       <option value="">اختر الحساب</option>
                       @for (account of matchingAccounts(); track account.id) {
-                        <option [value]="account.id">{{ account.name }} ({{ account.currency }})</option>
+                        <option [value]="account.id">
+                          {{ account.name }} ({{ account.currency }})
+                        </option>
                       }
                     </select>
                     @if (matchingAccounts().length === 0 && !accountsError()) {
@@ -398,7 +413,9 @@ function firstValidationMessage(error: ApiError): string | null {
                   </div>
                   @if (paymentMethod() === '2') {
                     <div>
-                      <label class="mb-1.5 block text-xs font-medium text-gray-600" for="invoice-buyer-account"
+                      <label
+                        class="mb-1.5 block text-xs font-medium text-gray-600"
+                        for="invoice-buyer-account"
                         >رقم حساب المشتري <span class="text-error">*</span></label
                       >
                       <input
@@ -431,7 +448,9 @@ function firstValidationMessage(error: ApiError): string | null {
                 </app-button>
               </div>
               @if (accountsError(); as message) {
-                <p class="rounded-input bg-error/10 px-3 py-2 text-xs text-red-700">{{ message }}</p>
+                <p class="rounded-input bg-error/10 px-3 py-2 text-xs text-red-700">
+                  {{ message }}
+                </p>
               }
               <div class="overflow-x-auto">
                 <table class="w-full min-w-[600px] border-collapse text-sm">
@@ -458,7 +477,9 @@ function firstValidationMessage(error: ApiError): string | null {
                           >
                             <option value="">اختر الحساب</option>
                             @for (account of accounts(); track account.id) {
-                              <option [value]="account.id">{{ account.name }} ({{ account.currency }})</option>
+                              <option [value]="account.id">
+                                {{ account.name }} ({{ account.currency }})
+                              </option>
                             }
                           </select>
                         </td>
@@ -521,7 +542,9 @@ function firstValidationMessage(error: ApiError): string | null {
                   </tbody>
                 </table>
               </div>
-              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-input bg-gray-50 px-3 py-2 text-sm">
+              <div
+                class="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-input bg-gray-50 px-3 py-2 text-sm"
+              >
                 <span>
                   الإجمالي المكافئ:
                   <span class="font-semibold data-mono" dir="ltr"
@@ -626,8 +649,6 @@ export class InvoiceDialog {
 
   readonly saving = this.store.saving;
   readonly saveError = this.store.saveError;
-  readonly nextNumber = this.store.nextNumber;
-  readonly nextNumberError = this.store.nextNumberError;
   readonly employees = this.store.employees;
   readonly employeesError = this.store.employeesError;
   readonly categories = this.store.categories;
@@ -693,7 +714,6 @@ export class InvoiceDialog {
 
   constructor() {
     void this.reference.ensureLoaded();
-    void this.store.loadNextNumber();
     void this.store.ensureEmployees();
     void this.store.ensureCategories();
     void this.store.ensureAccounts();
@@ -713,11 +733,8 @@ export class InvoiceDialog {
         void this.store.ensureEmployees();
         void this.store.ensureCategories();
         void this.store.ensureAccounts();
-        void this.store.loadNextNumber();
         this.draft.set({ customerName: '', customerPhone: '', notes: '' });
-        this.items.set([
-          { categoryId: '', karat: 21, weight: '', pricePerGram: '' },
-        ]);
+        this.items.set([{ categoryId: '', karat: 21, weight: '', pricePerGram: '' }]);
         this.itemsError.set('');
         this.employeeId.set('');
         this.employeeError.set(false);
@@ -748,7 +765,11 @@ export class InvoiceDialog {
     return total.toFixed(3);
   }
 
-  setItemField(index: number, field: 'categoryId' | 'karat' | 'weight' | 'price', value: string): void {
+  setItemField(
+    index: number,
+    field: 'categoryId' | 'karat' | 'weight' | 'price',
+    value: string,
+  ): void {
     this.items.update((items) =>
       items.map((item, i) =>
         i === index
@@ -791,7 +812,7 @@ export class InvoiceDialog {
 
   readonly legsTotal = computed(() =>
     round3(
-      this.legs().reduce((sum, leg, index) => {
+      this.legs().reduce((sum, leg) => {
         const amount = Number(leg.amount);
         if (!Number.isFinite(amount) || amount <= 0) {
           return sum;
@@ -991,14 +1012,12 @@ export class InvoiceDialog {
       totalAmount: total,
       amountPaid: round3(paid),
       paymentMethod: legsEnabled
-        ? (this.legs()[0]?.accountType === 'Bank' ? 2 : 1)
+        ? this.legs()[0]?.accountType === 'Bank'
+          ? 2
+          : 1
         : Number(this.paymentMethod()),
-      accountId: legsEnabled
-        ? (this.legs()[0]?.accountId ?? null)
-        : (this.accountId() || null),
-      buyerAccountNumber: legsEnabled
-        ? null
-        : (this.buyerAccountNumber().trim() || null),
+      accountId: legsEnabled ? (this.legs()[0]?.accountId ?? null) : this.accountId() || null,
+      buyerAccountNumber: legsEnabled ? null : this.buyerAccountNumber().trim() || null,
       employeeId: this.employeeId(),
       paymentLegs: legsEnabled
         ? this.legs()

@@ -32,7 +32,19 @@ public static class CategoryErrors
         "Categories.CircularReference",
         "لا يمكن أن تكون الفئة والمصدر نفسه.");
 
+    public static Error InvalidWeight => Error.Validation(
+        "Categories.InvalidWeight",
+        "وزن الفئة مطلوب ويجب أن يكون أكبر من صفر");
+
+    public static Error InvalidKarat => Error.Validation(
+        "Categories.InvalidKarat",
+        "عيار الفئة مطلوب");
+
     public static readonly Error HasReferences = Error.Conflict(
         "Categories.HasReferences",
         "لا يمكن حذف فئة مستخدمة في فواتير البيع أو الشراء");
+
+    public static Error InsufficientWeight(decimal available, decimal required) => Error.Conflict(
+        "Categories.InsufficientWeight",
+        $"وزن التصنيف غير كافٍ: المتاح {available:N3} غ والمطلوب {required:N3} غ");
 }

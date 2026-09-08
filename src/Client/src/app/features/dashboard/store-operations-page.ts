@@ -17,8 +17,10 @@ import { formatWeight } from '../../shared/format/formatters';
 import { OperationDetailDialog } from './operation-detail-dialog';
 import type { StoreOperationsQuery } from './store-operations-api.service';
 import {
+  toCategoryKpiRow,
   toEmployeeStatRow,
   toOperationRow,
+  type CategoryKpiRow,
   type EmployeeStatRow,
   type OperationRow,
 } from './store-operations.model';
@@ -94,6 +96,26 @@ const SKELETON_TABLE_COLUMNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
           }
         </app-card>
       </section>
+
+      <app-card title="مبيعات اليوم حسب التصنيف">
+        <app-table
+          [columns]="categoryColumns"
+          [rows]="salesByCategoryRows()"
+          [loading]="kpisLoading()"
+          emptyTitle="لا توجد مبيعات اليوم"
+          emptyDescription="لم تُسجَّل مبيعات اليوم."
+        />
+      </app-card>
+
+      <app-card title="مشتريات اليوم حسب التصنيف">
+        <app-table
+          [columns]="categoryColumns"
+          [rows]="purchasesByCategoryRows()"
+          [loading]="kpisLoading()"
+          emptyTitle="لا توجد مشتريات اليوم"
+          emptyDescription="لم تُسجَّل مشتريات اليوم."
+        />
+      </app-card>
 
       <app-card title="إحصائيات الموظفين اليوم">
         <app-table
@@ -362,6 +384,35 @@ export class StoreOperationsPage {
 
   readonly salesCount = computed(() => Number(this.store.kpis()?.todaySalesCount ?? 0));
   readonly purchasesCount = computed(() => Number(this.store.kpis()?.todayPurchasesCount ?? 0));
+
+  readonly salesByCategoryRows = computed<CategoryKpiRow[]>(() =>
+    (this.store.kpis()?.salesByCategory ?? []).map(toCategoryKpiRow),
+  );
+
+  readonly purchasesByCategoryRows = computed<CategoryKpiRow[]>(() =>
+    (this.store.kpis()?.purchasesByCategory ?? []).map(toCategoryKpiRow),
+  );
+
+  readonly categoryColumns: TableColumn<CategoryKpiRow>[] = [
+    { key: 'name', header: 'التصنيف', cell: (row) => row.name, sortable: true },
+    {
+      key: 'weight',
+      header: 'الوزن (غ)',
+      cell: (row) => row.weightText,
+      numeric: true,
+      sortable: true,
+      sortValue: (row) => row.weight,
+    },
+    {
+      key: 'count',
+      header: 'عدد البنود',
+      cell: (row) => row.count,
+      numeric: true,
+      sortable: true,
+      sortValue: (row) => row.count,
+    },
+    { key: 'totals', header: 'الإجمالي', cell: (row) => row.totals, numeric: true },
+  ];
 
   /**
    * The dashboard group exposes no account-list endpoint (contract gap vs the MVC page's

@@ -62,7 +62,9 @@ import { CatalogStore, type CategoryResponse } from './catalog-store';
           icon="plus"
           [disabled]="!canManageInventory()"
           [title]="!canManageInventory() ? 'ليس لديك صلاحية إدارة الكتالوج' : ''"
-          (clicked)="canManageInventory() && openCreate()">إضافة تصنيف</app-button>
+          (clicked)="canManageInventory() && openCreate()"
+          >إضافة تصنيف</app-button
+        >
       </div>
 
       <app-card>
@@ -116,7 +118,9 @@ import { CatalogStore, type CategoryResponse } from './catalog-store';
                   [title]="row.isActive ? 'إيقاف' : 'تفعيل'"
                   [attr.aria-label]="(row.isActive ? 'إيقاف ' : 'تفعيل ') + row.name"
                   [disabled]="!canManageInventory() || mutatingId() === row.id"
-                  [attr.title]="!canManageInventory() ? 'ليس لديك صلاحية' : (row.isActive ? 'إيقاف' : 'تفعيل')"
+                  [attr.title]="
+                    !canManageInventory() ? 'ليس لديك صلاحية' : row.isActive ? 'إيقاف' : 'تفعيل'
+                  "
                   (click)="canManageInventory() && toggleActive(row)"
                 >
                   <lucide-icon [img]="powerIcon" [size]="16" />
@@ -185,7 +189,9 @@ import { CatalogStore, type CategoryResponse } from './catalog-store';
 })
 export class CategoriesPage {
   private readonly auth = inject(AuthStore);
-  readonly canManageInventory = computed(() => this.auth.hasPermission('inventory.manage') || this.auth.hasRole('store_admin'));
+  readonly canManageInventory = computed(
+    () => this.auth.hasPermission('inventory.manage') || this.auth.hasRole('store_admin'),
+  );
   private readonly store = inject(CatalogStore);
 
   readonly loading = this.store.loading;
@@ -211,6 +217,19 @@ export class CategoriesPage {
   readonly columns = computed<TableColumn<CategoryTreeRow>[]>(() => [
     { key: 'name', header: 'الاسم', cell: (row) => row.name, cellTemplate: this.nameCell() },
     { key: 'parent', header: 'التصنيف الأب', cell: (row) => row.parentCategoryName ?? '—' },
+    {
+      key: 'weight',
+      header: 'الوزن (غ)',
+      cell: (row) =>
+        row.weightInGrams !== null && row.weightInGrams !== undefined
+          ? String(row.weightInGrams)
+          : '—',
+    },
+    {
+      key: 'karat',
+      header: 'العيار',
+      cell: (row) => (row.karat !== null && row.karat !== undefined ? String(row.karat) : '—'),
+    },
     { key: 'description', header: 'الوصف', cell: (row) => row.description ?? '—' },
     {
       key: 'status',
@@ -254,7 +273,9 @@ export class CategoriesPage {
       parentCategoryId: row.parentCategoryId,
       parentCategoryName: row.parentCategoryName,
       isActive: row.isActive,
-    });
+      weightInGrams: row.weightInGrams,
+      karat: row.karat,
+    } as CategoryResponse);
     this.formOpen.set(true);
   }
 

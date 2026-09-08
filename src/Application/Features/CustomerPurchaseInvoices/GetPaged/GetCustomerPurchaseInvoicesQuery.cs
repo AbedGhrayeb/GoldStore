@@ -12,4 +12,5 @@ public sealed record GetCustomerPurchaseInvoicesQuery(
     int PageSize = 20,
     DateTime? FromDate = null,
     DateTime? ToDate = null,
-    string? Search = null) : IQuery<PaginatedList<CustomerPurchaseInvoiceResponse>>;
+    string? Search = null,
+    Guid? CategoryId = null) : IQuery<PaginatedList<CustomerPurchaseInvoiceResponse>>;

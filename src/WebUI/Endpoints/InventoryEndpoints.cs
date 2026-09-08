@@ -90,6 +90,8 @@ public sealed class InventoryEndpoints : IEndpoint
         DateTime? fromDate,
         DateTime? toDate,
         string? adjustmentType,
+        string? search,
+        int? karat,
         IQueryDispatcher dispatcher,
         CancellationToken cancellationToken)
     {
@@ -100,7 +102,9 @@ public sealed class InventoryEndpoints : IEndpoint
                     pageSize ?? 20,
                     fromDate,
                     toDate,
-                    adjustmentType),
+                    adjustmentType,
+                    search,
+                    karat),
                 cancellationToken);
 
         return ApiResults.From(result);

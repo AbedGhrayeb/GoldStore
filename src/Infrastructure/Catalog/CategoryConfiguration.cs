@@ -18,6 +18,10 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
 
         builder.Property(category => category.Description).HasMaxLength(500);
 
+        builder.Property(category => category.WeightInGrams).HasPrecision(18, 3);
+
+        builder.Property(category => category.Karat).HasConversion<string>().HasMaxLength(3);
+
         builder.HasOne(c => c.ParentCategory)
             .WithMany(c => c.Childrens)
             .HasForeignKey(category => category.ParentCategoryId)

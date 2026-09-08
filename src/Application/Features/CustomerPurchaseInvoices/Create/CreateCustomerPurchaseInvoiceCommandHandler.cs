@@ -107,15 +107,32 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
 
             Guid userId = userContext.UserId;
             decimal remainingBalance = command.TotalAmount - amountPaid;
-            List<CustomerPurchaseInvoiceItem> items = [];
-            foreach (CustomerPurchaseInvoiceItemDto item in command.Items)
+
+            // Preload the categories touched by this invoice so each category weight is
+            // moved exactly once per line weight (single query instead of one per line).
+            List<Guid> requestedCategoryIds = command.Items
+                .Where(i => i.CategoryId.HasValue)
+                .Select(i => i.CategoryId!.Value)
+                .Distinct()
+                .ToList();
+
+            Dictionary<Guid, Category> categoriesById = requestedCategoryIds.Count > 0
+                ? await context.Categories
+                    .Where(c => requestedCategoryIds.Contains(c.Id))
+                    .ToDictionaryAsync(c => c.Id, cancellationToken)
+                : [];
+
+            foreach (Guid categoryId in requestedCategoryIds)
             {
-                if (item.CategoryId is { } categoryId
-                    && !await context.Categories.AnyAsync(c => c.Id == categoryId, cancellationToken))
+                if (!categoriesById.ContainsKey(categoryId))
                 {
                     return CategoryErrors.NotFound(categoryId);
                 }
+            }
 
+            List<CustomerPurchaseInvoiceItem> items = [];
+            foreach (CustomerPurchaseInvoiceItemDto item in command.Items)
+            {
                 var karat = (Karat)item.Karat;
 
                 Result<CustomerPurchaseInvoiceItem> itemResult =
@@ -152,6 +169,33 @@ internal sealed class CreateCustomerPurchaseInvoiceCommandHandler(
             }
 
             context.CustomerPurchaseInvoices.Add(invoiceResult.Value);
+
+            // Increase each selected category weight by its line weight. The
+            // GoldLedgerEntry Increase loop below is the single general-store posting —
+            // this update is weight-only on purpose (no double-count). Uncategorized
+            // lines move the ledger only.
+            foreach (CustomerPurchaseInvoiceItemDto line in command.Items)
+            {
+                if (!line.CategoryId.HasValue)
+                {
+                    continue;
+                }
+
+                Category category = categoriesById[line.CategoryId.Value];
+                var lineKarat = (Karat)line.Karat;
+                if (category.Karat.HasValue && category.Karat.Value != lineKarat)
+                {
+                    return Error.Validation(
+                        "CustomerPurchases.CategoryKaratMismatch",
+                        $"عيار السطر ({lineKarat.KaratLabel()}) لا يطابق عيار التصنيف {category.Name} ({category.Karat.Value.KaratLabel()})");
+                }
+
+                Result<Updated> adjusted = category.IncreaseWeight(line.WeightInGrams);
+                if (adjusted.IsError)
+                {
+                    return adjusted.Errors;
+                }
+            }
 
             foreach (CustomerPurchaseInvoiceItem item in items)
             {

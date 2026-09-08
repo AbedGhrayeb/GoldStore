@@ -42,7 +42,7 @@ export interface PaymentLegInput {
 export interface CreateCustomerPurchaseInput {
   sellerName: string;
   sellerPhone: string | null;
-  sellerIdNumber: string;
+  sellerIdNumber: string | null;
   sellerYearOfBirth: number | null;
   sellerAddress: string | null;
   employeeId: string;
@@ -65,6 +65,8 @@ export interface CustomerPurchaseInvoiceQuery {
   toDate?: string;
   /** Matches invoice number or seller name. */
   search?: string;
+  /** Single-select category filter — matches invoices having at least one line in the category. */
+  categoryId?: string;
 }
 
 function toQueryString(params: object): string {
@@ -80,7 +82,7 @@ function toQueryString(params: object): string {
 
 /**
  * Typed transport for the customer-purchases group (`/api/v1/customer-purchases/invoices`,
- * `feature: purchases`) — paged list, KPIs, detail, create + next-number, plus the
+ * `feature: purchases`) — paged list, KPIs, detail, create, plus the
  * best-effort reference lists the dialog needs (`/employees`, `/categories`,
  * `/finance/accounts` — gated by other features server-side, degraded gracefully). No payload
  * ever carries a `tenantId`; the 21K-equivalent is computed server-side. Components never
@@ -118,10 +120,6 @@ export class PurchasesApi {
       `${PurchasesApi.invoices}/kpis`,
       options,
     );
-  }
-
-  getNextNumber(options?: ApiRequestOptions): Observable<string> {
-    return this.api.get<string>(`${PurchasesApi.invoices}/next-number`, options);
   }
 
   createInvoice(

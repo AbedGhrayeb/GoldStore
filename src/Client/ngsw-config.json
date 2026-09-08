@@ -34,7 +34,7 @@
       "cacheConfig": {
         "strategy": "performance",
         "maxSize": 4,
-        "maxAge": "5m",
+        "maxAge": "1d",
         "timeout": "2s"
       }
     },
@@ -66,12 +66,5 @@
       }
     }
   ],
-  "navigationUrls": [
-    "/**",
-    "!/**/*.*",
-    "!/**/*__*",
-    "!/**/*__*/**",
-    "!/api/**",
-    "!/host/**"
-  ]
+  "navigationUrls": ["/**", "!/**/*.*", "!/**/*__*", "!/**/*__*/**", "!/api/**", "!/host/**"]
 }

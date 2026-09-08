@@ -44,6 +44,12 @@ internal sealed class GetCustomerPurchaseInvoicesQueryHandler(
                 i.SellerName.Contains(search));
         }
 
+        if (query.CategoryId.HasValue)
+        {
+            Guid categoryId = query.CategoryId.Value;
+            invoicesQuery = invoicesQuery.Where(i => i.Items.Any(item => item.CategoryId == categoryId));
+        }
+
         List<Guid> employeeIds = await invoicesQuery
             .OrderByDescending(i => i.Date)
             .ThenByDescending(i => i.Id)

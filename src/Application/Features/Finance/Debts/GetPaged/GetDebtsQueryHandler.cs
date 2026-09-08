@@ -69,6 +69,5 @@ internal sealed class GetDebtsQueryHandler(IApplicationDbContext context, ICurre
         });
 
         return await PaginatedList<DebtResponse>.CreateAsync(items, query.Page, query.PageSize);
-
     }
 }

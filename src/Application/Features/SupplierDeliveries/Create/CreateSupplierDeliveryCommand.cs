@@ -3,6 +3,7 @@
 // </copyright>
 
 using Application.Abstractions.Messaging;
+using Application.Common.Ledger;
 
 namespace Application.SupplierDeliveries.Create;
 
@@ -11,5 +12,8 @@ public sealed record CreateSupplierDeliveryCommand(
     List<DeliveryLineDto> Lines,
     decimal ManufacturingFeePerGram,
     string ManufacturingFeeCurrency,
+    decimal AmountDue,
+    string AmountDueCurrency,
+    List<PaymentLegDto>? PaymentLegs,
     string? Notes)
     : ICommand<string>;

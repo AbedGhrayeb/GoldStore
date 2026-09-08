@@ -1,15 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AuthStore } from '../../core/auth/auth-store';
 
-import {
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  KpiCard,
-  RetryButton,
-  Skeleton,
-} from '../../shared/ui';
+import { Badge, Button, Card, EmptyState, KpiCard, RetryButton, Skeleton } from '../../shared/ui';
 import { formatDate, formatDateTime, formatWeight } from '../../shared/format/formatters';
 import type {
   AdjustmentsQuery,
@@ -23,7 +15,7 @@ import { InventoryStore } from './inventory-store';
 const PAGE_SIZE = 15;
 const SKELETON_TABLE_COLUMNS = [0, 1, 2, 3, 4, 5, 6, 7];
 
-const REFERENCE_TYPES: ReadonlyArray<{ value: string; label: string }> = [
+const REFERENCE_TYPES: readonly { value: string; label: string }[] = [
   { value: 'SupplierDelivery', label: 'توريد مورد' },
   { value: 'CustomerGoldPurchase', label: 'شراء ذهب عميل' },
   { value: 'Sale', label: 'بيع' },
@@ -80,28 +72,23 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
 @Component({
   selector: 'app-inventory-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    AdjustmentDialog,
-    Badge,
-    Button,
-    Card,
-    EmptyState,
-    KpiCard,
-    RetryButton,
-    Skeleton,
-  ],
+  imports: [AdjustmentDialog, Badge, Button, Card, EmptyState, KpiCard, RetryButton, Skeleton],
   template: `
     <main class="space-y-6">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 class="text-2xl font-bold text-gray-900">المخزون</h1>
-          <p class="mt-1 text-sm text-gray-600">تسويات المخزون، سجل حركة الذهب، ورصيد المعادل 21ك.</p>
+          <p class="mt-1 text-sm text-gray-600">
+            تسويات المخزون، سجل حركة الذهب، ورصيد المعادل 21ك.
+          </p>
         </div>
         <app-button
           icon="plus"
           [disabled]="!canManageInventory()"
           [title]="!canManageInventory() ? 'ليس لديك صلاحية إنشاء تسوية' : ''"
-          (clicked)="canManageInventory() && dialogOpen.set(true)">تسوية جردية</app-button>
+          (clicked)="canManageInventory() && dialogOpen.set(true)"
+          >تسوية جردية</app-button
+        >
       </div>
 
       @if (inventoryKpisLoading() && inventoryKpis() === null) {
@@ -231,13 +218,27 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
       </app-card>
 
       <app-card title="التسويات الجردية">
-        <form class="mb-4 space-y-4" novalidate (submit)="applyAdjustmentFilters(); $event.preventDefault()">
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <form
+          class="mb-4 space-y-4"
+          novalidate
+          (submit)="applyAdjustmentFilters(); $event.preventDefault()"
+        >
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-5">
+            <label class="block">
+              <span class="mb-2 block text-sm font-medium text-gray-700">بحث</span>
+              <input
+                type="text"
+                [value]="adjustmentSearchFilter()"
+                (input)="onAdjustmentSearchInput($any($event.target).value)"
+                placeholder="السبب أو الملاحظات..."
+                class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
+              />
+            </label>
             <label class="block">
               <span class="mb-2 block text-sm font-medium text-gray-700">النوع</span>
               <select
                 [value]="adjustmentTypeFilter()"
-                (change)="adjustmentTypeFilter.set($any($event.target).value)"
+                (change)="onAdjustmentFilterChange('type', $any($event.target).value)"
                 class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
               >
                 <option value="">الكل</option>
@@ -248,11 +249,25 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
             </label>
 
             <label class="block">
+              <span class="mb-2 block text-sm font-medium text-gray-700">العيار</span>
+              <select
+                [value]="adjustmentKaratFilter()"
+                (change)="onAdjustmentFilterChange('karat', $any($event.target).value)"
+                class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
+              >
+                <option value="">كل العيارات</option>
+                @for (karat of karatOptions; track karat.value) {
+                  <option [value]="karat.value">{{ karat.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="block">
               <span class="mb-2 block text-sm font-medium text-gray-700">من تاريخ</span>
               <input
                 type="date"
                 [value]="adjustmentFromDate()"
-                (change)="adjustmentFromDate.set($any($event.target).value)"
+                (change)="onAdjustmentFilterChange('from', $any($event.target).value)"
                 class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
               />
             </label>
@@ -262,7 +277,7 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
               <input
                 type="date"
                 [value]="adjustmentToDate()"
-                (change)="adjustmentToDate.set($any($event.target).value)"
+                (change)="onAdjustmentFilterChange('to', $any($event.target).value)"
                 class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
               />
             </label>
@@ -323,7 +338,9 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
                 </tr>
               } @else {
                 @for (adjustment of adjustmentRows(); track adjustment.id) {
-                  <tr class="border-b border-gray-100 transition-colors last:border-0 hover:bg-gold-container/15">
+                  <tr
+                    class="border-b border-gray-100 transition-colors last:border-0 hover:bg-gold-container/15"
+                  >
                     <td class="px-4 py-3 data-mono">{{ adjustment.dateText }}</td>
                     <td class="px-4 py-3">
                       @switch (adjustment.type) {
@@ -340,13 +357,22 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
                     </td>
                     <td class="px-4 py-3">{{ adjustment.karat }}</td>
                     <td class="px-4 py-3">
-                      <span class="data-mono font-medium" [class.text-emerald-600]="Number(adjustment.signedWeight ?? 0) >= 0" [class.text-red-600]="Number(adjustment.signedWeight ?? 0) < 0">
+                      <span
+                        class="data-mono font-medium"
+                        [class.text-emerald-600]="Number(adjustment.signedWeight ?? 0) >= 0"
+                        [class.text-red-600]="Number(adjustment.signedWeight ?? 0) < 0"
+                      >
                         {{ adjustment.signedWeightText }}
                       </span>
                     </td>
                     <td class="px-4 py-3 data-mono">{{ adjustment.equivalentText }}</td>
-                    <td class="max-w-48 truncate px-4 py-3" title="{{ adjustment.reason }}">{{ adjustment.reason }}</td>
-                    <td class="max-w-48 truncate px-4 py-3 text-gray-600" title="{{ adjustment.notes ?? '' }}">
+                    <td class="max-w-48 truncate px-4 py-3" title="{{ adjustment.reason }}">
+                      {{ adjustment.reason }}
+                    </td>
+                    <td
+                      class="max-w-48 truncate px-4 py-3 text-gray-600"
+                      title="{{ adjustment.notes ?? '' }}"
+                    >
                       {{ adjustment.notes ?? '—' }}
                     </td>
                     <td class="px-4 py-3 text-gray-600">{{ adjustment.userName }}</td>
@@ -360,7 +386,8 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
         @if (adjustmentsTotalPages() > 1) {
           <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
             <span class="text-xs text-gray-500 data-mono">
-              {{ adjustmentsTotalCount() }} تسوية — صفحة {{ adjustmentsCurrentPage() }} من {{ adjustmentsTotalPages() }}
+              {{ adjustmentsTotalCount() }} تسوية — صفحة {{ adjustmentsCurrentPage() }} من
+              {{ adjustmentsTotalPages() }}
             </span>
             <div class="flex gap-2">
               <app-button
@@ -387,13 +414,17 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
       </app-card>
 
       <app-card title="سجل حركة الذهب">
-        <form class="mb-4 space-y-4" novalidate (submit)="applyLedgerFilters(); $event.preventDefault()">
+        <form
+          class="mb-4 space-y-4"
+          novalidate
+          (submit)="applyLedgerFilters(); $event.preventDefault()"
+        >
           <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
             <label class="block">
               <span class="mb-2 block text-sm font-medium text-gray-700">العيار</span>
               <select
                 [value]="ledgerKaratFilter()"
-                (change)="ledgerKaratFilter.set($any($event.target).value)"
+                (change)="onLedgerFilterChange('karat', $any($event.target).value)"
                 class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
               >
                 <option value="">كل العيارات</option>
@@ -407,7 +438,7 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
               <span class="mb-2 block text-sm font-medium text-gray-700">نوع المرجع</span>
               <select
                 [value]="ledgerReferenceTypeFilter()"
-                (change)="ledgerReferenceTypeFilter.set($any($event.target).value)"
+                (change)="onLedgerFilterChange('referenceType', $any($event.target).value)"
                 class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
               >
                 <option value="">كل الأنواع</option>
@@ -422,7 +453,7 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
               <input
                 type="date"
                 [value]="ledgerFromDate()"
-                (change)="ledgerFromDate.set($any($event.target).value)"
+                (change)="onLedgerFilterChange('from', $any($event.target).value)"
                 class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
               />
             </label>
@@ -432,7 +463,7 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
               <input
                 type="date"
                 [value]="ledgerToDate()"
-                (change)="ledgerToDate.set($any($event.target).value)"
+                (change)="onLedgerFilterChange('to', $any($event.target).value)"
                 class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
               />
             </label>
@@ -493,7 +524,9 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
                 </tr>
               } @else {
                 @for (entry of ledgerRows(); track entry.id) {
-                  <tr class="border-b border-gray-100 transition-colors last:border-0 hover:bg-gold-container/15">
+                  <tr
+                    class="border-b border-gray-100 transition-colors last:border-0 hover:bg-gold-container/15"
+                  >
                     <td class="px-4 py-3 data-mono">{{ entry.dateText }}</td>
                     <td class="px-4 py-3">
                       @if (entry.movementType === 'Increase') {
@@ -506,7 +539,10 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
                     <td class="px-4 py-3 data-mono">{{ entry.weightText }}</td>
                     <td class="px-4 py-3 data-mono">{{ entry.equivalentText }}</td>
                     <td class="px-4 py-3">{{ entry.referenceLabel }}</td>
-                    <td class="max-w-48 truncate px-4 py-3 text-gray-600" title="{{ entry.notes ?? '' }}">
+                    <td
+                      class="max-w-48 truncate px-4 py-3 text-gray-600"
+                      title="{{ entry.notes ?? '' }}"
+                    >
                       {{ entry.notes ?? '—' }}
                     </td>
                     <td class="px-4 py-3 text-gray-600">{{ entry.userName }}</td>
@@ -520,7 +556,8 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
         @if (ledgerTotalPages() > 1) {
           <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
             <span class="text-xs text-gray-500 data-mono">
-              {{ ledgerTotalCount() }} حركة — صفحة {{ ledgerCurrentPage() }} من {{ ledgerTotalPages() }}
+              {{ ledgerTotalCount() }} حركة — صفحة {{ ledgerCurrentPage() }} من
+              {{ ledgerTotalPages() }}
             </span>
             <div class="flex gap-2">
               <app-button
@@ -556,7 +593,9 @@ function toLedgerRow(entry: GoldLedgerEntryResponse): LedgerTableRow {
 })
 export class InventoryPage {
   private readonly auth = inject(AuthStore);
-  readonly canManageInventory = computed(() => this.auth.hasPermission('inventory.manage') || this.auth.hasRole('store_admin'));
+  readonly canManageInventory = computed(
+    () => this.auth.hasPermission('inventory.manage') || this.auth.hasRole('store_admin'),
+  );
   readonly store = inject(InventoryStore);
 
   readonly inventoryKpis = this.store.inventoryKpis;
@@ -576,6 +615,8 @@ export class InventoryPage {
   readonly trendDays = signal(7);
 
   readonly adjustmentTypeFilter = signal('');
+  readonly adjustmentKaratFilter = signal('');
+  readonly adjustmentSearchFilter = signal('');
   readonly adjustmentFromDate = signal('');
   readonly adjustmentToDate = signal('');
 
@@ -583,6 +624,8 @@ export class InventoryPage {
   readonly ledgerReferenceTypeFilter = signal('');
   readonly ledgerFromDate = signal('');
   readonly ledgerToDate = signal('');
+
+  private searchDebounce: ReturnType<typeof setTimeout> | null = null;
 
   private readonly adjustmentsQuery = signal<AdjustmentsQuery>({ page: 1, pageSize: PAGE_SIZE });
   private readonly ledgerQuery = signal<GoldLedgerQuery>({ page: 1, pageSize: PAGE_SIZE });
@@ -606,9 +649,15 @@ export class InventoryPage {
   readonly adjustmentRows = computed(() =>
     (this.store.adjustments()?.items ?? []).map(toAdjustmentRow),
   );
-  readonly adjustmentsTotalCount = computed(() => Number(this.store.adjustments()?.totalCount ?? 0));
-  readonly adjustmentsCurrentPage = computed(() => Number(this.store.adjustments()?.pageNumber ?? 1));
-  readonly adjustmentsTotalPages = computed(() => Number(this.store.adjustments()?.totalPages ?? 0));
+  readonly adjustmentsTotalCount = computed(() =>
+    Number(this.store.adjustments()?.totalCount ?? 0),
+  );
+  readonly adjustmentsCurrentPage = computed(() =>
+    Number(this.store.adjustments()?.pageNumber ?? 1),
+  );
+  readonly adjustmentsTotalPages = computed(() =>
+    Number(this.store.adjustments()?.totalPages ?? 0),
+  );
 
   readonly ledgerRows = computed(() => (this.store.ledger()?.items ?? []).map(toLedgerRow));
   readonly ledgerTotalCount = computed(() => Number(this.store.ledger()?.totalCount ?? 0));
@@ -627,10 +676,7 @@ export class InventoryPage {
       const outGrams = Number(point.out21K ?? 0);
       return {
         date: point.date ?? '',
-        label:
-          this.trendDays() <= 7
-            ? (point.label ?? '')
-            : formatDate(point.date ?? '', 'date'),
+        label: this.trendDays() <= 7 ? (point.label ?? '') : formatDate(point.date ?? '', 'date'),
         inText: formatWeight(inGrams),
         outText: formatWeight(outGrams),
         inPercent: (inGrams / scale) * 100,
@@ -672,14 +718,56 @@ export class InventoryPage {
       page: 1,
       pageSize: PAGE_SIZE,
       adjustmentType: this.adjustmentTypeFilter() || undefined,
+      search: this.adjustmentSearchFilter().trim() || undefined,
+      karat: this.adjustmentKaratFilter() === '' ? undefined : Number(this.adjustmentKaratFilter()),
       fromDate: this.adjustmentFromDate() || undefined,
       toDate: this.adjustmentToDate() || undefined,
     });
     void this.store.loadAdjustments(this.adjustmentsQuery());
   }
 
+  onAdjustmentSearchInput(value: string): void {
+    this.adjustmentSearchFilter.set(value);
+    this.scheduleDebouncedApply(() => this.applyAdjustmentFilters());
+  }
+
+  onAdjustmentFilterChange(field: 'type' | 'karat' | 'from' | 'to', value: string): void {
+    if (field === 'type') {
+      this.adjustmentTypeFilter.set(value);
+    } else if (field === 'karat') {
+      this.adjustmentKaratFilter.set(value);
+    } else if (field === 'from') {
+      this.adjustmentFromDate.set(value);
+    } else {
+      this.adjustmentToDate.set(value);
+    }
+    this.applyAdjustmentFilters();
+  }
+
+  onLedgerFilterChange(field: 'karat' | 'referenceType' | 'from' | 'to', value: string): void {
+    if (field === 'karat') {
+      this.ledgerKaratFilter.set(value);
+    } else if (field === 'referenceType') {
+      this.ledgerReferenceTypeFilter.set(value);
+    } else if (field === 'from') {
+      this.ledgerFromDate.set(value);
+    } else {
+      this.ledgerToDate.set(value);
+    }
+    this.applyLedgerFilters();
+  }
+
+  private scheduleDebouncedApply(apply: () => void): void {
+    if (this.searchDebounce !== null) {
+      clearTimeout(this.searchDebounce);
+    }
+    this.searchDebounce = setTimeout(apply, 400);
+  }
+
   resetAdjustmentFilters(): void {
     this.adjustmentTypeFilter.set('');
+    this.adjustmentKaratFilter.set('');
+    this.adjustmentSearchFilter.set('');
     this.adjustmentFromDate.set('');
     this.adjustmentToDate.set('');
     this.applyAdjustmentFilters();

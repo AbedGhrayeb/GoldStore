@@ -7,5 +7,5 @@ using SharedKernel.Result;
 
 namespace Application.Categories.Update;
 
-public sealed record UpdateCategoryCommand(Guid Id, string Name, string? Description, Guid? ParentCategoryId, bool IsActive)
+public sealed record UpdateCategoryCommand(Guid Id, string Name, string? Description, Guid? ParentCategoryId, bool IsActive, decimal WeightInGrams, int Karat)
     : ICommand<Updated>;

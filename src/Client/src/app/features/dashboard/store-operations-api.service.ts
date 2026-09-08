@@ -11,6 +11,7 @@ export type StoreOperationDetailResponse = components['schemas']['StoreOperation
 export type StoreOperationItemResponse = components['schemas']['StoreOperationItemResponse'];
 export type EmployeeDayStatsResponse = components['schemas']['EmployeeDayStatsResponse'];
 export type CurrencyTotal = components['schemas']['CurrencyTotal'];
+export type CategoryKpi = components['schemas']['CategoryKpi'];
 
 export type OperationType = 'Sale' | 'Buy';
 

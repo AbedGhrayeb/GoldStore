@@ -95,7 +95,6 @@ const ACCOUNTS = `${BASE}/finance/accounts`;
 describe('PurchasesPage', () => {
   const server = setupServer(
     http.get(`${INVOICES}/kpis`, () => HttpResponse.json(KPIS)),
-    http.get(`${INVOICES}/next-number`, () => HttpResponse.json('PUR-2026-08-0005')),
     http.get(`${INVOICES}/:id`, () => HttpResponse.json(PURCHASE_DETAIL)),
     http.get(INVOICES, () => HttpResponse.json(PURCHASES_PAGE)),
     http.post(INVOICES, async ({ request }) => {
@@ -106,13 +105,23 @@ describe('PurchasesPage', () => {
     http.get(EMPLOYEES, () =>
       HttpResponse.json([{ id: 'emp-1', fullName: 'عمر حسن', isActive: true }]),
     ),
-    http.get(CATEGORIES, () =>
-      HttpResponse.json([{ id: 'cat-1', name: 'خواتم', isActive: true }]),
-    ),
+    http.get(CATEGORIES, () => HttpResponse.json([{ id: 'cat-1', name: 'خواتم', isActive: true }])),
     http.get(ACCOUNTS, () =>
       HttpResponse.json([
-        { id: 'acc-1', name: 'صندوق النقدية', currency: 'JOD', accountType: 'Cash', isActive: true },
-        { id: 'acc-2', name: 'الحساب البنكي', currency: 'JOD', accountType: 'Bank', isActive: true },
+        {
+          id: 'acc-1',
+          name: 'صندوق النقدية',
+          currency: 'JOD',
+          accountType: 'Cash',
+          isActive: true,
+        },
+        {
+          id: 'acc-2',
+          name: 'الحساب البنكي',
+          currency: 'JOD',
+          accountType: 'Bank',
+          isActive: true,
+        },
       ]),
     ),
     http.get(`${BASE}/reference/karats`, () =>
@@ -157,18 +166,26 @@ describe('PurchasesPage', () => {
     fixture: ComponentFixture<PurchasesPage>,
     label: string,
   ): HTMLButtonElement {
-    return [...fixture.nativeElement.querySelectorAll('button')].find(
-      (button: HTMLButtonElement) => button.textContent?.includes(label),
+    return [...fixture.nativeElement.querySelectorAll('button')].find((button: HTMLButtonElement) =>
+      button.textContent?.includes(label),
     ) as HTMLButtonElement;
   }
 
-  function setInput(fixture: ComponentFixture<PurchasesPage>, selector: string, value: string): void {
+  function setInput(
+    fixture: ComponentFixture<PurchasesPage>,
+    selector: string,
+    value: string,
+  ): void {
     const input = fixture.nativeElement.querySelector(selector) as HTMLInputElement;
     input.value = value;
     input.dispatchEvent(new Event('input'));
   }
 
-  function setSelect(fixture: ComponentFixture<PurchasesPage>, selector: string, value: string): void {
+  function setSelect(
+    fixture: ComponentFixture<PurchasesPage>,
+    selector: string,
+    value: string,
+  ): void {
     const select = fixture.nativeElement.querySelector(selector) as HTMLSelectElement;
     select.value = value;
     select.dispatchEvent(new Event('change'));
@@ -272,8 +289,7 @@ describe('PurchasesPage', () => {
     setInput(fixture, '#purchase-total', '250');
     setSelect(fixture, '#purchase-employee', 'emp-1');
     const bankRadio = [...fixture.nativeElement.querySelectorAll('input')].find(
-      (input: HTMLInputElement) =>
-        input.name === 'purchase-payment-method' && input.value === '2',
+      (input: HTMLInputElement) => input.name === 'purchase-payment-method' && input.value === '2',
     ) as HTMLInputElement;
     bankRadio.click();
     fixture.detectChanges();
@@ -369,7 +385,13 @@ describe('PurchasesPage', () => {
     server.use(
       http.get(ACCOUNTS, () =>
         HttpResponse.json([
-          { id: 'acc-1', name: 'صندوق النقدية', currency: 'USD', accountType: 'Cash', isActive: true },
+          {
+            id: 'acc-1',
+            name: 'صندوق النقدية',
+            currency: 'USD',
+            accountType: 'Cash',
+            isActive: true,
+          },
         ]),
       ),
     );
@@ -415,7 +437,9 @@ describe('PurchasesPage', () => {
     ) as HTMLInputElement;
     search.value = 'مريم';
     search.dispatchEvent(new Event('input'));
-    const dateInputs = [...fixture.nativeElement.querySelectorAll('input[type="date"]')] as HTMLInputElement[];
+    const dateInputs = [
+      ...fixture.nativeElement.querySelectorAll('input[type="date"]'),
+    ] as HTMLInputElement[];
     dateInputs[0]!.value = '2026-08-01';
     dateInputs[0]!.dispatchEvent(new Event('change'));
     dateInputs[1]!.value = '2026-08-31';
@@ -428,11 +452,11 @@ describe('PurchasesPage', () => {
     fixture.detectChanges();
 
     buttonByText(fixture, 'تصفية').click();
-    await vi.waitFor(() => expect((captured as any)?.get('search')).toBe('مريم'));
+    await vi.waitFor(() => expect((captured ?? new URLSearchParams()).get('search')).toBe('مريم'));
 
-    expect((captured as any)?.get('fromDate')).toBe('2026-08-01');
-    expect((captured as any)?.get('toDate')).toBe('2026-08-31');
-    expect((captured as any)?.get('pageSize')).toBe('25');
+    expect((captured ?? new URLSearchParams()).get('fromDate')).toBe('2026-08-01');
+    expect((captured ?? new URLSearchParams()).get('toDate')).toBe('2026-08-31');
+    expect((captured ?? new URLSearchParams()).get('pageSize')).toBe('25');
   });
 
   it('opens the detail dialog from a row and shows the refreshed invoice', async () => {
@@ -453,7 +477,9 @@ describe('PurchasesPage', () => {
 
   it('shows an inline retry state when the invoices fetch fails', async () => {
     const store = TestBed.inject(PurchasesStore);
-    server.use(http.get(INVOICES, () => HttpResponse.json({ detail: 'خطأ خادم' }, { status: 500 })));
+    server.use(
+      http.get(INVOICES, () => HttpResponse.json({ detail: 'خطأ خادم' }, { status: 500 })),
+    );
     await store.loadInvoices({ page: 1, pageSize: 15 });
 
     const fixture = TestBed.createComponent(PurchasesPage);

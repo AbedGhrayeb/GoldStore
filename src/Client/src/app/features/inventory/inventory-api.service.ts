@@ -8,7 +8,8 @@ import type { components } from '../../shared/api/schema';
 export type InventoryAdjustmentResponse = components['schemas']['InventoryAdjustmentResponse'];
 export type PaginatedInventoryAdjustments =
   components['schemas']['PaginatedListOfInventoryAdjustmentResponse'];
-export type InventoryAdjustmentKpiResponse = components['schemas']['InventoryAdjustmentKpiResponse'];
+export type InventoryAdjustmentKpiResponse =
+  components['schemas']['InventoryAdjustmentKpiResponse'];
 export type GoldLedgerEntryResponse = components['schemas']['GoldLedgerEntryResponse'];
 export type PaginatedGoldLedger = components['schemas']['PaginatedListOfGoldLedgerEntryResponse'];
 export type GoldTrendPoint = components['schemas']['GoldTrendPoint'];
@@ -35,6 +36,10 @@ export interface AdjustmentsQuery {
   toDate?: string;
   /** `InventoryAdjustmentType` enum name or number string (1..5). */
   adjustmentType?: string;
+  /** Free-text search across reason and notes. */
+  search?: string;
+  /** Karat filter (18/21/24). */
+  karat?: number;
 }
 
 export interface GoldLedgerQuery {
@@ -93,7 +98,10 @@ export class InventoryApi {
     );
   }
 
-  getGoldLedger(query: GoldLedgerQuery, options?: ApiRequestOptions): Observable<PaginatedGoldLedger> {
+  getGoldLedger(
+    query: GoldLedgerQuery,
+    options?: ApiRequestOptions,
+  ): Observable<PaginatedGoldLedger> {
     const queryString = toQueryString(query);
     return this.api.get<PaginatedGoldLedger>(`${InventoryApi.ledger}${queryString}`, options);
   }

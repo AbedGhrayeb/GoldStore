@@ -35,6 +35,39 @@ const SUPPLIERS: SupplierResponse[] = [
   },
 ];
 
+const PAGED_SUPPLIERS = {
+  items: [
+    {
+      id: 'supplier-1',
+      name: 'مؤسسة الذهب',
+      primaryPhone: '0791111111',
+      secondaryPhone: null,
+      bankAccountNumber: null,
+      notes: null,
+      isActive: true,
+      goldBalance: 125.5,
+      manufacturingBalance: 40.25,
+    },
+    {
+      id: 'supplier-2',
+      name: 'ورشة المجوهرات',
+      primaryPhone: '0792222222',
+      secondaryPhone: null,
+      bankAccountNumber: null,
+      notes: null,
+      isActive: false,
+      goldBalance: 0,
+      manufacturingBalance: 0,
+    },
+  ],
+  pageNumber: 1,
+  pageSize: 15,
+  totalCount: 2,
+  totalPages: 1,
+  hasPreviousPage: false,
+  hasNextPage: false,
+};
+
 const PAGED = {
   items: [
     {
@@ -75,6 +108,41 @@ const KPIS = {
 
 const ACCOUNTS = [{ id: 'account-1', name: 'صندوق النقد', currency: 'JOD', isActive: true }];
 
+const DETAIL = {
+  id: 'supplier-1',
+  name: 'مؤسسة الذهب',
+  primaryPhone: '0791111111',
+  secondaryPhone: null,
+  bankAccountNumber: null,
+  notes: null,
+  isActive: true,
+  createdAt: '2026-08-01T10:00:00',
+  goldBalance: 125.5,
+  manufacturingBalance: 40.25,
+  financialBalancesByCurrency: [{ currency: 'JOD', balance: 400 }],
+  recentTransactions: [],
+};
+
+const DETAIL_TX_GOLD = {
+  id: 'tx-gold',
+  description: 'توريد ذهب',
+  date: '2026-09-01T10:00:00',
+  type: 'ذهب',
+  amount: 10,
+  unit: 'جم',
+  direction: '+',
+};
+
+const DETAIL_TX_MFG = {
+  id: 'tx-mfg',
+  description: 'أجور تصنيع',
+  date: '2026-09-02T10:00:00',
+  type: 'تصنيع',
+  amount: 20,
+  unit: 'JOD',
+  direction: '+',
+};
+
 const BASE = apiUrl('/api/v1');
 const SUPPLIERS_ENDPOINT = `${BASE}/suppliers`;
 const DELIVERIES = `${BASE}/supplier-deliveries`;
@@ -83,9 +151,53 @@ const ACCOUNTS_ENDPOINT = `${BASE}/finance/accounts`;
 
 describe('SuppliersPage', () => {
   let suppliers: SupplierResponse[];
+  let lastDetailTxQuery: { id: string; type: string | null; page: string | null };
 
   const server = setupServer(
     http.get(SUPPLIERS_ENDPOINT, () => HttpResponse.json(suppliers)),
+    http.get(`${SUPPLIERS_ENDPOINT}/paged`, () => HttpResponse.json(PAGED_SUPPLIERS)),
+    http.get(`${SUPPLIERS_ENDPOINT}/:id/transactions`, ({ params, request }) => {
+      const url = new URL(request.url);
+      lastDetailTxQuery = {
+        id: params['id'] as string,
+        type: url.searchParams.get('type'),
+        page: url.searchParams.get('page'),
+      };
+      const type = url.searchParams.get('type') ?? '';
+      const page = url.searchParams.get('page') ?? '1';
+      if (type === 'gold') {
+        return HttpResponse.json({
+          items: [DETAIL_TX_GOLD],
+          pageNumber: 1,
+          pageSize: 15,
+          totalCount: 1,
+          totalPages: 1,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        });
+      }
+      if (type === 'manufacturing') {
+        return HttpResponse.json({
+          items: [DETAIL_TX_MFG],
+          pageNumber: 1,
+          pageSize: 15,
+          totalCount: 1,
+          totalPages: 1,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        });
+      }
+      return HttpResponse.json({
+        items: page === '2' ? [DETAIL_TX_MFG] : [DETAIL_TX_GOLD],
+        pageNumber: Number(page),
+        pageSize: 15,
+        totalCount: 2,
+        totalPages: 2,
+        hasPreviousPage: page === '2',
+        hasNextPage: page !== '2',
+      });
+    }),
+    http.get(`${SUPPLIERS_ENDPOINT}/:id`, () => HttpResponse.json(DETAIL)),
     http.post(SUPPLIERS_ENDPOINT, async ({ request }) => {
       const body = (await request.json()) as Record<string, unknown>;
       expect(Object.keys(body)).not.toContain('tenantId');
@@ -101,16 +213,35 @@ describe('SuppliersPage', () => {
       return HttpResponse.json('supplier-new', { status: 201 });
     }),
     http.post(DELIVERIES, async ({ request }) => {
-      const body = (await request.json()) as { lines: { karat: number; weightInGrams: number }[] };
+      const body = (await request.json()) as {
+        lines: {
+          karat: number;
+          weightInGrams: number;
+          categoryId: string | null;
+        }[];
+      };
       expect(Object.keys(body)).not.toContain('tenantId');
+      expect(Object.keys(body).sort()).toEqual([
+        'amountDue',
+        'amountDueCurrency',
+        'lines',
+        'manufacturingFeeCurrency',
+        'manufacturingFeePerGram',
+        'notes',
+        'paymentLegs',
+        'supplierId',
+      ]);
       for (const line of body.lines) {
-        expect(Object.keys(line).sort()).toEqual(['karat', 'weightInGrams']);
+        expect(Object.keys(line).sort()).toEqual(['categoryId', 'karat', 'weightInGrams']);
       }
       return HttpResponse.json('delivery-1', { status: 201 });
     }),
     http.get(`${TRANSACTIONS}/kpis`, () => HttpResponse.json(KPIS)),
     http.get(TRANSACTIONS, () => HttpResponse.json(PAGED)),
     http.get(ACCOUNTS_ENDPOINT, () => HttpResponse.json(ACCOUNTS)),
+    http.get(`${BASE}/categories`, () =>
+      HttpResponse.json([{ id: 'cat-1', name: 'خواتم', isActive: true }]),
+    ),
     http.get(`${BASE}/reference/karats`, () =>
       HttpResponse.json([
         { value: 18, label: 'عيار 18' },
@@ -131,11 +262,13 @@ describe('SuppliersPage', () => {
   afterEach(() => {
     server.resetHandlers();
     suppliers = [SUPPLIERS[0] as SupplierResponse, SUPPLIERS[1] as SupplierResponse];
+    lastDetailTxQuery = { id: '', type: null, page: null };
   });
   afterAll(() => server.close());
 
   beforeEach(() => {
     suppliers = [SUPPLIERS[0] as SupplierResponse, SUPPLIERS[1] as SupplierResponse];
+    lastDetailTxQuery = { id: '', type: null, page: null };
     TestBed.configureTestingModule({ providers: [provideHttpClient()] });
   });
 
@@ -143,9 +276,12 @@ describe('SuppliersPage', () => {
     const store = TestBed.inject(SuppliersStore);
     await store.ensureLoaded();
     await store.loadKpis();
+    await store.loadSuppliersPage({ page: 1, pageSize: 15 });
     await store.loadTransactions({ page: 1, pageSize: 15 });
     const fixture = TestBed.createComponent(SuppliersPage);
     fixture.detectChanges();
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
     return fixture;
   }
@@ -158,9 +294,22 @@ describe('SuppliersPage', () => {
     fixture: ComponentFixture<SuppliersPage>,
     label: string,
   ): HTMLButtonElement {
-    return [...fixture.nativeElement.querySelectorAll('button')].find(
-      (button: HTMLButtonElement) => button.textContent?.includes(label),
+    return [...fixture.nativeElement.querySelectorAll('button')].find((button: HTMLButtonElement) =>
+      button.textContent?.includes(label),
     ) as HTMLButtonElement;
+  }
+
+  async function openDetailTab(): Promise<ComponentFixture<SuppliersPage>> {
+    const fixture = await createLoadedFixture();
+    const eye = fixture.nativeElement.querySelector(
+      'button[aria-label="عرض تفاصيل مؤسسة الذهب"]',
+    ) as HTMLButtonElement;
+    eye.click();
+    fixture.detectChanges();
+    await vi.waitFor(() => {
+      expect(text(fixture)).toContain('توريد ذهب');
+    });
+    return fixture;
   }
 
   it('renders suppliers, KPI cards and the financial transactions table', async () => {
@@ -173,7 +322,15 @@ describe('SuppliersPage', () => {
     expect(content).toContain('متوقف');
     expect(content).toContain('سلف الموردين');
     expect(content).toContain('400.000');
-    expect(content).toContain('معاملة مالية');
+
+    const operationsTab = [...fixture.nativeElement.querySelectorAll('[role="tab"]')].find(
+      (button: HTMLButtonElement) => button.textContent?.includes('العمليات المالية'),
+    ) as HTMLButtonElement;
+    operationsTab.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(text(fixture)).toContain('معاملة مالية');
   });
 
   it('creates a supplier through the dialog and refreshes the table', async () => {
@@ -194,7 +351,7 @@ describe('SuppliersPage', () => {
     await vi.waitFor(() => expect(text(fixture)).toContain('مورد جديد'));
   });
 
-  it('records a delivery whose lines carry only karat and weightInGrams', async () => {
+  it('records a delivery with header-level due amount for the total weight', async () => {
     const fixture = await createLoadedFixture();
     buttonByText(fixture, 'تسليم ذهب').click();
     fixture.detectChanges();
@@ -217,18 +374,65 @@ describe('SuppliersPage', () => {
     await vi.waitFor(() => expect(text(fixture)).not.toContain('حفظ التسليم'));
   });
 
+  it('opens the supplier detail as a full-page tab instead of a modal', async () => {
+    const fixture = await openDetailTab();
+
+    expect(text(fixture)).toContain('تفاصيل المورد');
+    expect(text(fixture)).toContain('رصيد الذهب (21ك)');
+    expect(lastDetailTxQuery.id).toBe('supplier-1');
+    expect(fixture.nativeElement.querySelector('app-supplier-detail-dialog')).toBeNull();
+    const detailTab = [...fixture.nativeElement.querySelectorAll('[role="tab"]')].find(
+      (button: HTMLButtonElement) => button.textContent?.includes('تفاصيل المورد'),
+    ) as HTMLButtonElement;
+    expect(detailTab.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('filters detail transactions by type', async () => {
+    const fixture = await openDetailTab();
+
+    const typeSelect = fixture.nativeElement.querySelector('select') as HTMLSelectElement;
+    typeSelect.value = 'gold';
+    typeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    fixture.detectChanges();
+    buttonByText(fixture, 'تصفية').click();
+    fixture.detectChanges();
+
+    await vi.waitFor(() => {
+      expect(lastDetailTxQuery.type).toBe('gold');
+    });
+    await vi.waitFor(() => {
+      expect(text(fixture)).toContain('توريد ذهب');
+      expect(text(fixture)).not.toContain('أجور تصنيع');
+    });
+  });
+
+  it('pages detail transactions', async () => {
+    const fixture = await openDetailTab();
+    expect(text(fixture)).toContain('توريد ذهب');
+
+    buttonByText(fixture, 'التالي').click();
+    fixture.detectChanges();
+
+    await vi.waitFor(() => {
+      expect(lastDetailTxQuery.page).toBe('2');
+    });
+    await vi.waitFor(() => {
+      expect(text(fixture)).toContain('أجور تصنيع');
+    });
+  });
+
   it('shows an inline retry state when the supplier list fetch fails', async () => {
     const store = TestBed.inject(SuppliersStore);
     server.use(
-      http.get(SUPPLIERS_ENDPOINT, () =>
+      http.get(`${SUPPLIERS_ENDPOINT}/paged`, () =>
         HttpResponse.json({ detail: 'خطأ خادم' }, { status: 500 }),
       ),
     );
-    await store.load();
+    await store.loadSuppliersPage({ page: 1, pageSize: 15 });
 
     const fixture = TestBed.createComponent(SuppliersPage);
     fixture.detectChanges();
-    await vi.waitFor(() => expect(store.loading()).toBe(false));
+    await vi.waitFor(() => expect(store.suppliersPageLoading()).toBe(false));
     fixture.detectChanges();
 
     expect(text(fixture)).toContain('تعذّر تحميل الموردين');

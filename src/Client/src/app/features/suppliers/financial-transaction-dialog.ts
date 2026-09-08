@@ -13,6 +13,7 @@ import { FormField, form, required, submit } from '@angular/forms/signals';
 import { ReferenceStore } from '../../core/reference/reference-store';
 import type { ApiError } from '../../core/http/api-error';
 import { Button, Dialog } from '../../shared/ui';
+import { filterAccountsByCurrency } from '../../shared/finance/account-filters';
 import type { FinancialDirection, SupplierResponse } from './suppliers-api.service';
 import { SuppliersStore } from './suppliers-store';
 
@@ -173,9 +174,7 @@ function toIsoDateTime(dateInput: string): string {
         </div>
 
         <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700" for="tx-date"
-            >التاريخ</label
-          >
+          <label class="mb-2 block text-sm font-medium text-gray-700" for="tx-date">التاريخ</label>
           <input
             id="tx-date"
             type="date"
@@ -185,9 +184,7 @@ function toIsoDateTime(dateInput: string): string {
         </div>
 
         <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700" for="tx-notes"
-            >ملاحظات</label
-          >
+          <label class="mb-2 block text-sm font-medium text-gray-700" for="tx-notes">ملاحظات</label>
           <textarea
             id="tx-notes"
             rows="2"
@@ -239,7 +236,10 @@ export class FinancialTransactionDialog {
   );
 
   readonly activeAccounts = computed(() =>
-    (this.accounts() ?? []).filter((account) => account.isActive !== false),
+    filterAccountsByCurrency(
+      (this.accounts() ?? []).filter((account) => account.isActive !== false),
+      this.draft().currency,
+    ),
   );
 
   readonly direction = signal<FinancialDirection>(1);

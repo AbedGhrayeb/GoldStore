@@ -16,6 +16,7 @@ internal sealed class CreateSupplierScrapGoldPaymentCommandValidator : AbstractV
         this.RuleFor(x => x.SupplierId).NotEmpty();
         this.RuleFor(x => x.Karat).Must(k => ValidKarats.Contains(k)).WithMessage("العيار غير صالح");
         this.RuleFor(x => x.WeightInGrams).GreaterThan(0).WithMessage("الوزن يجب أن يكون أكبر من صفر");
+        this.RuleFor(x => x.CategoryId).Must(id => !id.HasValue || id.Value != Guid.Empty).WithMessage("التصنيف غير صالح");
         this.RuleFor(x => x.Notes).MaximumLength(1000).When(x => x.Notes is not null);
     }
 }

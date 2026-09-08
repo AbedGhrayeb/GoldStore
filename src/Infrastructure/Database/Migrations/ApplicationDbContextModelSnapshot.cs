@@ -184,6 +184,11 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
 
+                    b.Property<string>("Karat")
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("karat");
+
                     b.Property<Guid?>("LastModifiedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("last_modified_by");
@@ -205,6 +210,11 @@ namespace Infrastructure.Database.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
+
+                    b.Property<decimal?>("WeightInGrams")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("weight_in_grams");
 
                     b.HasKey("Id")
                         .HasName("pk_categories");
@@ -1426,6 +1436,10 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
                     b.Property<DateTimeOffset?>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
@@ -1494,8 +1508,14 @@ namespace Infrastructure.Database.Migrations
                     b.HasKey("Id")
                         .HasName("pk_supplier_deliveries");
 
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_supplier_deliveries_category_id");
+
                     b.HasIndex("SupplierId")
                         .HasDatabaseName("ix_supplier_deliveries_supplier_id");
+
+                    b.HasIndex("TenantId", "CategoryId")
+                        .HasDatabaseName("ix_supplier_deliveries_tenant_id_category_id");
 
                     b.HasIndex("TenantId", "SupplierId", "CreatedAtUtc")
                         .HasDatabaseName("ix_supplier_deliveries_tenant_id_supplier_id_created_at_utc");
@@ -3013,6 +3033,12 @@ namespace Infrastructure.Database.Migrations
 
             modelBuilder.Entity("Domain.SupplierOperations.SupplierDelivery", b =>
                 {
+                    b.HasOne("Domain.Catalog.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_supplier_deliveries_categories_category_id");
+
                     b.HasOne("Domain.Suppliers.Supplier", "Supplier")
                         .WithMany()
                         .HasForeignKey("SupplierId")
@@ -3026,6 +3052,8 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_supplier_deliveries_tenants_tenant_id");
+
+                    b.Navigation("Category");
 
                     b.Navigation("Supplier");
                 });

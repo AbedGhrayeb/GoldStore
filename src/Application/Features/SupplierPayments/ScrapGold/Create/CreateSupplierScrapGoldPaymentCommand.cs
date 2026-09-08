@@ -10,5 +10,6 @@ public sealed record CreateSupplierScrapGoldPaymentCommand(
     Guid SupplierId,
     int Karat,
     decimal WeightInGrams,
-    string? Notes)
+    string? Notes,
+    Guid? CategoryId = null)
     : ICommand<Guid>;

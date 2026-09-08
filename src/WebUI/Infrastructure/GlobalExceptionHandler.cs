@@ -32,7 +32,7 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
             {
                 Status = StatusCodes.Status500InternalServerError,
                 Type = "https://datatracker.ietf.org/doc/html/rfc7231#section-6.6.1",
-                Title = "Server failure"
+                Title = "Server failure",
             },
         };
 

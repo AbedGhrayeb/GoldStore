@@ -106,7 +106,7 @@ describe('GoldPriceStore', () => {
     expect(store.current()).toEqual(PRICES);
   });
 
-  it('auto-refreshes on the 5-minute interval', async () => {
+  it('auto-refreshes on the daily interval', async () => {
     vi.useFakeTimers();
     try {
       await store.ensureLoaded();

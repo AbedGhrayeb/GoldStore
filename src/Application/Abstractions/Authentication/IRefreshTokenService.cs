@@ -14,18 +14,18 @@ namespace Application.Abstractions.Authentication;
 public interface IRefreshTokenService
 {
     /// <summary>Issues a new refresh token for the given user.</summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task<RefreshTokenResponse> IssueAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>Validates and rotates a refresh token, returning a new one-token pair.</summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task<Result<RefreshTokenResponse>> RotateAsync(string refreshToken, CancellationToken cancellationToken);
 
     /// <summary>Revokes the given refresh token (idempotent).</summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task RevokeAsync(string refreshToken, CancellationToken cancellationToken);
 
     /// <summary>Revokes every active refresh token issued to the user (account disable, stamp rotation).</summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task RevokeAllForUserAsync(Guid userId, CancellationToken cancellationToken);
 }

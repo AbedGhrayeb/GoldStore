@@ -95,7 +95,7 @@ internal sealed class GetSalesInvoicesQueryHandler(IApplicationDbContext context
                 WeightInGrams = ii.WeightInGrams,
                 Equivalent21KWeightInGrams = ii.Equivalent21KWeightInGrams,
                 PricePerGram = ii.PricePerGram,
-                GoldAmount = ii.GoldAmount
+                GoldAmount = ii.GoldAmount,
             }).ToList(),
         }).ToList();
 

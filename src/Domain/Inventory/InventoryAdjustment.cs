@@ -32,6 +32,7 @@ public sealed class InventoryAdjustment : AuditableEntity, ITenantEntity
             decimal weightInGrams, string reason, string? notes)
         : base(id)
     {
+        this.Type = type;
         this.Karat = karat;
         this.WeightInGrams = weightInGrams;
         this.Equivalent21KWeightInGrams = GoldWeight.CalculateEquivalent21KWeight(this.WeightInGrams, this.Karat);

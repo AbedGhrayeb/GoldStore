@@ -26,6 +26,11 @@ internal sealed class SupplierDeliveryConfiguration : IEntityTypeConfiguration<S
 
         builder.Property(delivery => delivery.ManufacturingFeeCurrency).HasConversion<string>().HasMaxLength(3);
 
+        builder.HasOne(delivery => delivery.Category)
+            .WithMany()
+            .HasForeignKey(delivery => delivery.CategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Property(delivery => delivery.Notes).HasMaxLength(1000);
 
         builder.HasOne(ii => ii.Supplier)
@@ -34,5 +39,7 @@ internal sealed class SupplierDeliveryConfiguration : IEntityTypeConfiguration<S
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(delivery => new { delivery.TenantId, delivery.SupplierId, delivery.CreatedAtUtc });
+
+        builder.HasIndex(delivery => new { delivery.TenantId, delivery.CategoryId });
     }
 }

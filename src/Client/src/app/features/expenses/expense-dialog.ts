@@ -11,7 +11,9 @@ import {
 import { FormField, form, required, submit } from '@angular/forms/signals';
 
 import type { ApiError } from '../../core/http/api-error';
+import { ReferenceStore } from '../../core/reference/reference-store';
 import { Button, Dialog } from '../../shared/ui';
+import { filterAccountsByCurrency } from '../../shared/finance/account-filters';
 import { ExpensesStore } from './expenses-store';
 import type { ExpenseResponse } from './expenses-api.service';
 
@@ -101,7 +103,31 @@ function toDateInput(value: string): string {
               <option [value]="category.id">{{ category.name }}</option>
             }
           </select>
-          <p class="mt-1 text-xs text-gray-500">اختياري — اتركه فارغاً إن لم يكن المصروف مصنّفاً.</p>
+          <p class="mt-1 text-xs text-gray-500">
+            اختياري — اتركه فارغاً إن لم يكن المصروف مصنّفاً.
+          </p>
+        </div>
+
+        <div>
+          <span class="mb-2 block text-sm font-medium text-gray-700">العملة</span>
+          <div class="flex gap-2">
+            @for (option of currencies(); track option.code) {
+              <label class="flex-1 cursor-pointer">
+                <input
+                  class="peer sr-only"
+                  type="radio"
+                  name="expense-currency"
+                  [value]="option.code"
+                  [checked]="currency() === option.code"
+                  (change)="onCurrencyChange(option.code)"
+                />
+                <span
+                  class="block rounded-input border border-gray-300 py-2 text-center text-sm transition-colors peer-checked:border-gold peer-checked:bg-gold-container/60 peer-checked:ring-1 peer-checked:ring-gold"
+                  >{{ option.code }}</span
+                >
+              </label>
+            }
+          </div>
         </div>
 
         <div>
@@ -115,7 +141,7 @@ function toDateInput(value: string): string {
           }
           @if (noAccounts()) {
             <p class="mb-2 rounded-input bg-warning/10 px-3 py-2 text-xs text-amber-800">
-              لا توجد حسابات مالية — أنشئ حساباً من صفحة المالية أولاً.
+              لا توجد حسابات مالية بعملة {{ currency() }} — أنشئ حساباً من صفحة المالية أولاً.
             </p>
           }
           <select
@@ -125,11 +151,10 @@ function toDateInput(value: string): string {
             class="w-full rounded-input border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
           >
             <option value="">اختر الحساب</option>
-            @for (account of accounts(); track account.id) {
+            @for (account of eligibleAccounts(); track account.id) {
               <option [value]="account.id">
-                {{ account.name }} — {{ account.currency }}{{ account.accountNumber
-                  ? ' — ' + account.accountNumber
-                  : '' }}
+                {{ account.name }} — {{ account.currency
+                }}{{ account.accountNumber ? ' — ' + account.accountNumber : '' }}
               </option>
             }
           </select>
@@ -180,6 +205,7 @@ function toDateInput(value: string): string {
 })
 export class ExpenseDialog {
   private readonly store = inject(ExpensesStore);
+  private readonly reference = inject(ReferenceStore);
 
   readonly open = input(false);
   /** When provided, the dialog edits; otherwise it creates. */
@@ -192,21 +218,31 @@ export class ExpenseDialog {
   readonly categories = this.store.categories;
   readonly accounts = this.store.accounts;
   readonly accountsError = this.store.accountsError;
+  readonly currencies = this.reference.currencies;
 
   readonly expenseDate = signal(toDateInput(''));
   readonly categoryId = signal('');
   readonly accountId = signal('');
   readonly amount = signal('');
+  readonly currency = signal('JOD');
 
   readonly draft = signal({ description: '' });
-  readonly draftForm = form(this.draft, () => {});
+  // No field-level validators: amount/account are validated manually
+  // (invalidAmount/missingAccount) because they live outside the draft model.
+  readonly draftForm = form(this.draft, () => undefined);
 
   readonly invalidAmount = computed(() => Number(this.amount()) <= 0);
   readonly missingAccount = computed(() => this.accountId() === '');
-  readonly noAccounts = computed(() => this.accounts().length === 0 && !this.accountsError());
+  readonly eligibleAccounts = computed(() =>
+    filterAccountsByCurrency(this.accounts(), this.currency()),
+  );
+  readonly noAccounts = computed(
+    () => this.eligibleAccounts().length === 0 && !this.accountsError(),
+  );
   readonly editing = computed(() => this.expense() !== null);
 
   constructor() {
+    void this.reference.ensureLoaded();
     effect(() => {
       if (this.open()) {
         const expense = this.expense();
@@ -214,12 +250,22 @@ export class ExpenseDialog {
         this.categoryId.set((expense?.categoryId as string) ?? '');
         this.accountId.set((expense?.accountId as string) ?? '');
         this.amount.set(expense?.amount !== undefined ? String(expense.amount) : '');
+        this.currency.set((expense as { currency?: string } | null)?.currency ?? 'JOD');
         this.draft.set({ description: (expense?.description as string) ?? '' });
         this.store.clearSaveError();
         void this.store.ensureCategories();
         void this.store.ensureAccounts();
       }
     });
+  }
+
+  onCurrencyChange(code: string): void {
+    this.currency.set(code);
+    const current = this.accountId();
+    const stillEligible = this.eligibleAccounts().some((account) => account.id === current);
+    if (!stillEligible) {
+      this.accountId.set('');
+    }
   }
 
   /** Required for Angular signals in `form()` — must not be called externally. */

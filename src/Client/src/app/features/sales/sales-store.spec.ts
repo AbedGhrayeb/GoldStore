@@ -76,7 +76,6 @@ describe('SalesStore', () => {
 
   const server = setupServer(
     http.get(`${INVOICES}/kpis`, () => HttpResponse.json(KPIS)),
-    http.get(`${INVOICES}/next-number`, () => HttpResponse.json('INV-2026-08-0005')),
     http.get(`${INVOICES}/:id`, () => HttpResponse.json(INVOICE_DETAIL)),
     http.get(INVOICES, () => HttpResponse.json(INVOICES_PAGE)),
     http.post(INVOICES, async ({ request }) => {
@@ -102,13 +101,23 @@ describe('SalesStore', () => {
     http.get(EMPLOYEES, () =>
       HttpResponse.json([{ id: 'emp-1', fullName: 'عمر حسن', isActive: true }]),
     ),
-    http.get(CATEGORIES, () =>
-      HttpResponse.json([{ id: 'cat-1', name: 'خواتم', isActive: true }]),
-    ),
+    http.get(CATEGORIES, () => HttpResponse.json([{ id: 'cat-1', name: 'خواتم', isActive: true }])),
     http.get(ACCOUNTS, () =>
       HttpResponse.json([
-        { id: 'acc-1', name: 'صندوق النقدية', currency: 'JOD', accountType: 'Cash', isActive: true },
-        { id: 'acc-2', name: 'الحساب البنكي', currency: 'JOD', accountType: 'Bank', isActive: true },
+        {
+          id: 'acc-1',
+          name: 'صندوق النقدية',
+          currency: 'JOD',
+          accountType: 'Cash',
+          isActive: true,
+        },
+        {
+          id: 'acc-2',
+          name: 'الحساب البنكي',
+          currency: 'JOD',
+          accountType: 'Bank',
+          isActive: true,
+        },
       ]),
     ),
   );
@@ -123,9 +132,8 @@ describe('SalesStore', () => {
   afterEach(() => server.resetHandlers());
   afterAll(() => server.close());
 
-  it('loads KPIs, the next number, the paged invoices and the option lists', async () => {
+  it('loads KPIs, the paged invoices and the option lists', async () => {
     await store.loadKpis();
-    await store.loadNextNumber();
     await store.loadInvoices({ page: 1, pageSize: 15 });
     await store.ensureEmployees();
     await store.ensureCategories();
@@ -133,8 +141,7 @@ describe('SalesStore', () => {
 
     expect(store.kpis()?.totalSalesDisplay).toBe('1234.500');
     expect(store.kpis()?.todayCount).toBe(4);
-    expect(store.nextNumber()).toBe('INV-2026-08-0005');
-    expect((store.page() as any)?.items?.[0]?.invoiceNumber).toBe('INV-2026-08-0001');
+    expect(store.page()?.items?.[0]?.invoiceNumber).toBe('INV-2026-08-0001');
     expect(store.employees()[0]?.fullName).toBe('عمر حسن');
     expect(store.categories()[0]?.name).toBe('خواتم');
     expect(store.accounts()).toHaveLength(2);
@@ -215,21 +222,23 @@ describe('SalesStore', () => {
       toDate: '2026-08-31',
     });
 
-    expect((captured as any)?.get('search')).toBe('مريم');
-    expect((captured as any)?.get('status')).toBe('PartiallyPaid');
-    expect((captured as any)?.get('fromDate')).toBe('2026-08-01');
-    expect((captured as any)?.get('toDate')).toBe('2026-08-31');
+    expect((captured ?? new URLSearchParams()).get('search')).toBe('مريم');
+    expect((captured ?? new URLSearchParams()).get('status')).toBe('PartiallyPaid');
+    expect((captured ?? new URLSearchParams()).get('fromDate')).toBe('2026-08-01');
+    expect((captured ?? new URLSearchParams()).get('toDate')).toBe('2026-08-31');
   });
 
   it('loads a single invoice detail', async () => {
     await store.loadDetail('inv-1');
 
     expect(store.detail()?.invoiceNumber).toBe('INV-2026-08-0001');
-    expect((store.detail() as any)?.items?.[0]?.equivalent21KWeightInGrams).toBe(25);
+    expect(store.detail()?.items?.[0]?.equivalent21KWeightInGrams).toBe(25);
   });
 
   it('surfaces a list error without toasting it', async () => {
-    server.use(http.get(INVOICES, () => HttpResponse.json({ detail: 'خطأ خادم' }, { status: 500 })));
+    server.use(
+      http.get(INVOICES, () => HttpResponse.json({ detail: 'خطأ خادم' }, { status: 500 })),
+    );
 
     await store.loadInvoices({ page: 1, pageSize: 15 });
 
@@ -270,7 +279,9 @@ describe('SalesStore', () => {
   });
 
   it('degrades gracefully when the employees endpoint is gated behind another feature', async () => {
-    server.use(http.get(EMPLOYEES, () => HttpResponse.json({ detail: 'غير مصرح' }, { status: 403 })));
+    server.use(
+      http.get(EMPLOYEES, () => HttpResponse.json({ detail: 'غير مصرح' }, { status: 403 })),
+    );
 
     await store.ensureEmployees();
 

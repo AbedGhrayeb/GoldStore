@@ -18,13 +18,13 @@ public interface ISubscriptionGate
     /// Ensures the current tenant may add <paramref name="additionalUsers"/> active users
     /// without exceeding its plan's active-user limit.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task<Result<Success>> EnsureCanAddUsersAsync(int additionalUsers, CancellationToken cancellationToken);
 
     /// <summary>
     /// Ensures the current tenant may post <paramref name="additionalInvoices"/> sales
     /// invoices in the current billing period without exceeding its plan limit.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task<Result<Success>> EnsureCanPostInvoicesAsync(int additionalInvoices, CancellationToken cancellationToken);
 }

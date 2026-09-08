@@ -24,7 +24,7 @@ function asApiError(error: unknown): ApiError {
 
 /**
  * Signal-backed facade for the purchases feature (`feature: purchases`). Owns the paged
- * invoice list, the invoice KPIs, the next-number prefill, the invoice detail, the
+ * invoice list, the invoice KPIs, the invoice detail, the
  * create-invoice mutation, and the best-effort option lists (employees/categories/accounts)
  * the invoice dialog needs. Components consume only this store — never {@link PurchasesApi}
  * directly.
@@ -46,9 +46,6 @@ export class PurchasesStore {
   private readonly detailLoadingSignal = signal(false);
   private readonly detailErrorSignal = signal<ApiError | null>(null);
 
-  private readonly nextNumberSignal = signal('');
-  private readonly nextNumberErrorSignal = signal(false);
-
   private readonly employeesSignal = signal<EmployeeResponse[]>([]);
   private readonly employeesErrorSignal = signal<string | null>(null);
   private readonly employeesLoadedSignal = signal(false);
@@ -68,8 +65,6 @@ export class PurchasesStore {
   private categoriesPromise: Promise<void> | null = null;
   private accountsPromise: Promise<void> | null = null;
 
-  readonly nextNumber = this.nextNumberSignal.asReadonly();
-  readonly nextNumberError = this.nextNumberErrorSignal.asReadonly();
   readonly page = this.pageSignal.asReadonly();
   readonly loading = this.loadingSignal.asReadonly();
   readonly error = this.errorSignal.asReadonly();
@@ -86,16 +81,6 @@ export class PurchasesStore {
   readonly accountsError = this.accountsErrorSignal.asReadonly();
   readonly saving = this.savingSignal.asReadonly();
   readonly saveError = this.saveErrorSignal.asReadonly();
-
-  async loadNextNumber(): Promise<void> {
-    this.nextNumberErrorSignal.set(false);
-    try {
-      this.nextNumberSignal.set(await firstValueFrom(this.api.getNextNumber()));
-    } catch {
-      this.nextNumberSignal.set('');
-      this.nextNumberErrorSignal.set(true);
-    }
-  }
 
   async loadKpis(): Promise<void> {
     this.kpisLoadingSignal.set(true);
@@ -226,6 +211,21 @@ export class PurchasesStore {
     }
   }
 
+  /**
+   * Forces a reload of the cached dropdown options (employees/categories/accounts) so that
+   * returning to the page always shows freshly created options without a hard refresh.
+   */
+  async refreshOptions(): Promise<void> {
+    this.employeesLoadedSignal.set(false);
+    this.categoriesLoadedSignal.set(false);
+    this.accountsLoadedSignal.set(false);
+    await Promise.allSettled([
+      this.ensureEmployees(),
+      this.ensureCategories(),
+      this.ensureAccounts(),
+    ]);
+  }
+
   clearSaveError(): void {
     this.saveErrorSignal.set(null);
   }
@@ -234,9 +234,7 @@ export class PurchasesStore {
     this.savingSignal.set(true);
     this.saveErrorSignal.set(null);
     try {
-      await firstValueFrom(
-        this.api.createInvoice(input, { context: PurchasesStore.NO_TOAST }),
-      );
+      await firstValueFrom(this.api.createInvoice(input, { context: PurchasesStore.NO_TOAST }));
       this.toasts.success('تم إصدار فاتورة شراء الذهب بنجاح');
       return true;
     } catch (error) {

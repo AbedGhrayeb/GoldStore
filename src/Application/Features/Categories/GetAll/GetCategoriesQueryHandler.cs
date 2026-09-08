@@ -15,19 +15,35 @@ internal sealed class GetCategoriesQueryHandler(IApplicationDbContext context, I
 {
     public async Task<Result<List<CategoryResponse>>> Handle(GetCategoriesQuery query, CancellationToken cancellationToken)
     {
-        List<CategoryResponse> categories = await context.Categories.AsNoTracking()
+        // NOTE: Karat is stored as text (HasConversion<string>). The enum-to-int
+        // mapping must happen client-side after ToListAsync — projecting
+        // (int)c.Karat inside the query makes Postgres CAST('K21' AS integer) (22P02).
+        var rows = await context.Categories.AsNoTracking()
             .Where(c => c.TenantId == currentTenant.TenantId)
             .OrderByDescending(c => c)
-            .Select(c => new CategoryResponse
+            .Select(c => new
             {
-                Id = c.Id,
-                Name = c.Name,
-                Description = c.Description,
-                ParentCategoryId = c.ParentCategoryId,
-                ParentCategoryName = c.ParentCategoryId.HasValue ? string.Empty : string.Empty,
-                IsActive = c.IsActive,
+                c.Id,
+                c.Name,
+                c.Description,
+                c.ParentCategoryId,
+                c.IsActive,
+                c.WeightInGrams,
+                c.Karat,
             })
             .ToListAsync(cancellationToken);
+
+        List<CategoryResponse> categories = rows.Select(c => new CategoryResponse
+        {
+            Id = c.Id,
+            Name = c.Name,
+            Description = c.Description,
+            ParentCategoryId = c.ParentCategoryId,
+            ParentCategoryName = c.ParentCategoryId.HasValue ? string.Empty : string.Empty,
+            IsActive = c.IsActive,
+            WeightInGrams = c.WeightInGrams,
+            Karat = c.Karat.HasValue ? (int)c.Karat.Value : null,
+        }).ToList();
 
         var parentIds = categories
             .Where(c => c.ParentCategoryId.HasValue)

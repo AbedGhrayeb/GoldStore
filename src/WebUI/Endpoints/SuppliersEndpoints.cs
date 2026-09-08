@@ -3,10 +3,14 @@
 // </copyright>
 
 using Application.Abstractions.Messaging;
+using Application.Common.Models;
 using Application.Suppliers;
 using Application.Suppliers.Create;
 using Application.Suppliers.GetAll;
+using Application.Suppliers.GetBalances;
 using Application.Suppliers.GetById;
+using Application.Suppliers.GetPaged;
+using Application.Suppliers.GetTransactions;
 using Application.Suppliers.ToggleActive;
 using Application.Suppliers.Update;
 using Domain.Tenants;
@@ -37,9 +41,24 @@ public sealed class SuppliersEndpoints : IEndpoint
             .WithSummary("List the store's suppliers.")
             .Produces<List<SupplierResponse>>(StatusCodes.Status200OK);
 
+        group.MapGet("/paged", GetPagedSuppliers)
+            .WithSummary("Return paged suppliers with search and status filter.")
+            .Produces<PaginatedList<SupplierResponse>>(StatusCodes.Status200OK)
+            .ProducesValidationProblem();
+
         group.MapGet("/{id:guid}", GetSupplierById)
             .WithSummary("Return a supplier and its balances.")
             .Produces<SupplierDetailResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapGet("/{id:guid}/balances", GetSupplierBalances)
+            .WithSummary("Return a supplier's due gold per karat and due manufacturing per currency.")
+            .Produces<SupplierBalancesResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapGet("/{id:guid}/transactions", GetSupplierTransactions)
+            .WithSummary("Return a supplier's transactions (gold, manufacturing, financial) with type filter and paging.")
+            .Produces<PaginatedList<SupplierTransactionResponse>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/", CreateSupplier)
@@ -74,6 +93,26 @@ public sealed class SuppliersEndpoints : IEndpoint
         return ApiResults.From(result);
     }
 
+    private static async Task<IResult> GetPagedSuppliers(
+        int? page,
+        int? pageSize,
+        string? search,
+        bool? activeOnly,
+        IQueryDispatcher dispatcher,
+        CancellationToken cancellationToken)
+    {
+        Result<PaginatedList<SupplierResponse>> result = await dispatcher
+            .DispatchAsync<GetPagedSuppliersQuery, PaginatedList<SupplierResponse>>(
+                new GetPagedSuppliersQuery(
+                    page ?? 1,
+                    pageSize ?? 15,
+                    search,
+                    activeOnly),
+                cancellationToken);
+
+        return ApiResults.From(result);
+    }
+
     private static async Task<IResult> GetSupplierById(
         Guid id,
         IQueryDispatcher dispatcher,
@@ -81,6 +120,33 @@ public sealed class SuppliersEndpoints : IEndpoint
     {
         Result<SupplierDetailResponse> result = await dispatcher.DispatchAsync<GetSupplierByIdQuery, SupplierDetailResponse>(
             new GetSupplierByIdQuery(id), cancellationToken);
+
+        return ApiResults.From(result);
+    }
+
+    private static async Task<IResult> GetSupplierBalances(
+        Guid id,
+        IQueryDispatcher dispatcher,
+        CancellationToken cancellationToken)
+    {
+        Result<SupplierBalancesResponse> result = await dispatcher.DispatchAsync<GetSupplierBalancesQuery, SupplierBalancesResponse>(
+            new GetSupplierBalancesQuery(id), cancellationToken);
+
+        return ApiResults.From(result);
+    }
+
+    private static async Task<IResult> GetSupplierTransactions(
+        Guid id,
+        string? type,
+        int? page,
+        int? pageSize,
+        IQueryDispatcher dispatcher,
+        CancellationToken cancellationToken)
+    {
+        Result<PaginatedList<SupplierTransactionResponse>> result = await dispatcher
+            .DispatchAsync<GetSupplierTransactionsQuery, PaginatedList<SupplierTransactionResponse>>(
+                new GetSupplierTransactionsQuery(id, type, page ?? 1, pageSize ?? 15),
+                cancellationToken);
 
         return ApiResults.From(result);
     }

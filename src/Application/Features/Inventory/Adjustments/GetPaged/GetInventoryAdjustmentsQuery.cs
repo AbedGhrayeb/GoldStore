@@ -12,4 +12,6 @@ public sealed record GetInventoryAdjustmentsQuery(
     int PageSize = 20,
     DateTime? FromDate = null,
     DateTime? ToDate = null,
-    string? AdjustmentType = null) : IQuery<PaginatedList<InventoryAdjustmentResponse>>;
+    string? AdjustmentType = null,
+    string? Search = null,
+    int? Karat = null) : IQuery<PaginatedList<InventoryAdjustmentResponse>>;

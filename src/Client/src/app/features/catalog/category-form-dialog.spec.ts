@@ -15,9 +15,12 @@ const CATEGORY: CategoryResponse = {
   parentCategoryId: null,
   parentCategoryName: null,
   isActive: true,
+  weightInGrams: 10,
+  karat: 21,
 };
 
 const BASE = apiUrl('/api/v1/categories');
+const REFERENCE = apiUrl('/api/v1/reference');
 
 describe('CategoryFormDialog', () => {
   let lastCreateBody: unknown;
@@ -25,6 +28,20 @@ describe('CategoryFormDialog', () => {
   let lastUpdateId: string | null;
 
   const server = setupServer(
+    http.get(`${REFERENCE}/karats`, () =>
+      HttpResponse.json([
+        { value: 18, label: 'عيار 18' },
+        { value: 21, label: 'عيار 21' },
+        { value: 24, label: 'عيار 24' },
+      ]),
+    ),
+    http.get(`${REFERENCE}/currencies`, () =>
+      HttpResponse.json([
+        { code: 'JOD', symbol: 'د.أ' },
+        { code: 'USD', symbol: '$' },
+        { code: 'ILS', symbol: '₪' },
+      ]),
+    ),
     http.post(BASE, async ({ request }) => {
       lastCreateBody = await request.json();
       return HttpResponse.json('cat-new', { status: 201 });
@@ -71,6 +88,20 @@ describe('CategoryFormDialog', () => {
     fixture.detectChanges();
   }
 
+  function setWeight(fixture: ComponentFixture<CategoryFormDialog>, value: string): void {
+    const input = fixture.nativeElement.querySelector('#category-weight') as HTMLInputElement;
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  }
+
+  function setKarat(fixture: ComponentFixture<CategoryFormDialog>, value: string): void {
+    const select = fixture.nativeElement.querySelector('#category-karat') as HTMLSelectElement;
+    select.value = value;
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+  }
+
   function clickSave(fixture: ComponentFixture<CategoryFormDialog>): void {
     const saveButton = [...fixture.nativeElement.querySelectorAll('button')].find(
       (button: HTMLButtonElement) => button.textContent?.trim() === 'حفظ',
@@ -85,10 +116,12 @@ describe('CategoryFormDialog', () => {
       { id: 'cat-3', name: 'خواتم رجالي', depth: 1 },
     ]);
     setName(fixture, 'سلاسل');
-    const select = fixture.nativeElement.querySelector('select') as HTMLSelectElement;
+    const select = fixture.nativeElement.querySelector('#category-parent') as HTMLSelectElement;
     select.value = 'cat-1';
     select.dispatchEvent(new Event('change'));
     fixture.detectChanges();
+    setWeight(fixture, '12.5');
+    setKarat(fixture, '21');
 
     clickSave(fixture);
 
@@ -98,8 +131,20 @@ describe('CategoryFormDialog', () => {
         description: null,
         parentCategoryId: 'cat-1',
         isActive: true,
+        weightInGrams: 12.5,
+        karat: 21,
       }),
     );
+  });
+
+  it('blocks submit until weight and karat are provided', async () => {
+    const fixture = await createFixture();
+    setName(fixture, 'سلاسل');
+    clickSave(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain('أدخل وزناً أكبر من صفر');
+    expect(fixture.nativeElement.textContent).toContain('اختر العيار');
+    expect(lastCreateBody).toBeNull();
   });
 
   it('requires a name and does not call the API when empty', async () => {
@@ -112,8 +157,19 @@ describe('CategoryFormDialog', () => {
 
   it('prefills the edit target and submits through PUT', async () => {
     const fixture = await createFixture('edit', CATEGORY);
+    await vi.waitFor(() => {
+      const options = fixture.nativeElement.querySelectorAll('#category-karat option');
+      expect(options.length).toBeGreaterThan(1);
+    });
+    fixture.detectChanges();
     const input = fixture.nativeElement.querySelector('#category-name') as HTMLInputElement;
     expect(input.value).toBe('خواتم');
+    expect(
+      (fixture.nativeElement.querySelector('#category-weight') as HTMLInputElement).value,
+    ).toBe('10');
+    expect(
+      (fixture.nativeElement.querySelector('#category-karat') as HTMLSelectElement).value,
+    ).toBe('21');
 
     setName(fixture, 'خواتم نسائية');
     const activeCheckbox = fixture.nativeElement.querySelector(
@@ -131,6 +187,8 @@ describe('CategoryFormDialog', () => {
         description: 'خواتم ذهبية',
         parentCategoryId: null,
         isActive: false,
+        weightInGrams: 10,
+        karat: 21,
       }),
     );
     expect(lastUpdateId).toBe('cat-1');
@@ -153,6 +211,8 @@ describe('CategoryFormDialog', () => {
     );
     const fixture = await createFixture();
     setName(fixture, 'خواتم');
+    setWeight(fixture, '9');
+    setKarat(fixture, '18');
     clickSave(fixture);
 
     await vi.waitFor(() =>
@@ -165,6 +225,8 @@ describe('CategoryFormDialog', () => {
     const saved = vi.spyOn(fixture.componentInstance.saved, 'emit');
     const closed = vi.spyOn(fixture.componentInstance.openChange, 'emit');
     setName(fixture, 'سلاسل');
+    setWeight(fixture, '12.5');
+    setKarat(fixture, '21');
     clickSave(fixture);
 
     await vi.waitFor(() => expect(saved).toHaveBeenCalled());
